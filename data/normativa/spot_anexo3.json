@@ -1,0 +1,105 @@
+{
+  "_metadata": {
+    "fuente": "RS 183-2004/SUNAT y modificatorias",
+    "descripcion": "Anexo 3 - Servicios sujetos al Sistema de Pago de Obligaciones Tributarias (SPOT)",
+    "ultima_actualizacion": "2025-01-01",
+    "nota": "Lista simplificada con keywords para matching. Para porcentajes actualizados consultar SUNAT."
+  },
+  "servicios": [
+    {
+      "codigo": "012",
+      "descripcion": "Intermediación laboral y tercerización",
+      "tasa": 12,
+      "keywords": ["intermediación laboral", "tercerización", "outsourcing", "personal destacado", "destaque de personal"]
+    },
+    {
+      "codigo": "014",
+      "descripcion": "Arrendamiento de bienes",
+      "tasa": 10,
+      "keywords": ["arrendamiento", "alquiler", "locación de bienes", "leasing operativo"]
+    },
+    {
+      "codigo": "016",
+      "descripcion": "Transporte de bienes por vía terrestre",
+      "tasa": 4,
+      "keywords": ["transporte de bienes", "flete", "carga terrestre", "transporte de carga"]
+    },
+    {
+      "codigo": "017",
+      "descripcion": "Transporte público de pasajeros por vía terrestre",
+      "tasa": 4,
+      "keywords": ["transporte de pasajeros", "transporte público", "servicio de transporte"]
+    },
+    {
+      "codigo": "019",
+      "descripcion": "Contratos de construcción",
+      "tasa": 4,
+      "keywords": ["construcción", "obra civil", "contrato de obra", "edificación"]
+    },
+    {
+      "codigo": "020",
+      "descripcion": "Demás servicios gravados con IGV",
+      "tasa": 12,
+      "keywords": ["servicio", "consultoría", "asesoría", "locación de servicios", "prestación de servicios"]
+    },
+    {
+      "codigo": "021",
+      "descripcion": "Mantenimiento y reparación de bienes muebles",
+      "tasa": 12,
+      "keywords": ["mantenimiento", "reparación", "servicio técnico", "soporte técnico"]
+    },
+    {
+      "codigo": "022",
+      "descripcion": "Movimiento de carga",
+      "tasa": 10,
+      "keywords": ["movimiento de carga", "estiba", "desestiba", "manipuleo"]
+    },
+    {
+      "codigo": "024",
+      "descripcion": "Comisión mercantil",
+      "tasa": 10,
+      "keywords": ["comisión", "correduría", "intermediación comercial"]
+    },
+    {
+      "codigo": "025",
+      "descripcion": "Fabricación de bienes por encargo",
+      "tasa": 10,
+      "keywords": ["fabricación", "manufactura por encargo", "producción a pedido"]
+    },
+    {
+      "codigo": "026",
+      "descripcion": "Servicio de transporte de personas",
+      "tasa": 10,
+      "keywords": ["taxi", "transporte de personas", "movilidad"]
+    },
+    {
+      "codigo": "030",
+      "descripcion": "Contratos de construcción (DS 155)",
+      "tasa": 4,
+      "keywords": ["contrato construcción", "ejecución de obra"]
+    },
+    {
+      "codigo": "037",
+      "descripcion": "Demás servicios (residual)",
+      "tasa": 12,
+      "keywords": ["otros servicios", "servicios varios", "servicios profesionales", "honorarios"]
+    }
+  ],
+  "monto_minimo": 700.00,
+  "moneda": "PEN",
+  "cuenta_bn_prefijo": "00-",
+  "indicadores_texto_spot": [
+    "operación sujeta al spot",
+    "operación sujeta al sistema de pago de obligaciones tributarias",
+    "sujeto a detracción",
+    "detracción aplicada",
+    "cuenta de detracciones",
+    "constancia de depósito de detracción",
+    "depósito de detracción",
+    "banco de la nación",
+    "cuenta bn",
+    "00-0"
+  ]
+}
+
+

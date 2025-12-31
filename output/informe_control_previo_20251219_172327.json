@@ -1,0 +1,174 @@
+{
+  "metadata": {
+    "fecha_analisis": "19/12/2025 17:23",
+    "expediente_sinad": "984759",
+    "sistema": "AG-EVIDENCE v2.0.0 (Estándar Probatorio)",
+    "version_formato": "2.0"
+  },
+  "clasificacion": {
+    "naturaleza": "PAGO A PROVEEDOR",
+    "directiva_aplicada": "Pautas para Remisión de Expedientes de Pago"
+  },
+  "decision": {
+    "resultado": "PROCEDE CON OBSERVACIONES",
+    "procede": false,
+    "bloquea_pago": false
+  },
+  "estadisticas": {
+    "total_observaciones": 6,
+    "criticas": 0,
+    "mayores": 4,
+    "menores": 2,
+    "requieren_revision_humana": 3,
+    "riesgos_sunat": 2
+  },
+  "recomendacion": {
+    "texto": "Se recomienda subsanar las observaciones indicadas antes de aprobar el devengado. El expediente puede proceder una vez levantadas las observaciones mayores.",
+    "accion_requerida": "Verificar manualmente las páginas con problemas de legibilidad; Verificar si el servicio está sujeto a detracción según Res. SUNAT 183-2004; Corregir número de orden de servicio",
+    "area_responsable": "Oficina de Logística / Control Previo"
+  },
+  "hallazgos": [
+    {
+      "agente": "ocr_avanzado",
+      "hallazgo": "[EVIDENCIA INCOMPLETA] Se detectaron 32 páginas con baja calidad de texto",
+      "severidad": "INCIERTO",
+      "impacto": "Requiere verificación",
+      "accion": "Verificar manualmente las páginas con problemas de legibilidad",
+      "area_responsable": "Control Previo",
+      "regla_aplicada": "",
+      "requiere_revision_humana": true,
+      "tipo": "otro",
+      "bloquea_pago": false,
+      "evidencias": [],
+      "archivo": "",
+      "pagina": 0,
+      "snippet": "Documentos: ['202510231551AUTORIZACIONSPE01Nov.pdf', '2025102710412ANEXOSLOCCRojas01112025.pdf', '2025102710412ANEXOSLOCCRojas01112025.pdf']",
+      "confianza": 0.0,
+      "metodo_extraccion": "NO_DISPONIBLE"
+    },
+    {
+      "agente": "coherencia_documental",
+      "hallazgo": "Inconsistencia en ORDEN_SERVICIO: Valores diferentes: 012640-2025 vs 012640 vs 000020660",
+      "severidad": "MAYOR",
+      "impacto": "Requiere verificación",
+      "accion": "Corregir número de orden de servicio",
+      "area_responsable": "Oficina de Logística",
+      "regla_aplicada": "R004",
+      "requiere_revision_humana": false,
+      "tipo": "otro",
+      "bloquea_pago": false,
+      "evidencias": [
+        {
+          "archivo": "20251216152312OTIC2025INT0984759V8R1.pdf",
+          "pagina": 2,
+          "valor_detectado": "012640-2025",
+          "valor_esperado": "",
+          "snippet": "ación, con las observaciones al entregable de la  Orden de Servicio N° 0012640-2025 para su conocimiento y fines pertinentes.  Agrade",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R004"
+        },
+        {
+          "archivo": "20251216152312OTIC2025INT0984759V8R1.pdf",
+          "pagina": 7,
+          "valor_detectado": "012640",
+          "valor_esperado": "012640-2025",
+          "snippet": "nistrativa  Módulo de Logítica  Versión 25.01.01  ORDEN DE SERVICIO Nº  0012640      Página : 1 de 3      UNIDAD EJECUTORA  NRO.",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R004"
+        },
+        {
+          "archivo": "20251217125311984759SINADRmerged1.pdf",
+          "pagina": 57,
+          "valor_detectado": "000020660",
+          "valor_esperado": "012640-2025",
+          "snippet": ". Med. Descripción Dia Mes Año 30 10 2025 0012640 ORDEN DE SERVICIO Nº  0000020660 Nº Exp. SIAF :  Página : 1 de 3 SERVICIO DE SOPOR",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R004"
+        }
+      ],
+      "archivo": "20251216152312OTIC2025INT0984759V8R1.pdf",
+      "pagina": 2,
+      "snippet": "ación, con las observaciones al entregable de la  Orden de Servicio N° 0012640-2025 para su conocimiento y fines pertinentes.  Agrade",
+      "confianza": 1.0,
+      "metodo_extraccion": "REGEX"
+    },
+    {
+      "agente": "legal_directivas",
+      "hallazgo": "[EVIDENCIA INCOMPLETA] Monto supera S/ 700 - Verificar si corresponde detracción",
+      "severidad": "INCIERTO",
+      "impacto": "Diferencia en importes a pagar",
+      "accion": "Verificar si el servicio está sujeto a detracción y si se consignó la cuenta",
+      "area_responsable": "Control Previo",
+      "regla_aplicada": "",
+      "requiere_revision_humana": true,
+      "tipo": "monto",
+      "bloquea_pago": false,
+      "evidencias": [],
+      "archivo": "",
+      "pagina": 0,
+      "snippet": "Monto detectado: S/ 1,129,128.03",
+      "confianza": 0.0,
+      "metodo_extraccion": "NO_DISPONIBLE"
+    },
+    {
+      "agente": "sunat_publico",
+      "hallazgo": "[EVIDENCIA INCOMPLETA] [INFORMATIVO] Monto supera S/ 700 - Verificar si aplica detracción",
+      "severidad": "INCIERTO",
+      "impacto": "Diferencia en importes a pagar",
+      "accion": "Verificar si el servicio está sujeto a detracción según Res. SUNAT 183-2004",
+      "area_responsable": "Control Previo",
+      "regla_aplicada": "",
+      "requiere_revision_humana": true,
+      "tipo": "monto",
+      "bloquea_pago": false,
+      "evidencias": [],
+      "archivo": "",
+      "pagina": 0,
+      "snippet": "Monto detectado: S/ 1,129,128.03",
+      "confianza": 0.0,
+      "metodo_extraccion": "NO_DISPONIBLE"
+    },
+    {
+      "agente": "sunat_publico",
+      "hallazgo": "[INFORMATIVO] No se pudo verificar RUC 10",
+      "severidad": "INFORMATIVA",
+      "impacto": "Posible pago a proveedor incorrecto",
+      "accion": "Verificar estado del RUC en portal SUNAT",
+      "area_responsable": "Control Previo",
+      "regla_aplicada": "",
+      "requiere_revision_humana": false,
+      "tipo": "ruc",
+      "bloquea_pago": false,
+      "evidencias": [],
+      "archivo": "",
+      "pagina": 0,
+      "snippet": "No se pudo consultar. Verificar en SUNAT.",
+      "confianza": 0.0,
+      "metodo_extraccion": "NO_DISPONIBLE"
+    },
+    {
+      "agente": "sunat_publico",
+      "hallazgo": "[INFORMATIVO] No se pudo verificar RUC 20",
+      "severidad": "INFORMATIVA",
+      "impacto": "Posible pago a proveedor incorrecto",
+      "accion": "Verificar estado del RUC en portal SUNAT",
+      "area_responsable": "Control Previo",
+      "regla_aplicada": "",
+      "requiere_revision_humana": false,
+      "tipo": "ruc",
+      "bloquea_pago": false,
+      "evidencias": [],
+      "archivo": "",
+      "pagina": 0,
+      "snippet": "No se pudo consultar. Verificar en SUNAT.",
+      "confianza": 0.0,
+      "metodo_extraccion": "NO_DISPONIBLE"
+    }
+  ]
+}

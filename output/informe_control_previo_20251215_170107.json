@@ -1,0 +1,450 @@
+{
+  "metadata": {
+    "fecha_analisis": "15/12/2025 17:01",
+    "expediente_sinad": "12542",
+    "sistema": "Control Previo Premium v2.0.0 (Estándar Probatorio)",
+    "version_formato": "2.0"
+  },
+  "clasificacion": {
+    "naturaleza": "PAGO A PROVEEDOR",
+    "directiva_aplicada": "Pautas para Remisión de Expedientes de Pago"
+  },
+  "decision": {
+    "resultado": "NO PROCEDE",
+    "procede": false,
+    "bloquea_pago": true
+  },
+  "estadisticas": {
+    "total_observaciones": 13,
+    "criticas": 6,
+    "mayores": 6,
+    "menores": 1,
+    "requieren_revision_humana": 6,
+    "riesgos_sunat": 1
+  },
+  "recomendacion": {
+    "texto": "Se recomienda DEVOLVER el expediente al área correspondiente para subsanación de las observaciones críticas antes de continuar con el trámite.",
+    "accion_requerida": "Adjuntar Contrato; Verificar competencia del firmante o re-emitir documento con firma válida; Corregir número SINAD en documento(s) incorrecto(s) y re-emitir",
+    "area_responsable": "Área Usuaria / Logística / Área Usuaria / Oficina de Logística"
+  },
+  "hallazgos": [
+    {
+      "agente": "coherencia_documental",
+      "hallazgo": "Inconsistencia en SINAD: Valores diferentes: 512659 vs 43115 vs 12542",
+      "severidad": "CRÍTICA",
+      "impacto": "Bloquea trazabilidad SIAF/SINAD",
+      "accion": "Corregir número SINAD en documento(s) incorrecto(s) y re-emitir",
+      "area_responsable": "Oficina de Logística",
+      "regla_aplicada": "R001",
+      "requiere_revision_humana": false,
+      "tipo": "sinad",
+      "bloquea_pago": true,
+      "evidencias": [
+        {
+          "archivo": "20251215153848CONFORMIDAD.pdf",
+          "pagina": 1,
+          "valor_detectado": "0512659",
+          "valor_esperado": "",
+          "snippet": "da 18/11/2025 Fecha de entrega del bien 5/12/2025 E-SINAD 0512659 SGC - LOG N° 46-B-2025-MINEDU/SG- OGA-OGRH-OBIR F",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R001"
+        },
+        {
+          "archivo": "20251215153854COTIZACIONGANADORA.pdf",
+          "pagina": 294,
+          "valor_detectado": "43115",
+          "valor_esperado": "512659",
+          "snippet": "NISTERIO DE EDUCACION-SEDE CENTRAL - 024 Concepto SINAD : 43115 OGRH - ADQUISICION DE MATERIAL DENTAL Clasificado",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R001"
+        },
+        {
+          "archivo": "20251215153854COTIZACIONGANADORA.pdf",
+          "pagina": 295,
+          "valor_detectado": "12542",
+          "valor_esperado": "512659",
+          "snippet": "NISTERIO DE EDUCACION-SEDE CENTRAL - 024 Concepto SINAD : 12542 -  ARTÍCULOS ODONTOLÓGICOS  - OBIR Clasificador 2",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R001"
+        }
+      ],
+      "archivo": "20251215153848CONFORMIDAD.pdf",
+      "pagina": 1,
+      "snippet": "da 18/11/2025 Fecha de entrega del bien 5/12/2025 E-SINAD 0512659 SGC - LOG N° 46-B-2025-MINEDU/SG- OGA-OGRH-OBIR F",
+      "confianza": 1.0,
+      "metodo_extraccion": "REGEX"
+    },
+    {
+      "agente": "coherencia_documental",
+      "hallazgo": "Inconsistencia en RUC: Valores diferentes: 20611603186 vs 20131257750 vs 20131373237 vs 20392521390 vs 20498886605",
+      "severidad": "CRÍTICA",
+      "impacto": "Posible pago a proveedor incorrecto",
+      "accion": "VERIFICAR RUC del proveedor - posible documento de otro expediente",
+      "area_responsable": "Oficina de Logística",
+      "regla_aplicada": "R002",
+      "requiere_revision_humana": false,
+      "tipo": "ruc",
+      "bloquea_pago": true,
+      "evidencias": [
+        {
+          "archivo": "20251210151342OC44125UE024ORDENDECOMPRA.pdf",
+          "pagina": 1,
+          "valor_detectado": "20611603186",
+          "valor_esperado": "",
+          "snippet": "de Proceso :  Nº Contrato :  Moneda : S/. T/C :  RUC : 20611603186 Teléfono : Fax :  Nº Cuadro Adquisic: CM - Nª 193",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R002"
+        },
+        {
+          "archivo": "20251215153854COTIZACIONGANADORA.pdf",
+          "pagina": 17,
+          "valor_detectado": "20131257750",
+          "valor_esperado": "20611603186",
+          "snippet": ": 19/05/2025 Señor(es) : SEGURO SOCIAL DE SALUD   RUC  : 20131257750  Dirección del Receptor de la factura : AV. DOMIN",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R002"
+        },
+        {
+          "archivo": "20251215153854COTIZACIONGANADORA.pdf",
+          "pagina": 143,
+          "valor_detectado": "20131373237",
+          "valor_esperado": "20611603186",
+          "snippet": "Digitalmente por: VALDIVIA VERA Edith Viviana FAU 20131373237 hard EVALUADOR AREA DE AUTORIZACION DE ALMACENES",
+          "metodo_extraccion": "REGEX",
+          "confianza": 0.85,
+          "nivel_confianza": "MEDIUM",
+          "regla_aplicada": "R002"
+        },
+        {
+          "archivo": "20251215153854COTIZACIONGANADORA.pdf",
+          "pagina": 244,
+          "valor_detectado": "20392521390",
+          "valor_esperado": "20611603186",
+          "snippet": "egal: CAL. MANUEL DEL PINO 451-455 - LIMA - LIMA  RUC: 20392521390  Teléfono Fijo:   Celular: 972530743  Código de C",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R002"
+        },
+        {
+          "archivo": "20251215153854COTIZACIONGANADORA.pdf",
+          "pagina": 301,
+          "valor_detectado": "20498886605",
+          "valor_esperado": "20611603186",
+          "snippet": "PRODUCTOS ODONTOLOGICOS EN GENERAL / RUC:20498886605 LED 0002 Lampara Led D - Woodpecker MARCA: WOODPE",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R002"
+        }
+      ],
+      "archivo": "20251210151342OC44125UE024ORDENDECOMPRA.pdf",
+      "pagina": 1,
+      "snippet": "de Proceso :  Nº Contrato :  Moneda : S/. T/C :  RUC : 20611603186 Teléfono : Fax :  Nº Cuadro Adquisic: CM - Nª 193",
+      "confianza": 1.0,
+      "metodo_extraccion": "REGEX"
+    },
+    {
+      "agente": "firmas_competencia",
+      "hallazgo": "Firma digital de cargo no competente: JEFA DE LA",
+      "severidad": "CRÍTICA",
+      "impacto": "Validez de firma en cuestión",
+      "accion": "Verificar competencia del firmante o re-emitir documento con firma válida",
+      "area_responsable": "Área Usuaria",
+      "regla_aplicada": "RF004",
+      "requiere_revision_humana": false,
+      "tipo": "firma",
+      "bloquea_pago": true,
+      "evidencias": [
+        {
+          "archivo": "20251210151342OC44125UE024ORDENDECOMPRA.pdf",
+          "pagina": 1,
+          "valor_detectado": "JEFA DE LA OFICINA (JEFA DE LA)",
+          "valor_esperado": "",
+          "snippet": "BARRERA RAMIREZ Johana Natali FAU 20131370998 hard JEFA DE LA OFICINA DE LOGISTICA En señal de conformidad 2025/11/13 18:02:30",
+          "metodo_extraccion": "REGEX",
+          "confianza": 0.95,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "RF004"
+        }
+      ],
+      "archivo": "20251210151342OC44125UE024ORDENDECOMPRA.pdf",
+      "pagina": 1,
+      "snippet": "BARRERA RAMIREZ Johana Natali FAU 20131370998 hard JEFA DE LA OFICINA DE LOGISTICA En señal de conformidad 2025/11/13 18:02:30",
+      "confianza": 0.95,
+      "metodo_extraccion": "REGEX"
+    },
+    {
+      "agente": "firmas_competencia",
+      "hallazgo": "Firma digital de cargo no competente: ESPECIALISTA",
+      "severidad": "CRÍTICA",
+      "impacto": "Validez de firma en cuestión",
+      "accion": "Verificar competencia del firmante o re-emitir documento con firma válida",
+      "area_responsable": "Área Usuaria",
+      "regla_aplicada": "RF001",
+      "requiere_revision_humana": false,
+      "tipo": "firma",
+      "bloquea_pago": true,
+      "evidencias": [
+        {
+          "archivo": "20251215153840CONFORMIDADDEINGRESODEALMACEN.pdf",
+          "pagina": 1,
+          "valor_detectado": "ESPECIALISTA ALMACEN (ESPECIALISTA)",
+          "valor_esperado": "",
+          "snippet": "OS HUMANOS ROQUE BRAVO Joseph FAU 20131370998 soft ESPECIALISTA ALMACEN - LOGISTICA MINEDU Soy el autor del documento 2025/12/10 15:19:04 CAHUANA CARR",
+          "metodo_extraccion": "REGEX",
+          "confianza": 0.95,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "RF001"
+        }
+      ],
+      "archivo": "20251215153840CONFORMIDADDEINGRESODEALMACEN.pdf",
+      "pagina": 1,
+      "snippet": "OS HUMANOS ROQUE BRAVO Joseph FAU 20131370998 soft ESPECIALISTA ALMACEN - LOGISTICA MINEDU Soy el autor del documento 2025/12/10 15:19:04 CAHUANA CARR",
+      "confianza": 0.95,
+      "metodo_extraccion": "REGEX"
+    },
+    {
+      "agente": "firmas_competencia",
+      "hallazgo": "Firma digital de cargo no competente: ESPECIALISTA",
+      "severidad": "CRÍTICA",
+      "impacto": "Validez de firma en cuestión",
+      "accion": "Verificar competencia del firmante o re-emitir documento con firma válida",
+      "area_responsable": "Área Usuaria",
+      "regla_aplicada": "RF001",
+      "requiere_revision_humana": false,
+      "tipo": "firma",
+      "bloquea_pago": true,
+      "evidencias": [
+        {
+          "archivo": "CONFORMIDAD_DE_INGRESO_A_ALMACEN-00801-2025-MINEDU-SG-OGA-OL-ALM.pdf",
+          "pagina": 1,
+          "valor_detectado": "ESPECIALISTA ALMACEN (ESPECIALISTA)",
+          "valor_esperado": "",
+          "snippet": "OS HUMANOS ROQUE BRAVO Joseph FAU 20131370998 soft ESPECIALISTA ALMACEN - LOGISTICA MINEDU Soy el autor del documento 2025/12/10 15:19:04 CAHUANA CARR",
+          "metodo_extraccion": "REGEX",
+          "confianza": 0.95,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "RF001"
+        }
+      ],
+      "archivo": "CONFORMIDAD_DE_INGRESO_A_ALMACEN-00801-2025-MINEDU-SG-OGA-OL-ALM.pdf",
+      "pagina": 1,
+      "snippet": "OS HUMANOS ROQUE BRAVO Joseph FAU 20131370998 soft ESPECIALISTA ALMACEN - LOGISTICA MINEDU Soy el autor del documento 2025/12/10 15:19:04 CAHUANA CARR",
+      "confianza": 0.95,
+      "metodo_extraccion": "REGEX"
+    },
+    {
+      "agente": "integridad_expediente",
+      "hallazgo": "[EVIDENCIA INCOMPLETA] Documento faltante: Contrato",
+      "severidad": "INCIERTO",
+      "impacto": "Referencia contractual inconsistente",
+      "accion": "Adjuntar Contrato",
+      "area_responsable": "Área Usuaria / Logística",
+      "regla_aplicada": "",
+      "requiere_revision_humana": true,
+      "tipo": "contrato",
+      "bloquea_pago": false,
+      "evidencias": [],
+      "archivo": "",
+      "pagina": 0,
+      "snippet": "No se encontró en el expediente",
+      "confianza": 0.0,
+      "metodo_extraccion": "NO_DISPONIBLE"
+    },
+    {
+      "agente": "ocr_avanzado",
+      "hallazgo": "[EVIDENCIA INCOMPLETA] Se detectaron 66 páginas con baja calidad de texto",
+      "severidad": "INCIERTO",
+      "impacto": "Requiere verificación",
+      "accion": "Verificar manualmente las páginas con problemas de legibilidad",
+      "area_responsable": "Control Previo",
+      "regla_aplicada": "",
+      "requiere_revision_humana": true,
+      "tipo": "otro",
+      "bloquea_pago": false,
+      "evidencias": [],
+      "archivo": "",
+      "pagina": 0,
+      "snippet": "Documentos: ['20251210151316OC44125UE024GUIADEREMISION.pdf', '2025121117339ilovepdfmerged20251211T170308768.pdf', '20251215153854COTIZACIONGANADORA.pdf']",
+      "confianza": 0.0,
+      "metodo_extraccion": "NO_DISPONIBLE"
+    },
+    {
+      "agente": "coherencia_documental",
+      "hallazgo": "Inconsistencia en ORDEN_COMPRA: Valores diferentes: 000441-2025 vs 441-2025 vs 441",
+      "severidad": "MAYOR",
+      "impacto": "Requiere verificación",
+      "accion": "Corregir número de orden de compra",
+      "area_responsable": "Oficina de Logística",
+      "regla_aplicada": "R004",
+      "requiere_revision_humana": false,
+      "tipo": "otro",
+      "bloquea_pago": false,
+      "evidencias": [
+        {
+          "archivo": "20251211165937INFORMEDECONFORMIDADequiposodontolog.pdf",
+          "pagina": 1,
+          "valor_detectado": "000441-2025",
+          "valor_esperado": "",
+          "snippet": "tar Social    Asunto            :   Conformidad a Orden de Compra N° 0000441-2025.    Referencia      :   Orden de Compra N° 000044",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R004"
+        },
+        {
+          "archivo": "2025121117339ilovepdfmerged20251211T170308768.pdf",
+          "pagina": 5,
+          "valor_detectado": "441-2025",
+          "valor_esperado": "000441-2025",
+          "snippet": "Outlook OBIR2025-INT- 0512659 - SE NOTIFICA OC N° 441-2025-MINEDU Desde GIANCARLO JOHANNES RAMIREZ RAMIREZ <",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R004"
+        },
+        {
+          "archivo": "2025121117339ilovepdfmerged20251211T170308768.pdf",
+          "pagina": 5,
+          "valor_detectado": "441",
+          "valor_esperado": "000441-2025",
+          "snippet": "a usted, a fin de remitir adjunto al presente la ORDEN DE COMPRA N° 441- 2025, la misma que se ha generado para la “ADQUI",
+          "metodo_extraccion": "REGEX",
+          "confianza": 1.0,
+          "nivel_confianza": "HIGH",
+          "regla_aplicada": "R004"
+        }
+      ],
+      "archivo": "20251211165937INFORMEDECONFORMIDADequiposodontolog.pdf",
+      "pagina": 1,
+      "snippet": "tar Social    Asunto            :   Conformidad a Orden de Compra N° 0000441-2025.    Referencia      :   Orden de Compra N° 000044",
+      "confianza": 1.0,
+      "metodo_extraccion": "REGEX"
+    },
+    {
+      "agente": "legal_directivas",
+      "hallazgo": "[EVIDENCIA INCOMPLETA] Monto supera S/ 700 - Verificar si corresponde detracción",
+      "severidad": "INCIERTO",
+      "impacto": "Diferencia en importes a pagar",
+      "accion": "Verificar si el servicio está sujeto a detracción y si se consignó la cuenta",
+      "area_responsable": "Control Previo",
+      "regla_aplicada": "",
+      "requiere_revision_humana": true,
+      "tipo": "monto",
+      "bloquea_pago": false,
+      "evidencias": [],
+      "archivo": "",
+      "pagina": 0,
+      "snippet": "Monto detectado: S/ 38,400.00",
+      "confianza": 0.0,
+      "metodo_extraccion": "NO_DISPONIBLE"
+    },
+    {
+      "agente": "firmas_competencia",
+      "hallazgo": "Firma no verificable - cargo posiblemente no competente: especialista",
+      "severidad": "MAYOR",
+      "impacto": "Validez de firma en cuestión",
+      "accion": "Verificar competencia del firmante o re-emitir documento con firma válida",
+      "area_responsable": "Área Usuaria",
+      "regla_aplicada": "RF001",
+      "requiere_revision_humana": true,
+      "tipo": "firma",
+      "bloquea_pago": false,
+      "evidencias": [
+        {
+          "archivo": "20251211165937INFORMEDECONFORMIDADequiposodontolog.pdf",
+          "pagina": 4,
+          "valor_detectado": "RONALD HENRY FORTÓN PALOMINO (especialista)",
+          "valor_esperado": "",
+          "snippet": "las acciones pertinentes.    Atentamente,        RONALD HENRY FORTÓN PALOMINO  Odontólogo  Oficina de Bienestar y Relaciones Laborales    Es",
+          "metodo_extraccion": "HEURISTICA",
+          "confianza": 0.6,
+          "nivel_confianza": "LOW",
+          "regla_aplicada": "RF001"
+        }
+      ],
+      "archivo": "20251211165937INFORMEDECONFORMIDADequiposodontolog.pdf",
+      "pagina": 4,
+      "snippet": "las acciones pertinentes.    Atentamente,        RONALD HENRY FORTÓN PALOMINO  Odontólogo  Oficina de Bienestar y Relaciones Laborales    Es",
+      "confianza": 0.6,
+      "metodo_extraccion": "HEURISTICA"
+    },
+    {
+      "agente": "firmas_competencia",
+      "hallazgo": "Firma no verificable - cargo posiblemente no competente: especialista",
+      "severidad": "MAYOR",
+      "impacto": "Validez de firma en cuestión",
+      "accion": "Verificar competencia del firmante o re-emitir documento con firma válida",
+      "area_responsable": "Área Usuaria",
+      "regla_aplicada": "RF001",
+      "requiere_revision_humana": true,
+      "tipo": "firma",
+      "bloquea_pago": false,
+      "evidencias": [
+        {
+          "archivo": "20251215153923INFORMEDECONFORMIDAD.pdf",
+          "pagina": 4,
+          "valor_detectado": "RONALD HENRY FORTÓN PALOMINO (especialista)",
+          "valor_esperado": "",
+          "snippet": "las acciones pertinentes.    Atentamente,        RONALD HENRY FORTÓN PALOMINO  Odontólogo  Oficina de Bienestar y Relaciones Laborales    Es",
+          "metodo_extraccion": "HEURISTICA",
+          "confianza": 0.6,
+          "nivel_confianza": "LOW",
+          "regla_aplicada": "RF001"
+        }
+      ],
+      "archivo": "20251215153923INFORMEDECONFORMIDAD.pdf",
+      "pagina": 4,
+      "snippet": "las acciones pertinentes.    Atentamente,        RONALD HENRY FORTÓN PALOMINO  Odontólogo  Oficina de Bienestar y Relaciones Laborales    Es",
+      "confianza": 0.6,
+      "metodo_extraccion": "HEURISTICA"
+    },
+    {
+      "agente": "sunat_publico",
+      "hallazgo": "[EVIDENCIA INCOMPLETA] [INFORMATIVO] Monto supera S/ 700 - Verificar si aplica detracción",
+      "severidad": "INCIERTO",
+      "impacto": "Diferencia en importes a pagar",
+      "accion": "Verificar si el servicio está sujeto a detracción según Res. SUNAT 183-2004",
+      "area_responsable": "Control Previo",
+      "regla_aplicada": "",
+      "requiere_revision_humana": true,
+      "tipo": "monto",
+      "bloquea_pago": false,
+      "evidencias": [],
+      "archivo": "",
+      "pagina": 0,
+      "snippet": "Monto detectado: S/ 38,400.00",
+      "confianza": 0.0,
+      "metodo_extraccion": "NO_DISPONIBLE"
+    },
+    {
+      "agente": "sunat_publico",
+      "hallazgo": "[INFORMATIVO] No se pudo verificar RUC 20",
+      "severidad": "INFORMATIVA",
+      "impacto": "Posible pago a proveedor incorrecto",
+      "accion": "Verificar estado del RUC en portal SUNAT",
+      "area_responsable": "Control Previo",
+      "regla_aplicada": "",
+      "requiere_revision_humana": false,
+      "tipo": "ruc",
+      "bloquea_pago": false,
+      "evidencias": [],
+      "archivo": "",
+      "pagina": 0,
+      "snippet": "No se pudo consultar. Verificar en SUNAT.",
+      "confianza": 0.0,
+      "metodo_extraccion": "NO_DISPONIBLE"
+    }
+  ]
+}

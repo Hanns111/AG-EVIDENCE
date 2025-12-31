@@ -1,0 +1,112 @@
+================================================================================
+INFORME DE CONTROL PREVIO — ANÁLISIS ADMINISTRATIVO
+Ministerio de Educación del Perú
+================================================================================
+
+A. DATOS DEL EXPEDIENTE
+----------------------------------------
+   Expediente SINAD    : 984759
+   Fecha de análisis   : 19/12/2025 17:23
+   Naturaleza          : PAGO A PROVEEDOR
+   Directiva aplicable : Pautas para Remisión de Expedientes de Pago
+
+B. RESUMEN EJECUTIVO
+----------------------------------------
+
+   El expediente PROCEDE CON OBSERVACIONES.
+
+   - Observaciones subsanables: 4
+   - Observaciones menores: 2
+
+   Principales aspectos a verificar:
+   • Inconsistencia en ORDEN_SERVICIO: Valores diferentes: 012640-2025 vs 012640 vs 0...
+   • Se detectaron 32 páginas con baja calidad de texto...
+   • Monto supera S/ 700 - Verificar si corresponde detracción...
+
+C. DETALLE DE OBSERVACIONES
+----------------------------------------
+
+   C.2 OBSERVACIONES SUBSANABLES
+   ==================================================
+
+   [1] Coherencia de Datos
+   ----------------------------------------
+   Descripción: Inconsistencia en ORDEN_SERVICIO: Valores diferentes: 012640-2025 vs 012640 vs 000020660
+   Acción requerida: Corregir número de orden de servicio
+   Área responsable: Oficina de Logística
+
+   Evidencia documental:
+   • Archivo: 20251216152312OTIC2025INT0984759V8R1.pdf, Página: 2
+     Extracto: "ación, con las observaciones al entregable de la  Orden de Servicio N° 0012640-2025 para su conocimiento y fines pertinentes.  Agrade..."
+   • Archivo: 20251216152312OTIC2025INT0984759V8R1.pdf, Página: 7
+     Extracto: "nistrativa  Módulo de Logítica  Versión 25.01.01  ORDEN DE SERVICIO Nº  0012640      Página : 1 de 3      UNIDAD EJECUTORA  NRO...."
+   • Archivo: 20251217125311984759SINADRmerged1.pdf, Página: 57
+     Extracto: ". Med. Descripción Dia Mes Año 30 10 2025 0012640 ORDEN DE SERVICIO Nº  0000020660 Nº Exp. SIAF :  Página : 1 de 3 SERVICIO DE SOPOR..."
+
+   C.3 OBSERVACIONES EN INCERTIDUMBRE (Requieren verificación manual)
+   ==================================================
+
+   [1] Calidad Documental
+   ----------------------------------------
+   Descripción: Se detectaron 32 páginas con baja calidad de texto
+   Acción requerida: Verificar manualmente las páginas con problemas de legibilidad
+   Área responsable: Control Previo
+
+   Evidencia:
+   • Documentos: ['202510231551AUTORIZACIONSPE01Nov.pdf', '2025102710412ANEXOSLOCCRojas01112025.pdf', '2025102710412ANEXOSLOCCRojas01112025.pdf']
+
+   [2] Cumplimiento Normativo
+   ----------------------------------------
+   Descripción: Monto supera S/ 700 - Verificar si corresponde detracción
+   Acción requerida: Verificar si el servicio está sujeto a detracción y si se consignó la cuenta
+   Área responsable: Control Previo
+
+   Evidencia:
+   • Monto detectado: S/ 1,129,128.03
+
+   [3] Verificación SUNAT
+   ----------------------------------------
+   Descripción: Monto supera S/ 700 - Verificar si aplica detracción
+   Acción requerida: Verificar si el servicio está sujeto a detracción según Res. SUNAT 183-2004
+   Área responsable: Control Previo
+
+   Evidencia:
+   • Monto detectado: S/ 1,129,128.03
+
+   C.4 NOTAS INFORMATIVAS
+   ==================================================
+
+   [1] Verificación SUNAT
+   ----------------------------------------
+   Descripción: No se pudo verificar RUC 10
+   Acción requerida: Verificar estado del RUC en portal SUNAT
+   Área responsable: Control Previo
+
+   Evidencia:
+   • No se pudo consultar. Verificar en SUNAT.
+
+   [2] Verificación SUNAT
+   ----------------------------------------
+   Descripción: No se pudo verificar RUC 20
+   Acción requerida: Verificar estado del RUC en portal SUNAT
+   Área responsable: Control Previo
+
+   Evidencia:
+   • No se pudo consultar. Verificar en SUNAT.
+
+D. RECOMENDACIÓN FINAL
+----------------------------------------
+
+   Se recomienda subsanar las observaciones indicadas antes de aprobar el devengado. El expediente puede proceder una vez levantadas las observaciones mayores.
+
+   Acciones pendientes: Verificar manualmente las páginas con problemas de legibilidad; Verificar si el servicio está sujeto a detracción según Res. SUNAT 183-2004; Corregir número de orden de servicio
+   Áreas involucradas: Oficina de Logística / Control Previo
+
+================================================================================
+SISTEMA AG-EVIDENCE — Análisis Probatorio de Expedientes
+Generado: 22/12/2025 22:25:47
+
+Este informe ha sido generado automáticamente. Las observaciones
+están sustentadas en evidencia documental del expediente.
+Para cualquier consulta, referirse a los archivos y páginas citados.
+================================================================================

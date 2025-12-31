@@ -1,0 +1,143 @@
+====================================================================================================
+INFORME DE CONTROL PREVIO (ESTÁNDAR PROBATORIO)
+Sistema Multi-Agente de Revisión de Expedientes v2.0
+====================================================================================================
+
+📅 Fecha de análisis: 15/12/2025 16:53
+📋 Expediente SINAD: 274975
+📁 Naturaleza: PAGO A PROVEEDOR
+📖 Directiva aplicada: Pautas para Remisión de Expedientes de Pago
+
+====================================================================================================
+🔴 DECISIÓN: NO PROCEDE
+====================================================================================================
+
+📝 RESUMEN EJECUTIVO:
+--------------------------------------------------
+❌ El expediente NO PROCEDE por observaciones críticas.
+   Se detectaron 6 observaciones que bloquean el pago.
+
+Resumen por módulo de verificación:
+   ✓ Clasificador de Naturaleza: 0 observaciones
+   ✓ OCR Avanzado: 1 observaciones
+   ✗ Coherencia Documental: 4 observaciones
+   ✓ Legal / Directivas: 0 observaciones
+   ✗ Firmas y Competencia: 4 observaciones
+   ✓ Integridad del Expediente: 0 observaciones
+   ✓ Penalidades: 0 observaciones
+   ✓ SUNAT Público (Experimental): 1 observaciones
+
+🔴 OBSERVACIONES CRÍTICAS (Bloquean pago):
+--------------------------------------------------
+
+1. Inconsistencia en SINAD: Error de dígitos detectado (27497 vs 274975)
+   📏 Regla: R001
+   📎 Evidencia:
+      • 20251121102438OC25725UE024ANTECEDENTES4TOENTRE.pdf pág. 1 -> "a 09/11/2025 Fecha de entrega del bien 06/11/2025 E-SINAD 027497 SGC - LOG N° 4-..."
+        Método: REGEX | Confianza: HIGH (100%)
+        Valor detectado: 027497
+      • 20251124123651SUSTENTOPAGO4.pdf pág. 258 -> "Superior” – BASES INTEGRADAS       1              SINAD: 274975                 ..."
+        Método: REGEX | Confianza: HIGH (100%)
+        Valor detectado: 274975
+   ⚡ Acción: Corregir número SINAD en documento(s) incorrecto(s) y re-emitir
+   👤 Responsable: Oficina de Logística
+
+2. Inconsistencia en RUC: Error de dígitos detectado (20417494406 vs 20417494409)
+   📏 Regla: R002
+   📎 Evidencia:
+      • 20251121102419OC25725UE024GUIADEREMISION4TOE.pdf pág. 1 -> "STINATARIO GUIA DE REMISIÓN REMITENTE ELECTRÓNICA RUC: 20417494406 N° T001-00000..."
+        Método: REGEX | Confianza: HIGH (100%)
+        Valor detectado: 20417494406
+      • 20251205165255OC25725UE024ANTECEDENTES5TOENTRE.pdf pág. 24 -> "RANSPORTE: GUIA DE REMISIÓN REMITENTE ELECTRONICA RUC: 20417494409 N° T001-00000..."
+        Método: REGEX | Confianza: HIGH (100%)
+        Valor detectado: 20417494409
+   ⚡ Acción: VERIFICAR RUC del proveedor - posible documento de otro expediente
+   👤 Responsable: Oficina de Logística
+
+3. Inconsistencia en CONTRATO: Valores diferentes: 008-2025-MINEDU/SG-OGA-OL-UE024 vs 08-2025 vs 008-2025-MINEDU/SG-OGA-OL- vs 008-2025-MINEDU/SG-OGA-OL
+   📏 Regla: R003
+   📎 Evidencia:
+      • 20251121102438OC25725UE024ANTECEDENTES4TOENTRE.pdf pág. 2 -> "y Escuelas de Educación Superior Referencia : a) Contrato N° 008-2025-MINEDU/SG-..."
+        Método: REGEX | Confianza: HIGH (100%)
+        Valor detectado: 008-2025-MINEDU/SG-OGA-OL-UE024
+      • 20251121102438OC25725UE024ANTECEDENTES4TOENTRE.pdf pág. 2 -> "y Escuelas de Educación Superior Referencia : a) Contrato N° 008-2025-MINEDU/SG-..."
+        Método: REGEX | Confianza: HIGH (90%)
+        Valor detectado: 08-2025
+      • 20251121102438OC25725UE024ANTECEDENTES4TOENTRE.pdf pág. 3 -> "E024    Por el presente documento en el marco del Contrato N° 008-2025-MINEDU/SG..."
+        Método: REGEX | Confianza: HIGH (100%)
+        Valor detectado: 008-2025-MINEDU/SG-OGA-OL-
+   ⚡ Acción: Verificar y unificar número de contrato en todos los documentos
+   👤 Responsable: Oficina de Logística
+
+4. Firma digital de cargo no competente: ESPECIALISTA
+   📏 Regla: RF001
+   📎 Evidencia:
+      • CONFORMIDAD_DE_INGRESO_A_ALMACEN-00714-2025-MINEDU-SG-OGA-OL-ALM.pdf pág. 2 -> "entamente, ROQUE BRAVO Joseph FAU 20131370998 soft ESPECIALISTA ALMACEN - LOGIST..."
+        Método: REGEX | Confianza: HIGH (95%)
+        Valor detectado: ESPECIALISTA ALMACEN (ESPECIALISTA)
+   ⚡ Acción: Verificar competencia del firmante o re-emitir documento con firma válida
+   👤 Responsable: Área Usuaria
+
+5. Firma digital de cargo no competente: ESPECIALISTA
+   📏 Regla: RF001
+   📎 Evidencia:
+      • CONFORMIDAD_DE_INGRESO_A_ALMACEN-00796-2025-MINEDU-SG-OGA-OL-ALM.pdf pág. 2 -> "TESORERIA ROQUE BRAVO Joseph FAU 20131370998 soft ESPECIALISTA ALMACEN - LOGISTI..."
+        Método: REGEX | Confianza: HIGH (95%)
+        Valor detectado: ESPECIALISTA ALMACEN (ESPECIALISTA)
+   ⚡ Acción: Verificar competencia del firmante o re-emitir documento con firma válida
+   👤 Responsable: Área Usuaria
+
+6. Firma digital de cargo no competente: Jefa de la
+   📏 Regla: RF004
+   📎 Evidencia:
+      • MEMORANDUM-00944-2025-MINEDU-SG-OGA-OT.pdf pág. 1 -> "LARCON CARREÑO Nidia Angelica FAU 20131370998 soft Jefa de la Oficina de Tesorer..."
+        Método: REGEX | Confianza: HIGH (95%)
+        Valor detectado: MINEDU
+En (Jefa de la)
+   ⚡ Acción: Verificar competencia del firmante o re-emitir documento con firma válida
+   👤 Responsable: Área Usuaria
+
+🟡 OBSERVACIONES MAYORES (Subsanables):
+--------------------------------------------------
+
+1. ⚠️ [REQUIERE REVISIÓN HUMANA] [EVIDENCIA INCOMPLETA] Se detectaron 557 páginas con baja calidad de texto
+   📎 Evidencia: Documentos: ['20251121102419OC25725UE024GUIADEREMISION4TOE.pdf', '20251121102419OC25725UE024GUIADEREMISION4TOE.pdf', '20251121102419OC25725UE024GUIADEREMISION4TOE.pdf']
+   ⚡ Acción: Verificar manualmente las páginas con problemas de legibilidad
+   👤 Responsable: Control Previo
+
+2. Inconsistencia en CONFORMIDAD: Valores diferentes: 00157-2025-MINEDU/SG-OGA-OT vs 00172-2025-MINEDU/SG-OGA-OT vs 00172-2025
+   📏 Regla: R006
+   📎 Evidencia:
+      • 20251121102438OC25725UE024ANTECEDENTES4TOENTRE.pdf pág. 1 -> "noviembre de 2025 EXPEDIENTE : OT2024-INT-0274975 CONFORMIDAD N° 00157-2025-MINE..."
+        Método: REGEX | Confianza: MEDIUM (85%)
+        Valor detectado: 00157-2025-MINEDU/SG-OGA-OT
+      • 2025120311370ANEXO.pdf pág. 2 -> "laración jurada. Asimismo, se adjunta el acta de  Conformidad N° 00172-2025-MINE..."
+        Método: REGEX | Confianza: MEDIUM (85%)
+        Valor detectado: 00172-2025-MINEDU/SG-OGA-OT
+      • 2025121510363Proveido8874Sinad027497.pdf pág. 1 -> "UB TOTAL 5 de 12 FACTURA F001-00004199 12/12/2025 CONFORMIDAD 00172-2025- MINEDU..."
+        Método: REGEX | Confianza: MEDIUM (85%)
+        Valor detectado: 00172-2025
+   ⚡ Acción: Verificar número de conformidad
+   👤 Responsable: Oficina de Logística
+
+3. ⚠️ [REQUIERE REVISIÓN HUMANA] No se detectó firma en documento: CONFORMIDAD-00172-2025-MINEDU-SG-OGA-OT.pdf
+   📏 Regla: RF001
+   📎 Evidencia:
+      • CONFORMIDAD-00172-2025-MINEDU-SG-OGA-OT.pdf pág. 1 -> "aso de bienes, la recepción es responsabilidad del área de almacén y la conformi..."
+        Método: HEURISTICA | Confianza: LOW (50%)
+        Valor detectado: SIN FIRMA DETECTADA
+   ⚡ Acción: Verificar manualmente que el documento esté firmado
+   👤 Responsable: Control Previo
+
+🟢 OBSERVACIONES MENORES / INFORMATIVAS:
+--------------------------------------------------
+
+1. [INFORMATIVO] No se pudo verificar RUC 20
+
+====================================================================================================
+📋 RECOMENDACIÓN FINAL:
+Se recomienda DEVOLVER el expediente al área correspondiente para subsanación de las observaciones críticas antes de continuar con el trámite.
+
+⚡ Acción requerida: Corregir número SINAD en documento(s) incorrecto(s) y re-emitir; Verificar competencia del firmante o re-emitir documento con firma válida; Verificar y unificar número de contrato en todos los documentos
+👤 Área responsable: Oficina de Logística / Área Usuaria
+====================================================================================================
