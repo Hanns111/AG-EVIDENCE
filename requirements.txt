@@ -10,8 +10,11 @@ Pillow>=10.0.0
 # OCR Avanzado (opcional pero recomendado)
 easyocr>=1.7.0
 
-# Alternativa OCR si easyocr falla
-# pytesseract>=0.3.10
+# OCR con Tesseract (requiere Tesseract instalado en el sistema)
+pytesseract>=0.3.10
+
+# Procesamiento de imágenes para métricas OCR
+opencv-python>=4.8.0
 
 # Requests para consultas SUNAT
 requests>=2.31.0
@@ -21,6 +24,3 @@ python-dateutil>=2.8.0
 
 # Para futuras integraciones (actualmente deshabilitado)
 # sunat-api>=1.0.0  # Cuando se habilite SOL/SIRE
-
-
-
