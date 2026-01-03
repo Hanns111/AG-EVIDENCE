@@ -1,9 +1,9 @@
 # OCR_SPEC.md
 ## Especificación Técnica de OCR — Fase 1
 
-**Versión:** 1.0.0  
-**Estado:** Especificación (sin implementar)  
-**Fecha:** 2025-12-18  
+**Versión:** 1.1.0  
+**Estado:** Fase 1b CERRADA — Smoke test funcional  
+**Fecha:** 2025-12-31  
 **Prioridad:** 🔴 CRÍTICA
 
 ---
@@ -362,7 +362,89 @@ Si Tesseract no está instalado:
 
 ---
 
+## 11. REGISTRO DE FASES IMPLEMENTADAS
+
+### 11.1 Fase 1a — Smoke Test OCR — ✅ CERRADA
+
+**Fecha de cierre:** 2025-12-31  
+**Commit:** `50c725f`
+
+**Entregables:**
+- Script aislado: `tools/ocr_smoke_test.py`
+- Dependencias agregadas: `pytesseract`, `opencv-python`
+- Renderizado PDF→imagen con PyMuPDF (`fitz.Matrix`)
+- Métricas implementadas: DPI, contraste (percentiles), blur_score (Laplacian)
+- OCR con Tesseract + confianza promedio + snippet 200 chars
+
+**Comando de ejecución:**
+```bash
+python tools/ocr_smoke_test.py --pdf "<RUTA_PDF>" --page 1 --dpi 200 --lang eng
+```
+
+**Evidencia (PDF de prueba con `--lang eng`):**
+- `confianza_promedio`: 0.77
+- `num_palabras`: 47
+- `tiempo_ms`: 329
+- `error`: null
+
+---
+
+### 11.2 Fase 1b — OCR Español (spa) — ✅ CERRADA
+
+**Fecha de cierre:** 2025-12-31
+
+**Prerrequisito:**
+- Archivo `spa.traineddata` instalado en `tessdata/`
+- Verificar con: `tesseract --list-langs` (debe incluir `spa`)
+
+**Comando de ejecución:**
+```bash
+python tools/ocr_smoke_test.py --pdf "<RUTA_PDF>" --page 1 --dpi 200 --lang spa
+```
+
+**Evidencia (PDF de prueba con `--lang spa`):**
+```json
+{
+  "confianza_promedio": 0.847,
+  "num_palabras": 46,
+  "tiempo_ms": 491,
+  "error": null,
+  "langs_disponibles": ["eng", "osd", "spa"]
+}
+```
+
+**Nota Windows — TESSDATA_PREFIX:**
+```powershell
+$env:TESSDATA_PREFIX = "C:\Program Files\Tesseract-OCR\tessdata"
+```
+
+**Criterio de aceptación:**
+> OCR con `--lang spa` ejecuta sin error y `confianza_promedio >= 0.75` en PDF de prueba.
+
+✅ **Criterio cumplido:** 0.847 ≥ 0.75
+
+---
+
+### 11.3 Fase 1c — Rotación/Deskew — 🔜 PENDIENTE
+
+**Estado:** No implementado  
+**Campo actual:** `rotacion_grados: "pendiente Fase 1c"`
+
+**Tareas planificadas:**
+- [ ] Detectar rotación (0°/90°/180°/270°) y deskew leve (<15°)
+- [ ] Persistir `rotacion_grados` real (float) en JSON
+- [ ] Aplicar corrección de rotación antes de OCR
+- [ ] Pruebas con PDFs escaneados rotados
+
+**Técnicas propuestas:**
+- Hough Transform para detección de líneas
+- `cv2.minAreaRect()` para ángulo de inclinación
+- `cv2.getRotationMatrix2D()` + `cv2.warpAffine()` para corrección
+
+---
+
 **Documento creado:** 2025-12-18  
+**Última actualización:** 2025-12-31  
 **Autor:** Sistema AG-EVIDENCE  
-**Estado:** Pendiente de implementación
+**Estado:** Fase 1b cerrada, Fase 1c pendiente
 
