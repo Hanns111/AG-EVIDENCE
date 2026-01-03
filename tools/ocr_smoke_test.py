@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-OCR SMOKE TEST — Fase 1a/1b
-===========================
+OCR SMOKE TEST — Fase 1a/1b/1c
+==============================
 Script aislado para probar OCR con Tesseract.
 NO modifica agentes, orquestador ni pipeline.
 
@@ -12,8 +12,8 @@ Uso:
 Requisitos:
     - PyMuPDF (fitz)
     - pytesseract
-    - Tesseract-OCR instalado en el sistema (con idioma requerido)
-    - opencv-python (para métricas de imagen)
+    - Tesseract-OCR instalado en el sistema (con idioma requerido + osd)
+    - opencv-python (para métricas de imagen y rotación)
     - Pillow
 """
 
@@ -81,7 +81,6 @@ def list_tesseract_langs() -> Dict[str, Any]:
         line = line.strip()
         if not line:
             continue
-        # Saltar la línea de encabezado
         if line.startswith("List of available languages"):
             continue
         langs.append(line)
@@ -154,16 +153,213 @@ def renderizar_pagina(pdf_path: str, page_num: int, dpi: int = 200) -> Optional[
         return None
 
 
-def calcular_metricas(img: Image.Image, dpi_render: int) -> Dict[str, Any]:
+# =============================================================================
+# FASE 1c: ROTACIÓN Y DESKEW
+# =============================================================================
+
+def detectar_rotacion_osd(img: Image.Image) -> Tuple[int, str]:
+    """
+    Detecta rotación usando Tesseract OSD (Orientation and Script Detection).
+    
+    Returns:
+        (angulo, metodo) donde angulo es 0, 90, 180 o 270
+    """
+    try:
+        osd = pytesseract.image_to_osd(img, output_type=pytesseract.Output.DICT)
+        rotate = osd.get("rotate", 0)
+        # OSD retorna el ángulo que HAY QUE rotar para corregir
+        # Si rotate=90, significa que la imagen está rotada 90° y hay que rotarla -90° (o 270°)
+        return int(rotate), "osd"
+    except Exception as e:
+        # OSD puede fallar si no hay suficiente texto o el script no es reconocido
+        return 0, f"osd_failed:{str(e)[:50]}"
+
+
+def detectar_rotacion_bruteforce(img: Image.Image, lang: str = "eng") -> Tuple[int, str]:
+    """
+    Detecta rotación probando 0, 90, 180, 270 y eligiendo la que maximiza palabras.
+    Early exit si encontramos buena confianza.
+    
+    Returns:
+        (angulo_correccion, metodo)
+    """
+    mejor_angulo = 0
+    mejor_palabras = 0
+    mejor_confianza = 0.0
+    
+    for angulo in [0, 90, 180, 270]:
+        # Rotar imagen
+        if angulo == 0:
+            img_rotada = img
+        else:
+            img_rotada = img.rotate(-angulo, expand=True)  # Rotate CCW para corregir
+        
+        try:
+            # OCR rápido para contar palabras
+            data = pytesseract.image_to_data(
+                img_rotada, 
+                lang=lang, 
+                output_type=pytesseract.Output.DICT,
+                config='--psm 6'  # Assume uniform block of text
+            )
+            
+            palabras = sum(1 for t in data['text'] if t.strip())
+            confianzas = [c for c in data['conf'] if c != -1 and c > 0]
+            confianza = sum(confianzas) / len(confianzas) / 100 if confianzas else 0
+            
+            if palabras > mejor_palabras or (palabras == mejor_palabras and confianza > mejor_confianza):
+                mejor_angulo = angulo
+                mejor_palabras = palabras
+                mejor_confianza = confianza
+            
+            # Early exit si encontramos buena confianza con muchas palabras
+            if palabras >= 20 and confianza >= 0.75:
+                return angulo, "bruteforce_early"
+                
+        except Exception:
+            continue
+    
+    return mejor_angulo, "bruteforce"
+
+
+def detectar_deskew(img: Image.Image) -> float:
+    """
+    Detecta inclinación leve (deskew) usando análisis de líneas.
+    Solo para ángulos pequeños (|angulo| <= 15°).
+    
+    Returns:
+        Ángulo de inclinación en grados (positivo = CW, negativo = CCW)
+    """
+    if not CV2_DISPONIBLE:
+        return 0.0
+    
+    try:
+        # Convertir a grayscale y binarizar
+        img_gray = img.convert('L')
+        img_array = np.array(img_gray)
+        
+        # Binarización adaptativa
+        binary = cv2.adaptiveThreshold(
+            img_array, 255, 
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+            cv2.THRESH_BINARY_INV, 11, 2
+        )
+        
+        # Encontrar contornos y calcular minAreaRect
+        coords = np.column_stack(np.where(binary > 0))
+        if len(coords) < 100:
+            return 0.0
+        
+        # minAreaRect retorna ((cx, cy), (w, h), angle)
+        rect = cv2.minAreaRect(coords)
+        angle = rect[-1]
+        
+        # Normalizar ángulo
+        if angle < -45:
+            angle = 90 + angle
+        elif angle > 45:
+            angle = angle - 90
+        
+        # Solo corregir si es inclinación leve
+        if abs(angle) <= 15:
+            return round(angle, 2)
+        else:
+            return 0.0
+            
+    except Exception:
+        return 0.0
+
+
+def aplicar_rotacion(img: Image.Image, angulo: int) -> Image.Image:
+    """
+    Aplica rotación de 0, 90, 180 o 270 grados.
+    """
+    if angulo == 0:
+        return img
+    elif angulo == 90:
+        return img.rotate(-90, expand=True)
+    elif angulo == 180:
+        return img.rotate(180, expand=True)
+    elif angulo == 270:
+        return img.rotate(-270, expand=True)
+    return img
+
+
+def aplicar_deskew(img: Image.Image, angulo: float) -> Image.Image:
+    """
+    Aplica corrección de inclinación leve.
+    """
+    if not CV2_DISPONIBLE or abs(angulo) < 0.5:
+        return img
+    
+    try:
+        img_array = np.array(img)
+        h, w = img_array.shape[:2]
+        center = (w // 2, h // 2)
+        
+        M = cv2.getRotationMatrix2D(center, angulo, 1.0)
+        rotated = cv2.warpAffine(
+            img_array, M, (w, h),
+            flags=cv2.INTER_CUBIC,
+            borderMode=cv2.BORDER_REPLICATE
+        )
+        
+        return Image.fromarray(rotated)
+    except Exception:
+        return img
+
+
+def preprocesar_rotacion(img: Image.Image, lang: str = "eng") -> Tuple[Image.Image, Dict[str, Any]]:
+    """
+    Preprocesa la imagen detectando y corrigiendo rotación.
+    
+    Returns:
+        (imagen_corregida, info_rotacion)
+    """
+    info = {
+        "rotacion_grados": 0,
+        "rotacion_metodo": "none",
+        "deskew_grados": 0.0,
+        "rotacion_aplicada": False
+    }
+    
+    # 1. Intentar OSD primero
+    rotacion, metodo = detectar_rotacion_osd(img)
+    
+    if "osd_failed" in metodo:
+        # Fallback a bruteforce
+        rotacion, metodo = detectar_rotacion_bruteforce(img, lang)
+    
+    info["rotacion_metodo"] = metodo
+    
+    # 2. Aplicar rotación si es necesaria
+    if rotacion != 0:
+        img = aplicar_rotacion(img, rotacion)
+        info["rotacion_grados"] = rotacion
+        info["rotacion_aplicada"] = True
+    
+    # 3. Detectar y aplicar deskew (solo después de rotación principal)
+    deskew = detectar_deskew(img)
+    if abs(deskew) >= 0.5:
+        img = aplicar_deskew(img, deskew)
+        info["deskew_grados"] = deskew
+        info["rotacion_aplicada"] = True
+        # Actualizar rotacion_grados total
+        info["rotacion_grados"] = rotacion + deskew
+    
+    # Redondear rotacion_grados final
+    info["rotacion_grados"] = round(info["rotacion_grados"], 2)
+    
+    return img, info
+
+
+# =============================================================================
+# MÉTRICAS Y OCR
+# =============================================================================
+
+def calcular_metricas(img: Image.Image, dpi_render: int, rotacion_info: Dict[str, Any]) -> Dict[str, Any]:
     """
     Calcula métricas de calidad de imagen.
-    
-    Args:
-        img: Imagen PIL
-        dpi_render: DPI usado en el render
-        
-    Returns:
-        Dict con métricas calculadas
     """
     metricas = {
         "dpi_estimado": dpi_render,
@@ -171,7 +367,9 @@ def calcular_metricas(img: Image.Image, dpi_render: int) -> Dict[str, Any]:
         "height_px": img.height,
         "contraste": None,
         "blur_score": None,
-        "rotacion_grados": "pendiente Fase 1c"  # Explícitamente pendiente
+        "rotacion_grados": rotacion_info.get("rotacion_grados", 0),
+        "rotacion_metodo": rotacion_info.get("rotacion_metodo", "none"),
+        "deskew_grados": rotacion_info.get("deskew_grados", 0.0)
     }
     
     if not CV2_DISPONIBLE:
@@ -209,13 +407,6 @@ def calcular_metricas(img: Image.Image, dpi_render: int) -> Dict[str, Any]:
 def ejecutar_ocr(img: Image.Image, lang: str = "eng") -> Dict[str, Any]:
     """
     Ejecuta OCR con Tesseract y obtiene texto y confianza.
-    
-    Args:
-        img: Imagen PIL
-        lang: Código de idioma Tesseract (eng, spa, etc.)
-        
-    Returns:
-        Dict con texto, snippet, confianza y tiempo
     """
     resultado = {
         "lang": lang,
@@ -263,11 +454,15 @@ def ejecutar_ocr(img: Image.Image, lang: str = "eng") -> Dict[str, Any]:
     return resultado
 
 
+# =============================================================================
+# MAIN
+# =============================================================================
+
 def main():
     """Función principal del smoke test"""
     
     parser = argparse.ArgumentParser(
-        description="OCR Smoke Test - Fase 1a/1b",
+        description="OCR Smoke Test - Fase 1a/1b/1c",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
@@ -289,7 +484,7 @@ Ejemplos:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     
     print("=" * 70)
-    print("OCR SMOKE TEST — Fase 1a/1b")
+    print("OCR SMOKE TEST — Fase 1c (con rotación/deskew)")
     print("=" * 70)
     
     # Verificar dependencias
@@ -335,8 +530,8 @@ Ejemplos:
             "tiempo_ms": 0,
             "error": None
         },
-        "fase": "1b" if args.lang != "eng" else "1a",
-        "nota": "Smoke test aislado. NO integrado al pipeline.",
+        "fase": "1c",
+        "nota": "Smoke test aislado con rotación/deskew. NO integrado al pipeline.",
         "tesseract": {
             "version": tesseract_info,
             "TESSDATA_PREFIX": os.environ.get("TESSDATA_PREFIX"),
@@ -374,20 +569,32 @@ Ejemplos:
         print("❌ Error al renderizar página")
         sys.exit(1)
     
-    print(f"   ✅ Imagen: {img.width}x{img.height} px")
+    print(f"   ✅ Imagen original: {img.width}x{img.height} px")
     
-    # Paso 2: Calcular métricas
+    # Paso 2: FASE 1c - Detectar y corregir rotación
+    print("\n🔄 Detectando rotación...")
+    img_corregida, rotacion_info = preprocesar_rotacion(img, args.lang)
+    
+    if rotacion_info["rotacion_aplicada"]:
+        print(f"   ✅ Rotación detectada: {rotacion_info['rotacion_grados']}° (método: {rotacion_info['rotacion_metodo']})")
+        if rotacion_info["deskew_grados"] != 0:
+            print(f"   ✅ Deskew aplicado: {rotacion_info['deskew_grados']}°")
+        print(f"   📐 Imagen corregida: {img_corregida.width}x{img_corregida.height} px")
+    else:
+        print(f"   ℹ️ Sin rotación necesaria (método: {rotacion_info['rotacion_metodo']})")
+    
+    # Paso 3: Calcular métricas (con info de rotación)
     print("\n📊 Calculando métricas de calidad...")
-    metricas = calcular_metricas(img, args.dpi)
+    metricas = calcular_metricas(img_corregida, args.dpi, rotacion_info)
     reporte["metricas"] = metricas
     print(f"   DPI: {metricas['dpi_estimado']}")
     print(f"   Contraste: {metricas.get('contraste', 'N/A')}")
     print(f"   Blur Score: {metricas.get('blur_score', 'N/A')} ({metricas.get('blur_interpretacion', 'N/A')})")
-    print(f"   Rotación: {metricas.get('rotacion_grados', 'N/A')}")
+    print(f"   Rotación: {metricas.get('rotacion_grados', 0)}° ({metricas.get('rotacion_metodo', 'none')})")
     
-    # Paso 3: Ejecutar OCR
+    # Paso 4: Ejecutar OCR sobre imagen corregida
     print(f"\n🔍 Ejecutando OCR con Tesseract (lang={args.lang})...")
-    ocr_result = ejecutar_ocr(img, args.lang)
+    ocr_result = ejecutar_ocr(img_corregida, args.lang)
     reporte["ocr"] = ocr_result
     
     if ocr_result.get("error"):
@@ -421,8 +628,8 @@ Ejemplos:
         print("\n🟡 Smoke test completado con observación (ver 'ocr.error').")
         sys.exit(0)
     
-    print("\n✅ Smoke test completado")
-    
+    print("\n✅ Smoke test Fase 1c completado")
+
 
 if __name__ == "__main__":
     main()
