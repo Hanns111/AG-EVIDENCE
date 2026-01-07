@@ -85,12 +85,18 @@ def crear_estructura_carpetas(base_dir: str) -> dict:
 class TestChatAsistente:
     """Tests del Chat Asistente"""
     
-    def __init__(self):
+    def setup_method(self, method=None):
+        """Inicializa el entorno para cada test (compatible con pytest)"""
         self.passed = 0
         self.failed = 0
         self.results = []
         self.temp_dir = None
         self.estructura = None
+        self.setup()
+    
+    def teardown_method(self, method=None):
+        """Limpia después de cada test (compatible con pytest)"""
+        self.cleanup()
     
     def setup(self):
         """Configura el entorno de prueba"""

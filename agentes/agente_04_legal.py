@@ -77,6 +77,18 @@ class AgenteLegal:
         RequisitoDocumental("Conformidad", True, "Conformidad del área usuaria", r"conformidad"),
     ]
     
+    # Requisitos adicionales para ORDEN_COMPRA (bienes) menor a 8 UIT
+    REQUISITOS_ORDEN_COMPRA_MENOR_8_UIT = [
+        RequisitoDocumental("TDR/EETT", True, "Términos de Referencia o EETT", r"t[eé]rminos|especificaciones"),
+        RequisitoDocumental("Cotización", True, "Cotización ganadora", r"cotizaci[oó]n"),
+        RequisitoDocumental("Orden", True, "Orden de compra", r"orden\s*de\s*compra|O\.?C\.?"),
+        RequisitoDocumental("CCI", True, "Carta de autorización CCI", r"CCI|cuenta\s*interbancaria"),
+        RequisitoDocumental("Comprobante Pago", True, "Comprobante de pago SUNAT", r"factura|boleta"),
+        RequisitoDocumental("Conformidad", True, "Conformidad del área usuaria", r"conformidad"),
+        RequisitoDocumental("Guía Remisión", True, "Guía de remisión del proveedor", r"gu[ií]a\s*(?:de\s*)?remisi[oó]n"),
+        RequisitoDocumental("Conformidad Almacén", True, "Conformidad de ingreso a almacén", r"almac[eé]n|ingreso|PECOSA"),
+    ]
+    
     REQUISITOS_VIATICOS = [
         RequisitoDocumental("Planilla Viáticos", True, "Planilla de viáticos", r"planilla\s*de\s*vi[aá]ticos|PV"),
         RequisitoDocumental("Autorización", True, "Autorización de comisión", r"autorizaci[oó]n|comisi[oó]n\s*de\s*servicio"),
@@ -180,9 +192,14 @@ class AgenteLegal:
         elif tipo_procedimiento == TipoProcedimiento.LICITACION_PUBLICA:
             return self.REQUISITOS_LICITACION_PUBLICA
         elif tipo_procedimiento == TipoProcedimiento.MENOR_8_UIT:
+            # Diferenciar ORDEN_COMPRA (bienes) de ORDEN_SERVICIO (servicios)
+            if naturaleza == NaturalezaExpediente.ORDEN_COMPRA:
+                return self.REQUISITOS_ORDEN_COMPRA_MENOR_8_UIT
             return self.REQUISITOS_MENOR_8_UIT
         else:
             # Por defecto, usar requisitos de menor a 8 UIT
+            if naturaleza == NaturalezaExpediente.ORDEN_COMPRA:
+                return self.REQUISITOS_ORDEN_COMPRA_MENOR_8_UIT
             return self.REQUISITOS_MENOR_8_UIT
     
     def _verificar_requisitos(

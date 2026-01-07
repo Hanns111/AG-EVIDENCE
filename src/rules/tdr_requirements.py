@@ -98,7 +98,8 @@ class TDRRequirementExtractor:
             r"curr[ií]culum\s+(?:vitae\s+)?(?:documentado|actualizado)",
         ],
         "EXPERIENCIA": [
-            r"experiencia\s+(?:profesional|laboral|m[ií]nima)?\s*(?:de\s+)?(\d+)\s*(?:a[ñn]os?|meses?)",
+            # Patrón principal: "experiencia [profesional] [mínima] de N años"
+            r"experiencia\s+(?:(?:profesional|laboral|m[ií]nima|general|espec[ií]fica)\s+)*(?:de\s+)?(\d+)\s*(?:a[ñn]os?|meses?)",
             r"(?:acreditar|demostrar|contar\s+con)\s+experiencia",
             r"(\d+)\s*(?:a[ñn]os?|meses?)\s+de\s+experiencia",
             r"experiencia\s+(?:no\s+)?menor\s+(?:a|de)\s+(\d+)",

@@ -95,11 +95,17 @@ un descuento del 10% del monto de viáticos no rendidos.
 class TestAgenteDirectivas:
     """Tests de estándar probatorio para agente de directivas"""
     
-    def __init__(self):
+    def setup_method(self, method=None):
+        """Inicializa el entorno para cada test (compatible con pytest)"""
         self.passed = 0
         self.failed = 0
         self.results = []
         self.pdf_prueba = None
+        self.setup()
+    
+    def teardown_method(self, method=None):
+        """Limpia después de cada test (compatible con pytest)"""
+        self.cleanup()
     
     def setup(self):
         """Configura el entorno de prueba"""

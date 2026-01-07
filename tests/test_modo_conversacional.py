@@ -52,11 +52,17 @@ def crear_pdf_prueba(contenido: str, ruta: str) -> bool:
 class TestModoConversacional:
     """Tests del modo conversacional"""
     
-    def __init__(self):
+    def setup_method(self, method=None):
+        """Inicializa el entorno para cada test (compatible con pytest)"""
         self.passed = 0
         self.failed = 0
         self.results = []
         self.temp_dir = None
+        self.pdf_created = self.setup()
+    
+    def teardown_method(self, method=None):
+        """Limpia después de cada test (compatible con pytest)"""
+        self.cleanup()
     
     def setup(self):
         """Configura el entorno de prueba"""

@@ -96,7 +96,8 @@ JSON_EVIDENCIA_INCOMPLETA = {
 class TestEstandarProbatorio:
     """Tests de estándar probatorio estricto"""
     
-    def __init__(self):
+    def setup_method(self, method=None):
+        """Inicializa el entorno para cada test (compatible con pytest)"""
         self.passed = 0
         self.failed = 0
         self.results = []
