@@ -21,8 +21,10 @@ from config.settings import (
 from utils.pdf_extractor import DocumentoPDF, PDFExtractor
 
 # Intentar importar OCR (opcional)
+# NOTA: EasyOCR se importa LAZY (solo cuando se usa) para evitar
+# crash de torch en entornos sin CUDA/GPU drivers.
 TESSERACT_DISPONIBLE = False
-EASYOCR_DISPONIBLE = False
+_easyocr_module = None  # Cache para import lazy
 
 try:
     import pytesseract
@@ -31,12 +33,18 @@ try:
 except (ImportError, OSError):
     pass
 
-try:
-    import easyocr
-    EASYOCR_DISPONIBLE = True
-except (ImportError, OSError, Exception):
-    # EasyOCR puede fallar por DLLs de PyTorch
-    pass
+
+def _get_easyocr():
+    """Import lazy de EasyOCR para evitar crash de torch al cargar módulo."""
+    global _easyocr_module
+    if _easyocr_module is None:
+        try:
+            import easyocr
+            _easyocr_module = easyocr
+        except Exception:
+            # EasyOCR puede fallar por DLLs de PyTorch, CUDA, etc.
+            _easyocr_module = False
+    return _easyocr_module if _easyocr_module else None
 
 
 @dataclass
@@ -82,12 +90,15 @@ class AgenteOCR:
         self.incertidumbres: List[str] = []
         self.datos_extraidos: Dict = {}
         self.ocr_reader = None
+        self._easyocr_disponible = False
         
-        # Inicializar OCR si está disponible
-        if EASYOCR_DISPONIBLE:
+        # Inicializar OCR si está disponible (import lazy)
+        easyocr = _get_easyocr()
+        if easyocr:
             try:
                 self.ocr_reader = easyocr.Reader(['es', 'en'], gpu=False, verbose=False)
-            except:
+                self._easyocr_disponible = True
+            except Exception:
                 pass
     
     def analizar(self, documentos: List[DocumentoPDF]) -> ResultadoAgente:
@@ -143,7 +154,7 @@ class AgenteOCR:
             "paginas_escaneadas": paginas_escaneadas,
             "paginas_baja_calidad": paginas_baja_calidad,
             "documentos_problematicos": documentos_problematicos,
-            "ocr_disponible": EASYOCR_DISPONIBLE or TESSERACT_DISPONIBLE,
+            "ocr_disponible": self._easyocr_disponible or TESSERACT_DISPONIBLE,
             "firmas_detectadas": sum(1 for r in resultados_ocr if r.tiene_firma_manuscrita),
             "sellos_detectados": sum(1 for r in resultados_ocr if r.tiene_sello)
         }

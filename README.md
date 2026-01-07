@@ -128,6 +128,25 @@ python -c "import fitz; print('PyMuPDF OK')"
 
 ---
 
+## 🧪 Tests
+
+### Ejecutar tests estándar (sin EasyOCR/torch):
+
+```bash
+python -m pytest tests/ -v
+```
+
+### Ejecutar tests con EasyOCR (si tienes torch instalado):
+
+```bash
+# Primero instalar extras: pip install easyocr torch
+python -m pytest tests/ -v -m "easyocr"
+```
+
+> **Nota:** Los tests de EasyOCR se skipean automáticamente si no están instaladas las dependencias.
+
+---
+
 ## 📖 Uso
 
 ### Modo Simple (Carpeta Downloads)
