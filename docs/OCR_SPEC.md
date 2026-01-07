@@ -1,9 +1,10 @@
 # OCR_SPEC.md
 ## Especificación Técnica de OCR — Fases 1 y 2
 
-**Versión:** 2.0.0  
+**Versión:** 2.1.0  
 **Estado:** Fase 2 CERRADA — Gating PDF nativo vs OCR implementado  
-**Fecha:** 2026-01-07  
+**Fecha de Cierre:** 2026-01-07  
+**Commits Clave:** `3be5172`, `300df6f`, `c490972`  
 **Prioridad:** 🔴 CRÍTICA
 
 ---
@@ -557,6 +558,12 @@ python -m pytest tests/test_pdf_text_extractor.py -v
 - ✅ No bloquea el flujo completo
 - ✅ Decisión basada en métricas medibles (no heurística opaca)
 - ✅ Trazabilidad completa (thresholds, timestamp, versión)
+
+### 12.8 Estabilidad y Optimizaciones
+
+- **Lazy Import EasyOCR**: Se implementó carga perezosa para `easyocr` y `torch` en `agente_02_ocr.py` (Commit `300df6f`). Esto resuelve problemas de crash en sistemas sin GPU o con memoria limitada al no cargar librerías pesadas a menos que sean estrictamente necesarias.
+- **PyTest Green**: Cobertura completa de la lógica de decisión en `tests/test_pdf_text_extractor.py` (Commit `c490972`).
+- **Gating Robusto**: El sistema prioriza `direct_text` (rápido y exacto) y solo recurre a `ocr` si el texto extraído es insuficiente o inexistente.
 
 ---
 
