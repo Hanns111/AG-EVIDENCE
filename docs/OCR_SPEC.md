@@ -1,9 +1,9 @@
 # OCR_SPEC.md
-## Especificación Técnica de OCR — Fase 1
+## Especificación Técnica de OCR — Fases 1 y 2
 
-**Versión:** 1.1.0  
-**Estado:** Fase 1b CERRADA — Smoke test funcional  
-**Fecha:** 2025-12-31  
+**Versión:** 2.0.0  
+**Estado:** Fase 2 CERRADA — Gating PDF nativo vs OCR implementado  
+**Fecha:** 2026-01-07  
 **Prioridad:** 🔴 CRÍTICA
 
 ---
@@ -425,26 +425,143 @@ $env:TESSDATA_PREFIX = "C:\Program Files\Tesseract-OCR\tessdata"
 
 ---
 
-### 11.3 Fase 1c — Rotación/Deskew — 🔜 PENDIENTE
+### 11.3 Fase 1c — Rotación/Deskew — ✅ CERRADA
 
-**Estado:** No implementado  
-**Campo actual:** `rotacion_grados: "pendiente Fase 1c"`
+**Fecha de cierre:** 2026-01-07  
+**Commit:** `b314c20`
 
-**Tareas planificadas:**
-- [ ] Detectar rotación (0°/90°/180°/270°) y deskew leve (<15°)
-- [ ] Persistir `rotacion_grados` real (float) en JSON
-- [ ] Aplicar corrección de rotación antes de OCR
-- [ ] Pruebas con PDFs escaneados rotados
+**Entregables:**
+- Detección de rotación con Tesseract OSD (0°/90°/180°/270°)
+- Fallback bruteforce si OSD falla (4 pruebas, early exit)
+- Detección de deskew leve (≤15°) con `cv2.minAreaRect()`
+- Corrección de rotación con `cv2.warpAffine()`
+- Campos JSON: `rotacion_grados` (numérico), `rotacion_metodo`, `deskew_grados`
 
-**Técnicas propuestas:**
-- Hough Transform para detección de líneas
-- `cv2.minAreaRect()` para ángulo de inclinación
-- `cv2.getRotationMatrix2D()` + `cv2.warpAffine()` para corrección
+**Evidencia:**
+```json
+{
+  "rotacion_grados": 0,
+  "rotacion_metodo": "osd",
+  "deskew_grados": 0.0
+}
+```
+
+✅ **Criterio cumplido:** `rotacion_grados` es numérico, no "pendiente".
+
+---
+
+## 12. FASE 2 — GATING (INTEGRACIÓN CONTROLADA) — ✅ CERRADA
+
+**Fecha de cierre:** 2026-01-07  
+**Versión del módulo:** 2.0.0
+
+### 12.1 Objetivo
+
+Implementar decisión automática entre:
+- `direct_text`: PDF nativo con texto embebido → extracción directa PyMuPDF
+- `ocr`: PDF escaneado → Tesseract OCR con preprocesamiento
+- `fallback_manual`: Ambos fallan → requiere revisión humana (NUNCA inventa texto)
+
+### 12.2 Archivos Creados
+
+| Archivo | Propósito |
+|---------|-----------|
+| `src/ocr/__init__.py` | Módulo OCR core reutilizable |
+| `src/ocr/core.py` | Funciones: render, rotación, OCR, métricas |
+| `src/ingestion/__init__.py` | Módulo de ingestión |
+| `src/ingestion/config.py` | Umbrales de gating (`GatingThresholds`) |
+| `src/ingestion/pdf_text_extractor.py` | Función principal `extract_text_with_gating()` |
+| `tests/test_pdf_text_extractor.py` | 9 tests PyTest |
+
+### 12.3 Umbrales por Defecto
+
+```python
+GatingThresholds(
+    direct_text_min_chars=200,    # Mínimo caracteres para direct_text
+    direct_text_min_words=30,     # Mínimo palabras para direct_text
+    ocr_min_confidence=0.60,      # Mínima confianza OCR
+    ocr_min_words=20,             # Mínimo palabras OCR
+    sample_pages=1,               # Páginas de muestra
+    ocr_dpi=200,                  # DPI para render
+    ocr_lang="spa"                # Idioma OCR
+)
+```
+
+### 12.4 Uso del Módulo
+
+```python
+from src.ingestion import extract_text_with_gating
+
+resultado = extract_text_with_gating("documento.pdf", lang="spa")
+
+print(resultado["decision"]["metodo"])  # "direct_text" | "ocr" | "fallback_manual"
+print(resultado["decision"]["razon"])   # Explicación basada en métricas
+```
+
+### 12.5 Ejemplo de Salida JSON
+
+```json
+{
+  "archivo": "PAUTAS.pdf",
+  "decision": {
+    "metodo": "direct_text",
+    "razon": "direct_text: 15234 chars >= 200, 2847 words >= 30"
+  },
+  "direct_text": {
+    "texto": "...",
+    "num_chars": 15234,
+    "num_words": 2847,
+    "num_paginas": 19,
+    "tiempo_ms": 45,
+    "error": null
+  },
+  "ocr": {
+    "texto": "...",
+    "confianza_promedio": 0.847,
+    "num_words": 46,
+    "tiempo_ms": 485
+  },
+  "evidencia": {
+    "thresholds_usados": { ... },
+    "version_modulo": "2.0.0",
+    "timestamp_iso": "2026-01-07T...",
+    "tesseract_disponible": true,
+    "pymupdf_disponible": true
+  }
+}
+```
+
+### 12.6 Tests Implementados
+
+| Test | Descripción | Estado |
+|------|-------------|--------|
+| `test_direct_text_detection` | PDF nativo → decide direct_text | ✅ PASS |
+| `test_direct_text_metrics` | Métricas completas | ✅ PASS |
+| `test_ocr_fallback_with_low_threshold` | Umbral alto → OCR o fallback | ✅ PASS |
+| `test_ocr_result_structure` | Estructura OCR completa | ✅ PASS |
+| `test_archivo_inexistente` | Archivo no existe → fallback_manual | ✅ PASS |
+| `test_pdf_corrupto_simulado` | Archivo corrupto → manejo seguro | ✅ PASS |
+| `test_estructura_completa_siempre` | JSON completo incluso con error | ✅ PASS |
+| `test_custom_thresholds` | Umbrales personalizados | ✅ PASS |
+| `test_default_thresholds` | Valores por defecto | ✅ PASS |
+
+**Comando de ejecución:**
+```bash
+python -m pytest tests/test_pdf_text_extractor.py -v
+```
+
+### 12.7 Principios de Gobernanza Respetados
+
+- ✅ NUNCA inventa texto si falla la extracción
+- ✅ Retorna `fallback_manual` con evidencia del fallo
+- ✅ No bloquea el flujo completo
+- ✅ Decisión basada en métricas medibles (no heurística opaca)
+- ✅ Trazabilidad completa (thresholds, timestamp, versión)
 
 ---
 
 **Documento creado:** 2025-12-18  
-**Última actualización:** 2025-12-31  
+**Última actualización:** 2026-01-07  
 **Autor:** Sistema AG-EVIDENCE  
-**Estado:** Fase 1b cerrada, Fase 1c pendiente
+**Estado:** Fase 1c cerrada, Fase 2 cerrada
 
