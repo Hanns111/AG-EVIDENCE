@@ -50,7 +50,7 @@ Se está **profesionalizando**, no reiniciando.
   - El OCR se ejecuta exclusivamente en WSL2 (Ubuntu)
   - Windows actúa solo como host/editor y orquestador
   - Dependencias OCR instaladas en WSL2:
-    - `ocrmypdf` v17.1.0
+    - `ocrmypdf` v13.4.0+dfsg
     - `tesseract-ocr` con idioma `spa`
     - `ghostscript`
   - Los chequeos o warnings de OCR en Windows son irrelevantes y no forman parte del runtime soportado

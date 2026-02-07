@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "pdf-handler": {
+      "command": "C:\\Users\\Hans\\.claude-worktrees\\AG-EVIDENCE\\exciting-lewin\\pdf-mcp-server\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "pdf_mcp.server"
+      ],
+      "cwd": "C:\\Users\\Hans\\.claude-worktrees\\AG-EVIDENCE\\exciting-lewin\\pdf-mcp-server",
+      "env": {
+        "TESSDATA_PREFIX": "C:\\Users\\Hans\\tessdata",
+        "TESSERACT_CMD": "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+      }
+    }
+  }
+}

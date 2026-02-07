@@ -414,10 +414,19 @@ python tools/ocr_smoke_test.py --pdf "<RUTA_PDF>" --page 1 --dpi 200 --lang spa
 }
 ```
 
-**Nota Windows — TESSDATA_PREFIX:**
+~~**Nota Windows — TESSDATA_PREFIX:**~~ ⚠️ **OBSOLETA**
 ```powershell
+# NOTA: Esta configuración es OBSOLETA. El OCR se ejecuta exclusivamente en WSL.
 $env:TESSDATA_PREFIX = "C:\Program Files\Tesseract-OCR\tessdata"
 ```
+
+> **⚠️ IMPORTANTE — Arquitectura WSL-Only:**
+> 
+> El OCR de este proyecto está diseñado para ejecutarse **exclusivamente en WSL (Ubuntu)**.
+> Windows actúa únicamente como **host/editor** y no requiere instalación de Tesseract ni Ghostscript.
+> Todo el runtime OCR (Tesseract, Ghostscript, ocrmypdf) debe estar instalado y configurado en WSL.
+> 
+> **No es necesario** configurar variables de entorno en Windows ni instalar binarios OCR en Windows.
 
 **Criterio de aceptación:**
 > OCR con `--lang spa` ejecuta sin error y `confianza_promedio >= 0.75` en PDF de prueba.

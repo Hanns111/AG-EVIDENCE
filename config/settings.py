@@ -426,6 +426,23 @@ LIMITES_NORMATIVOS = {
 
 
 # ==============================================================================
+# CONFIGURACIÓN DE OCR
+# ==============================================================================
+OCR_CONFIG = {
+    "idioma_default": "spa",
+    "timeout_segundos": 120,      # Timeout por PDF
+    "max_paginas_ocr": 200,       # Límite de seguridad
+    "directorio_temporal": "output/ocr_temp",
+    "ocrmypdf_flags": [
+        "--skip-text",             # No toca PDFs nativos
+        "--deskew",                # Corrige rotación leve
+        "--clean",                 # Limpia imagen
+        "--output-type", "pdf",    # Salida PDF estándar
+    ],
+}
+
+
+# ==============================================================================
 # CONFIGURACIÓN DE LOGGING
 # ==============================================================================
 LOG_CONFIG = {
