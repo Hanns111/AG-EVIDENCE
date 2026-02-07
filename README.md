@@ -1,16 +1,294 @@
 ﻿# 🔒 AG-EVIDENCE — Sistema de Análisis Probatorio de Expedientes
 
-**Ministerio de Educación del Perú**
+**Framework de Gobernanza y Orquestación LLM para Control Previo Administrativo**
 
 ---
 
-## 📋 Descripción
+## 🎯 ¿Qué es AG-EVIDENCE?
 
-**AG-EVIDENCE** es un sistema multi-agente para análisis probatorio de expedientes administrativos en procesos de control previo.  
+**AG-EVIDENCE** es un framework enterprise de gobernanza y orquestación LLM diseñado para análisis probatorio automatizado de expedientes administrativos. El sistema combina arquitectura multi-agente, políticas estrictas de anti-alucinación y estándares probatorios verificables para procesos de control previo en el sector público.
 
-El sistema analiza expedientes en formato PDF y emite conclusiones estructuradas (**PROCEDE / PROCEDE CON OBSERVACIONES / NO PROCEDE**) bajo un **estándar probatorio estricto**, con evidencia verificable (archivo, página y extracto literal).
+---
 
-El proyecto está diseñado para operar en entornos críticos, con políticas explícitas de **anti-alucinación**, **trazabilidad documental** y **restricción de inferencias**.
+## 🔍 Problema que Resuelve
+
+En procesos de control previo administrativo, la revisión manual de expedientes es:
+- **Lenta**: Requiere horas de análisis por expediente
+- **Propensa a errores**: Inconsistencias entre revisores
+- **Difícil de auditar**: Falta de trazabilidad documental
+- **Costosa**: Requiere personal especializado
+
+**AG-EVIDENCE automatiza este proceso** mediante:
+- ✅ Análisis estructurado multi-agente
+- ✅ Evidencia verificable (archivo + página + snippet)
+- ✅ Trazabilidad completa de decisiones
+- ✅ Políticas anti-alucinación estrictas
+- ✅ Inferencia local (privacidad garantizada)
+
+---
+
+## 🏗️ Arquitectura General
+
+AG-EVIDENCE sigue una arquitectura modular enterprise con separación clara de responsabilidades:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    CAPA DE ORQUESTACIÓN                  │
+│              (orquestador.py, workflows)                 │
+└─────────────────────────────────────────────────────────┘
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+┌───────▼──────┐  ┌──────▼──────┐  ┌──────▼──────┐
+│   AGENTES    │  │    CONFIG    │  │     SRC     │
+│  (agentes/)  │  │  (config/)   │  │   (src/)    │
+│              │  │              │  │             │
+│ 9 agentes    │  │ Settings,   │  │ Domain,      │
+│ especializados│  │ Enums,      │  │ Tools,      │
+│              │  │ Dataclasses  │  │ RAG, Vision │
+└──────────────┘  └──────────────┘  └─────────────┘
+        │                 │                 │
+        └─────────────────┼─────────────────┘
+                          │
+┌─────────────────────────▼─────────────────────────┐
+│              DOCUMENTACIÓN Y DATOS                 │
+│         (docs/, data/, tests/, scripts/)            │
+└────────────────────────────────────────────────────┘
+```
+
+### Componentes Principales
+
+| Componente | Ubicación | Responsabilidad |
+|------------|-----------|------------------|
+| **Agentes** | `agentes/` | 9 agentes especializados (Clasificador, OCR, Legal, etc.) |
+| **Configuración** | `config/` | Settings globales, enums, dataclasses |
+| **Código Fuente** | `src/` | Lógica de dominio, herramientas, RAG, visión |
+| **Documentación** | `docs/` | Gobernanza, arquitectura, ADRs |
+| **Tests** | `tests/` | Tests unitarios e integración |
+| **Scripts** | `scripts/` | Utilidades y automatización |
+
+---
+
+## 📋 Requisitos
+
+### Mínimos
+
+- **Python**: 3.8 o superior
+- **Sistema Operativo**: Windows 10/11 o Linux (WSL2 recomendado)
+- **RAM**: 8GB mínimo (16GB recomendado)
+- **Espacio en disco**: 5GB para dependencias
+
+### Para LLM Local (Opcional)
+
+- **Ollama**: Instalado y corriendo
+- **Modelo Qwen**: `qwen3:32b` (recomendado, ~20GB)
+- **VRAM**: 24GB+ para modelos grandes (opcional)
+
+---
+
+## 🚀 Quick Start Local
+
+### 1. Clonar y Configurar
+
+```bash
+# Clonar repositorio
+git clone https://github.com/Hanns111/AG-EVIDENCE.git
+cd AG-EVIDENCE
+
+# Crear entorno virtual
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/WSL
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+### 2. Configurar Ollama + Qwen3:32b
+
+```bash
+# Instalar Ollama (si no está instalado)
+# Windows: https://ollama.ai/download
+# O: winget install Ollama.Ollama
+
+# Descargar modelo recomendado
+ollama pull qwen3:32b
+
+# Verificar instalación
+ollama list
+python -c "from utils.llm_local import verificar_ollama; print(verificar_ollama())"
+```
+
+### 3. Configurar Variables de Entorno (Opcional)
+
+```bash
+# Copiar archivo de ejemplo
+cp .env.example .env
+
+# Editar .env si necesitas cambiar configuración por defecto
+# Por defecto: OLLAMA_HOST=http://localhost:11434, MODEL_NAME=qwen3:32b
+```
+
+### 4. Ejecutar Sistema
+
+```bash
+# Modo batch (análisis de expedientes)
+python ejecutar_control_previo.py
+
+# Chat asistente conversacional
+python chat_asistente.py --modo conversacional --backend llm
+```
+
+---
+
+# 🔒 AG-EVIDENCE — Sistema de Análisis Probatorio de Expedientes
+
+**Framework de Gobernanza y Orquestación LLM para Control Previo Administrativo**
+
+---
+
+## 🎯 ¿Qué es AG-EVIDENCE?
+
+**AG-EVIDENCE** es un framework enterprise de gobernanza y orquestación LLM diseñado para análisis probatorio automatizado de expedientes administrativos. El sistema combina arquitectura multi-agente, políticas estrictas de anti-alucinación y estándares probatorios verificables para procesos de control previo en el sector público.
+
+---
+
+## 🔍 Problema que Resuelve
+
+En procesos de control previo administrativo, la revisión manual de expedientes es:
+- **Lenta**: Requiere horas de análisis por expediente
+- **Propensa a errores**: Inconsistencias entre revisores
+- **Difícil de auditar**: Falta de trazabilidad documental
+- **Costosa**: Requiere personal especializado
+
+**AG-EVIDENCE automatiza este proceso** mediante:
+- ✅ Análisis estructurado multi-agente
+- ✅ Evidencia verificable (archivo + página + snippet)
+- ✅ Trazabilidad completa de decisiones
+- ✅ Políticas anti-alucinación estrictas
+- ✅ Inferencia local (privacidad garantizada)
+
+---
+
+## 🏗️ Arquitectura General
+
+AG-EVIDENCE sigue una arquitectura modular enterprise con separación clara de responsabilidades:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    CAPA DE ORQUESTACIÓN                  │
+│              (orquestador.py, workflows)                 │
+└─────────────────────────────────────────────────────────┘
+                          │
+        ┌─────────────────┼─────────────────┐
+        │                 │                 │
+┌───────▼──────┐  ┌──────▼──────┐  ┌──────▼──────┐
+│   AGENTES    │  │    CONFIG    │  │     SRC     │
+│  (agentes/)  │  │  (config/)   │  │   (src/)    │
+│              │  │              │  │             │
+│ 9 agentes    │  │ Settings,   │  │ Domain,      │
+│ especializados│  │ Enums,      │  │ Tools,      │
+│              │  │ Dataclasses  │  │ RAG, Vision │
+└──────────────┘  └──────────────┘  └─────────────┘
+        │                 │                 │
+        └─────────────────┼─────────────────┘
+                          │
+┌─────────────────────────▼─────────────────────────┐
+│              DOCUMENTACIÓN Y DATOS                 │
+│         (docs/, data/, tests/, scripts/)            │
+└────────────────────────────────────────────────────┘
+```
+
+### Componentes Principales
+
+| Componente | Ubicación | Responsabilidad |
+|------------|-----------|------------------|
+| **Agentes** | `agentes/` | 9 agentes especializados (Clasificador, OCR, Legal, etc.) |
+| **Configuración** | `config/` | Settings globales, enums, dataclasses |
+| **Código Fuente** | `src/` | Lógica de dominio, herramientas, RAG, visión |
+| **Documentación** | `docs/` | Gobernanza, arquitectura, ADRs |
+| **Tests** | `tests/` | Tests unitarios e integración |
+| **Scripts** | `scripts/` | Utilidades y automatización |
+
+---
+
+## 📋 Requisitos
+
+### Mínimos
+
+- **Python**: 3.8 o superior
+- **Sistema Operativo**: Windows 10/11 o Linux (WSL2 recomendado)
+- **RAM**: 8GB mínimo (16GB recomendado)
+- **Espacio en disco**: 5GB para dependencias
+
+### Para LLM Local (Opcional)
+
+- **Ollama**: Instalado y corriendo
+- **Modelo Qwen**: `qwen3:32b` (recomendado, ~20GB)
+- **VRAM**: 24GB+ para modelos grandes (opcional)
+
+---
+
+## 🚀 Quick Start Local
+
+### 1. Clonar y Configurar
+
+```bash
+# Clonar repositorio
+git clone https://github.com/Hanns111/AG-EVIDENCE.git
+cd AG-EVIDENCE
+
+# Crear entorno virtual
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/WSL
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+### 2. Configurar Ollama + Qwen3:32b
+
+```bash
+# Instalar Ollama (si no está instalado)
+# Windows: https://ollama.ai/download
+# O: winget install Ollama.Ollama
+
+# Descargar modelo recomendado
+ollama pull qwen3:32b
+
+# Verificar instalación
+ollama list
+python -c "from utils.llm_local import verificar_ollama; print(verificar_ollama())"
+```
+
+### 3. Configurar Variables de Entorno (Opcional)
+
+```bash
+# Copiar archivo de ejemplo
+cp .env.example .env
+
+# Editar .env si necesitas cambiar configuración por defecto
+# Por defecto: OLLAMA_HOST=http://localhost:11434, MODEL_NAME=qwen3:32b
+```
+
+### 4. Ejecutar Sistema
+
+```bash
+# Modo batch (análisis de expedientes)
+python ejecutar_control_previo.py
+
+# Chat asistente conversacional
+python chat_asistente.py --modo conversacional --backend llm
+```
+
+---
+
+## 📋 Descripción Detallada
+
+## 📋 Descripción Detallada
+
+
 
 ---
 
