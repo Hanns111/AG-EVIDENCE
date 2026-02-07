@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO – AG-EVIDENCE
 
 ## Fecha de Corte
-2026-01-XX
+2026-02-07
 
 ---
 
