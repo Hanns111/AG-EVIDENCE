@@ -132,7 +132,7 @@ AG-EVIDENCE/
 | Componente | Valor |
 |------------|-------|
 | Backend LLM local | Ollama en `http://localhost:11434` |
-| Modelo activo | `qwen2.5:14b` |
+| Modelo activo | `qwen3:32b` |
 | Política | Anti-alucinación estricta |
 | Estándar | Probatorio (archivo + página + snippet) |
 

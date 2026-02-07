@@ -44,6 +44,7 @@ class NaturalezaExpediente(Enum):
     ORDEN_SERVICIO = "ORDEN DE SERVICIO"
     ORDEN_COMPRA = "ORDEN DE COMPRA"
     CONTRATO = "CONTRATO"
+    SUBVENCIONES = "SUBVENCIONES"
     OTRO = "OTRO"
     NO_DETERMINADO = "NO DETERMINADO"
 
@@ -394,6 +395,10 @@ KEYWORDS_NATURALEZA = {
     NaturalezaExpediente.CONTRATO: [
         "contrato", "licitación", "concurso público", "adjudicación",
         "buena pro", "bases integradas"
+    ],
+    NaturalezaExpediente.SUBVENCIONES: [
+        "subvención", "subvenciones", "transferencia", "donación",
+        "aporte", "financiamiento", "subsidio"
     ]
 }
 

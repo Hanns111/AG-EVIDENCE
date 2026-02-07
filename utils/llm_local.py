@@ -112,11 +112,7 @@ class LocalLLMClient:
     BASE_URL = "http://localhost:11434"
     
     MODELOS_PREFERIDOS = [
-        "qwen2.5:14b",
-        "qwen2.5:7b-instruct",
-        "qwen2.5:7b",
-        "qwen2:7b-instruct",
-        "qwen2:7b",
+        "qwen3:32b",
         "llama3.2:3b",
         "llama3.1:8b",
         "mistral:7b",
@@ -467,7 +463,7 @@ if __name__ == "__main__":
         print("❌ Ollama NO disponible")
         print("\nPara instalar:")
         print("  1. https://ollama.ai/download")
-        print("  2. ollama pull qwen2.5:7b-instruct")
+        print("  2. ollama pull qwen3:32b")
 
 
 

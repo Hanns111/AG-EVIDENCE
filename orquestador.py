@@ -252,7 +252,25 @@ class OrquestadorControlPrevio:
     def _ejecutar_agente_04(self) -> ResultadoAgente:
         """Ejecuta el Agente Legal"""
         agente = AgenteLegal()
-        resultado = agente.analizar(self.documentos, self.naturaleza, self.tipo_procedimiento)
+        
+        # Extraer fecha de inicio de trámite si es viáticos
+        fecha_inicio = None
+        if self.naturaleza == NaturalezaExpediente.VIATICOS:
+            # Intentar extraer fecha de los documentos
+            texto_completo = " ".join([doc.texto_completo for doc in self.documentos])
+            import re
+            patron_fecha = r"(?:fecha\s+de\s+)?solicitud[:\s]+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})"
+            match = re.search(patron_fecha, texto_completo, re.IGNORECASE)
+            if match:
+                dia, mes, anio = match.groups()
+                fecha_inicio = f"{dia.zfill(2)}/{mes.zfill(2)}/{anio}"
+        
+        resultado = agente.analizar(
+            self.documentos, 
+            self.naturaleza, 
+            self.tipo_procedimiento,
+            fecha_inicio_tramite=fecha_inicio
+        )
         self.directiva_aplicada = resultado.datos_extraidos.get('directiva_aplicada', '')
         return resultado
     

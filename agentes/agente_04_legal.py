@@ -16,6 +16,7 @@ import sys
 import re
 from typing import List, Dict, Optional
 from dataclasses import dataclass
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -108,16 +109,28 @@ class AgenteLegal:
         self, 
         documentos: List[DocumentoPDF], 
         naturaleza: NaturalezaExpediente,
-        tipo_procedimiento: TipoProcedimiento
+        tipo_procedimiento: TipoProcedimiento,
+        fecha_inicio_tramite: Optional[str] = None
     ) -> ResultadoAgente:
         """
         Analiza el cumplimiento de la directiva aplicable
+        
+        Args:
+            documentos: Lista de documentos del expediente
+            naturaleza: Naturaleza del expediente
+            tipo_procedimiento: Tipo de procedimiento
+            fecha_inicio_tramite: Fecha de inicio de trámite (DD/MM/YYYY o YYYY-MM-DD)
+                                  Para viáticos: >= 06.02.2026 aplica nueva directiva v03
         """
         self.observaciones = []
         self.incertidumbres = []
         
+        # Si no se proporciona fecha, intentar extraerla de los documentos
+        if not fecha_inicio_tramite and naturaleza == NaturalezaExpediente.VIATICOS:
+            fecha_inicio_tramite = self._extraer_fecha_solicitud_viaticos(documentos)
+        
         # Determinar directiva aplicable
-        self.directiva_aplicada = self._determinar_directiva(naturaleza)
+        self.directiva_aplicada = self._determinar_directiva(naturaleza, fecha_inicio_tramite)
         
         # Obtener requisitos aplicables
         requisitos = self._obtener_requisitos(naturaleza, tipo_procedimiento)
@@ -163,10 +176,39 @@ class AgenteLegal:
             incertidumbres=self.incertidumbres
         )
     
-    def _determinar_directiva(self, naturaleza: NaturalezaExpediente) -> str:
-        """Determina la directiva aplicable según naturaleza"""
+    def _determinar_directiva(self, naturaleza: NaturalezaExpediente, fecha_inicio_tramite: Optional[str] = None) -> str:
+        """
+        Determina la directiva aplicable según naturaleza y fecha de inicio de trámite.
+        
+        Para viáticos:
+        - Si fecha_inicio_tramite >= 2026-02-06: Directiva DI-003-01-MINEDU v03 (023-2026-MINEDU)
+        - Si fecha_inicio_tramite < 2026-02-06 o no disponible: Directiva 011-2020 (versión anterior)
+        """
+        if naturaleza == NaturalezaExpediente.VIATICOS:
+            # Nueva directiva vigente desde 06.02.2026
+            fecha_corte_nueva_directiva = datetime(2026, 2, 6)
+            
+            if fecha_inicio_tramite:
+                try:
+                    # Intentar parsear fecha en formato DD/MM/YYYY o YYYY-MM-DD
+                    fecha_parsed = None
+                    for formato in ["%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"]:
+                        try:
+                            fecha_parsed = datetime.strptime(fecha_inicio_tramite, formato)
+                            break
+                        except ValueError:
+                            continue
+                    
+                    if fecha_parsed and fecha_parsed >= fecha_corte_nueva_directiva:
+                        return "Directiva DI-003-01-MINEDU v03 (023-2026-MINEDU)"
+                except Exception:
+                    # Si no se puede parsear, usar versión anterior por seguridad
+                    pass
+            
+            # Por defecto, versión anterior (hasta que se confirme fecha >= 06.02.2026)
+            return "Directiva de Viáticos 011-2020"
+        
         mapeo = {
-            NaturalezaExpediente.VIATICOS: "Directiva de Viáticos 011-2020",
             NaturalezaExpediente.CAJA_CHICA: "Directiva de Caja Chica 0023-2025",
             NaturalezaExpediente.ENCARGO: "Directiva de Encargos 261-2018",
             NaturalezaExpediente.PAGO_PROVEEDOR: "Pautas para Remisión de Expedientes de Pago",
@@ -256,6 +298,34 @@ class AgenteLegal:
                 pass
         
         return observaciones
+    
+    def _extraer_fecha_solicitud_viaticos(self, documentos: List[DocumentoPDF]) -> Optional[str]:
+        """
+        Intenta extraer la fecha de solicitud/inicio de trámite de viáticos desde los documentos.
+        
+        Busca patrones como:
+        - Fecha de solicitud
+        - Fecha de inicio de comisión
+        - Fecha en planilla de viáticos
+        """
+        texto_completo = " ".join([doc.texto_completo for doc in documentos])
+        
+        # Patrones para buscar fecha de solicitud/inicio
+        patrones_fecha = [
+            r"(?:fecha\s+de\s+)?solicitud[:\s]+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})",
+            r"fecha\s+de\s+inicio[:\s]+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})",
+            r"fecha\s+de\s+comisi[oó]n[:\s]+(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})",
+            r"planilla\s+de\s+vi[aá]ticos.*?(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})",
+        ]
+        
+        for patron in patrones_fecha:
+            match = re.search(patron, texto_completo, re.IGNORECASE)
+            if match:
+                dia, mes, anio = match.groups()
+                # Retornar en formato DD/MM/YYYY
+                return f"{dia.zfill(2)}/{mes.zfill(2)}/{anio}"
+        
+        return None
     
     def _verificar_topes_viaticos(self, texto: str) -> List[Observacion]:
         """Verifica topes específicos de viáticos"""

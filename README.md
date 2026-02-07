@@ -1,4 +1,4 @@
-# 🔒 AG-EVIDENCE — Sistema de Análisis Probatorio de Expedientes
+﻿# 🔒 AG-EVIDENCE — Sistema de Análisis Probatorio de Expedientes
 
 **Ministerio de Educación del Perú**
 
@@ -370,10 +370,8 @@ winget install Ollama.Ollama
 
 ```bash
 # Modelo recomendado (7B)
-ollama pull qwen2.5:7b-instruct
 
 # O modelo más grande (14B, mejor calidad)
-ollama pull qwen2.5:14b
 ```
 
 ### 3. Verificar Instalación
@@ -390,9 +388,7 @@ python -c "from utils.llm_local import verificar_ollama; print(verificar_ollama(
 
 | Modelo | Tamaño | Recomendación |
 |--------|--------|---------------|
-| qwen2.5:7b-instruct | ~4GB | Bueno para uso general |
-| qwen2.5:14b | ~8GB | Mejor comprensión |
-| qwen2.5:3b | ~2GB | Para equipos con poca RAM |
+| qwen3:32b | ~20GB | **Recomendado** - Mejor calidad y comprensión |
 | llama3.2:3b | ~2GB | Alternativa ligera |
 
 ---
@@ -421,3 +417,149 @@ python -c "from utils.llm_local import verificar_ollama; print(verificar_ollama(
 - ✅ Evaluación de penalidades
 - ✅ Generación de informes estructurados
 
+---
+
+## 📂 Estructura de Carpetas
+
+```
+AG-EVIDENCE/
+├── agentes/                    # 9 agentes especializados (implementación actual)
+│   ├── agente_01_clasificador.py
+│   ├── agente_02_ocr.py
+│   ├── agente_03_coherencia.py
+│   ├── agente_04_legal.py
+│   ├── agente_05_firmas.py
+│   ├── agente_06_integridad.py
+│   ├── agente_07_penalidades.py
+│   ├── agente_08_sunat.py
+│   ├── agente_09_decisor.py
+│   ├── agente_10_conversacional.py
+│   └── agente_directivas.py
+│
+├── config/                     # Configuración global
+│   └── settings.py            # Enums, dataclasses, configuración
+│
+├── data/                       # Datos (NO versionados - .gitignore)
+│   ├── directivas/            # PDFs de normativas
+│   ├── expedientes/           # Expedientes de prueba
+│   └── normativa/             # Datos normativos estructurados
+│
+├── docs/                       # Documentación de gobernanza
+│   ├── PROJECT_SPEC.md        # Especificación maestra del proyecto
+│   ├── ARCHITECTURE.md        # Arquitectura del sistema
+│   ├── HARDWARE_CONTEXT.md    # Contexto técnico y hardware
+│   ├── GOVERNANCE_RULES.md    # Reglas de gobernanza
+│   ├── ADR.md                 # Decisiones arquitectónicas
+│   ├── CURRENT_STATE.md      # Estado actual del proyecto
+│   ├── CONTEXT_CHAIN.md       # Cadena de continuidad entre IAs
+│   └── AGENT_GOVERNANCE_RULES.md  # Reglas normativas de agentes
+│
+├── scripts/                    # Scripts de utilidad
+│   ├── categorizar_expedientes.py  # Categorización automática
+│   └── README_CATEGORIZAR.md
+│
+├── src/                        # Código fuente estructurado (en desarrollo)
+│   ├── domain/                 # Lógica de dominio
+│   ├── orchestration/          # Orquestación (futuro: LangGraph)
+│   ├── agents/                 # Agentes (futuro)
+│   ├── tools/                  # Herramientas técnicas
+│   ├── rag/                    # RAG y conocimiento
+│   ├── vision/                 # Procesamiento visual
+│   └── reporting/              # Generación de reportes
+│
+├── tests/                      # Tests unitarios e integración
+│   ├── test_agente_directivas.py
+│   ├── test_chat_asistente.py
+│   ├── test_enrutamiento_os_oc.py
+│   ├── test_estandar_probatorio.py
+│   └── README.md               # Documentación de tests
+│
+├── tools/                      # Herramientas de desarrollo
+│   ├── ocr_smoke_test.py
+│   └── run_gating_demo.py
+│
+├── utils/                      # Utilidades
+│   ├── pdf_extractor.py        # Extracción de PDFs
+│   ├── llm_local.py            # Cliente LLM (Ollama)
+│   ├── validador_evidencia.py  # Validación probatoria
+│   └── exportador_json.py      # Exportación JSON/TXT
+│
+├── output/                     # Informes generados (NO versionado)
+│
+├── orquestador.py              # Orquestador principal
+├── ejecutar_control_previo.py # Entrypoint principal
+├── chat_asistente.py           # Chat conversacional
+├── chat_directiva.py           # Chat de directivas
+├── requirements.txt            # Dependencias
+├── pytest.ini                  # Configuración pytest
+├── CHANGELOG.md                # Historial de cambios
+└── README.md                   # Este archivo
+```
+
+---
+
+## 📊 Estado Actual del Proyecto
+
+### ✅ Implementado
+
+- Sistema multi-agente funcional (9 agentes)
+- Chat asistente conversacional con LLM local
+- Estándar probatorio estricto (archivo + página + snippet)
+- Política anti-alucinación implementada
+- Integración con Ollama/Qwen para inferencia local
+- Exportación JSON/TXT con evidencia completa
+- Tests unitarios y de integración
+- Documentación de gobernanza completa
+- Sistema de categorización automática de expedientes
+
+### 🟡 En Desarrollo
+
+- Migración a LangGraph para orquestación
+- Integración de vLLM como servidor de inferencia
+- Migración a WSL2/Ubuntu para soporte RTX 5090 (sm_120)
+- Implementación de RAG con Qdrant y BGE-M3
+- Reimplementación de OCR/visión con Qwen2.5-VL
+
+### 📋 Próximos Pasos
+
+1. **Configurar entorno WSL2 + GPU funcional**
+   - Validar PyTorch Nightly con RTX 5090
+   - Configurar vLLM para inferencia local
+
+2. **Migrar a LangGraph**
+   - Implementar flujos como grafos
+   - Permitir ciclos y validaciones cruzadas
+
+3. **Implementar RAG completo**
+   - Indexar directivas con BGE-M3
+   - Configurar Qdrant local
+   - Implementar reranking
+
+4. **Golden Tests**
+   - Crear suite de tests con expedientes reales
+   - Validar regresiones
+
+5. **Documentación técnica**
+   - Completar documentación de APIs
+   - Crear guías de desarrollo
+
+---
+
+## 🎯 Estándar Profesional Europeo
+
+Este proyecto sigue estándares profesionales europeos para consultoría y sector público:
+
+- **Privacy by Design**: Cumplimiento GDPR desde el diseño
+- **Local-first**: Sin dependencias cloud pagadas
+- **Auditabilidad**: Trazabilidad completa de decisiones
+- **Documentación viva**: Gobernanza mediante Markdown
+- **Versionado semántico**: Commits y releases estructurados
+- **Separación de capas**: Dominio, orquestación e infraestructura desacopladas
+
+---
+
+## 📄 Licencia
+
+Sistema desarrollado para uso interno del Ministerio de Educación del Perú.
+
+**Control Previo - Oficina General de Administración**

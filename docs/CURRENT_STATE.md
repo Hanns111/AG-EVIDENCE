@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO – AG-EVIDENCE
 
 ## Fecha de Corte
-2026-01-14
+2026-02-06
 
 ---
 
@@ -38,6 +38,11 @@ Se está **profesionalizando**, no reiniciando.
 - Abandono de Ollama como servidor principal
 - Aprobación de vLLM como motor de inferencia
 - Definición formal de documentos de gobernanza
+- **Integración de nueva Directiva DI-003-01-MINEDU v03 (023-2026-MINEDU)**
+  - Vigente desde 06.02.2026
+  - Sistema ahora determina versión de directiva según fecha de inicio de trámite
+  - Expedientes con fecha >= 06.02.2026 aplican nueva directiva v03
+  - Expedientes con fecha < 06.02.2026 aplican directiva 011-2020 (versión anterior)
 
 ---
 
