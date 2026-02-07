@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO – AG-EVIDENCE
 
 ## Fecha de Corte
-2026-02-06
+2026-01-XX
 
 ---
 
@@ -43,6 +43,17 @@ Se está **profesionalizando**, no reiniciando.
   - Sistema ahora determina versión de directiva según fecha de inicio de trámite
   - Expedientes con fecha >= 06.02.2026 aplican nueva directiva v03
   - Expedientes con fecha < 06.02.2026 aplican directiva 011-2020 (versión anterior)
+- **Decisión técnica sobre MCPs:**
+  - Se descartó definitivamente `readpdfx`
+  - El proyecto usa **UN solo MCP**: `pdf-handler`
+- **Arquitectura OCR WSL2-Only:**
+  - El OCR se ejecuta exclusivamente en WSL2 (Ubuntu)
+  - Windows actúa solo como host/editor y orquestador
+  - Dependencias OCR instaladas en WSL2:
+    - `ocrmypdf` v17.1.0
+    - `tesseract-ocr` con idioma `spa`
+    - `ghostscript`
+  - Los chequeos o warnings de OCR en Windows son irrelevantes y no forman parte del runtime soportado
 
 ---
 
@@ -53,6 +64,8 @@ Se está **profesionalizando**, no reiniciando.
 - Reimplementar OCR/visión con Qwen2.5-VL
 - Integrar LangGraph con agentes reales
 - Crear golden tests
+- **Próximo paso técnico OCR:**
+  - Implementar el adaptador `src/tools/ocr_preprocessor.py` para integrar OCRmyPDF al pipeline existente
 
 ---
 
