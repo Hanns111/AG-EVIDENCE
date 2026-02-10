@@ -49,15 +49,23 @@ Si una solicitud del usuario entra en conflicto con `AGENT_GOVERNANCE_RULES.md`:
 Tu rol es el de un ASISTENTE TÉCNICO DISCIPLINADO, no un analista creativo.
 ```
 
-- ✅ Puedes reformular texto técnico en lenguaje administrativo
-- ✅ Puedes organizar información ya extraída
-- ✅ Puedes buscar en documentos cargados
-- ✅ Puedes citar con archivo + página + snippet
+### Permitido:
+- ✅ Reformular texto técnico en lenguaje administrativo
+- ✅ Organizar información ya extraída
+- ✅ Buscar en documentos cargados
+- ✅ Citar con archivo + página + snippet
+- ✅ Editar código en `src/`, `agentes/`, `utils/`, `config/`, `tests/`
+- ✅ Agregar tests en `tests/`
 
-- ❌ NO puedes inventar obligaciones normativas
-- ❌ NO puedes inferir requisitos sin pauta identificada
-- ❌ NO puedes derivar a análisis incorrectos (ej: desarrollo de software cuando es pago)
-- ❌ NO puedes emitir opiniones o recomendaciones subjetivas
+### Prohibido:
+- ❌ NO inventar obligaciones normativas
+- ❌ NO inferir requisitos sin pauta identificada
+- ❌ NO derivar a análisis incorrectos
+- ❌ NO emitir opiniones o recomendaciones subjetivas
+- ❌ NO crear carpetas nuevas sin verificar `ARCHITECTURE_SNAPSHOT.md`
+- ❌ NO mover archivos entre módulos sin confirmación del usuario
+- ❌ NO modificar archivos PROTEGIDOS (ver CONTRIBUTING.md)
+- ❌ NO crear worktrees, ramas ni hacer merge (eso lo maneja Claude Code)
 
 ---
 
@@ -118,11 +126,18 @@ AG-EVIDENCE/
 ├── chat_asistente.py                      # Entrypoint CLI principal
 ├── ejecutar_control_previo.py             # Análisis batch de expedientes
 ├── orquestador.py                         # Coordinador multi-agente
+├── src/
+│   ├── domain/                            # Lógica de dominio
+│   ├── extraction/                        # Cadena de custodia (NUEVO Fase 1)
+│   ├── orchestration/                     # Futuro: LangGraph
+│   └── tools/                             # Herramientas técnicas
 ├── docs/
 │   ├── AGENT_GOVERNANCE_RULES.md          # 🔴 DOCUMENTO NORMATIVO
 │   ├── ARCHITECTURE_SNAPSHOT.md           # 🔴 DOCUMENTO DESCRIPTIVO
+│   ├── CURRENT_STATE.md                   # 🔴 ESTADO DEL PROYECTO
+│   ├── GOVERNANCE_RULES.md                # 🔴 REGLAS DE GOBERNANZA
 │   └── OCR_SPEC.md                        # 🔴 ESPECIFICACIÓN OCR
-└── data/directivas/vigentes_2025_11_26/   # Fuente normativa oficial
+└── data/directivas/                       # Fuente normativa oficial
 ```
 
 ---
@@ -131,8 +146,12 @@ AG-EVIDENCE/
 
 | Componente | Valor |
 |------------|-------|
-| Backend LLM local | Ollama en `http://localhost:11434` |
+| Backend LLM local (actual) | Ollama en `http://localhost:11434` |
+| Backend LLM (futuro) | vLLM con Qwen2.5-32B |
 | Modelo activo | `qwen3:32b` |
+| GPU | RTX 5090 MSI Titan 32GB VRAM |
+| Entorno de ejecución | WSL2 (Ubuntu 22.04) |
+| OCR runtime | WSL2 only (ocrmypdf + tesseract-ocr) |
 | Política | Anti-alucinación estricta |
 | Estándar | Probatorio (archivo + página + snippet) |
 
@@ -151,4 +170,4 @@ Cuando la naturaleza sea indeterminada:
 
 ---
 
-**Última actualización:** 2025-12-18
+**Última actualización:** 2026-02-10

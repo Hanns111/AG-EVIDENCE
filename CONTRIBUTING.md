@@ -188,6 +188,76 @@ python -m pytest tests/ -v
 
 ---
 
+## 🤖 Protocolo de Convivencia — Cursor + Claude Code
+
+Este proyecto usa **dos herramientas de IA coordinadas**. Para evitar conflictos,
+se establecen las siguientes reglas:
+
+### Roles Asignados
+
+| Herramienta | Rol Principal | Alcance |
+|-------------|---------------|---------|
+| **Cursor** | Editor rápido, refactors puntuales, revisión visual | Archivos individuales dentro de estructura existente |
+| **Claude Code** | Arquitectura, pipelines complejos, tareas multi-archivo | Cambios estructurales, nuevos módulos, gobernanza |
+
+### Reglas de Coordinación
+
+#### Para Cursor:
+- ✅ Editar código dentro de `src/`, `agentes/`, `utils/`, `config/`, `tests/`
+- ✅ Agregar tests nuevos en `tests/`
+- ✅ Refactorizar archivos individuales
+- ❌ NO crear carpetas nuevas sin verificar `docs/ARCHITECTURE_SNAPSHOT.md`
+- ❌ NO mover archivos entre módulos sin confirmación del usuario
+- ❌ NO modificar documentos de gobernanza (ver lista protegida abajo)
+- ❌ NO crear worktrees, ramas ni hacer merge
+
+#### Para Claude Code:
+- ✅ Crear nuevos módulos y carpetas según arquitectura
+- ✅ Modificar múltiples archivos coordinadamente
+- ✅ Actualizar documentos de gobernanza (con aprobación del usuario)
+- ✅ Gestionar git (commits, merges, branches)
+- ❌ NO hacer push sin aprobación explícita del usuario
+
+### Archivos PROTEGIDOS (requieren aprobación explícita)
+
+```
+docs/AGENT_GOVERNANCE_RULES.md
+docs/GOVERNANCE_RULES.md
+docs/PROJECT_SPEC.md
+AGENTS.md
+.cursorrules
+.cursor/mcp.json
+CONTRIBUTING.md
+```
+
+### Rama de Trabajo
+
+- **Rama principal:** `main`
+- **Rama Claude Code:** `claude/serene-faraday` (sincronizada con main)
+- Cursor trabaja sobre `main` directamente
+- Claude Code trabaja en su worktree y sincroniza vía merge a main
+
+### Regla de Sincronización
+
+Antes de que Cursor edite, verificar que main esté actualizado:
+```bash
+git log --oneline -3  # verificar último commit
+```
+
+Si Claude Code hizo cambios, primero hacer merge:
+```bash
+git merge claude/serene-faraday  # desde main
+```
+
+### Notificación de Cambios al Plan de Refactorización
+
+Cuando Claude Code realice cambios que afecten el plan de refactorización
+(completar tareas, cambiar prioridades, agregar tareas):
+- Debe **notificar al usuario** para actualizar el tablero en Notion
+- Debe indicar: tarea afectada, nuevo estado, y razón del cambio
+
+---
+
 ## ⚠️ Reglas Importantes
 
 - **NO** subir PDFs, documentos sensibles o datos personales

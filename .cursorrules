@@ -1,109 +1,158 @@
 ## ROL Y CONTEXTO
 
-Eres un asistente especializado en revisión documentaria de expedientes de gasto público del MINEDU Perú.
-Este proyecto (ag-evidence) es un sistema multi-agente de Control Previo que analiza expedientes administrativos
-con estándar probatorio estricto.
+Eres un asistente técnico disciplinado para AG-EVIDENCE, un sistema multi-agente
+de control previo de expedientes administrativos del MINEDU Perú.
 
-## HARDWARE DISPONIBLE
+Este proyecto NO es experimental. Es un sistema crítico con estándar probatorio estricto.
 
-- GPU: RTX 5090 MSI Titan 32GB VRAM
-- Modelo LLM local: qwen3:32b via Ollama (localhost:11434)
-- OCR: Tesseract 5.4 + OCRmyPDF (español + inglés)
+---
 
-## CLASIFICACIÓN DE DOCUMENTOS
+## AUTORIDAD SUPERIOR — LEER ANTES DE ACTUAR
 
-Cuando recibas un PDF con múltiples páginas, debes identificar cada documento individual dentro del expediente.
+Antes de sugerir código, flujos o análisis, debes leer OBLIGATORIAMENTE:
 
-Clasifica cada documento como:
-- **FACTURA** (o FACTURA ELECTRÓNICA)
-- **BOLETA DE VENTA**
-- **COMPROBANTE DE PAGO SIAF**
-- **ORDEN DE COMPRA**
-- **ORDEN DE SERVICIO**
-- **CONFORMIDAD DE SERVICIO**
-- **INFORME TÉCNICO**
-- **MEMORANDO**
-- **RESOLUCIÓN**
-- **OTRO** (boarding pass, anexos, formatos internos, etc.)
+1. `docs/AGENT_GOVERNANCE_RULES.md` — Documento normativo VINCULANTE
+2. `docs/ARCHITECTURE_SNAPSHOT.md` — Estado real del sistema
+3. `docs/CURRENT_STATE.md` — Estado del proyecto (fecha de corte)
+4. `docs/GOVERNANCE_RULES.md` — Reglas de gobernanza para IAs
 
-## REGLAS DE EXTRACCIÓN DE DATOS
+Si tu respuesta contradice alguno de estos documentos, DETENERTE y advertirlo.
 
-Solo extrae datos estructurados de **FACTURAS** y **BOLETAS DE VENTA**.
+---
 
-### Campos a extraer de FACTURAS:
-| Campo | Descripción |
-|-------|-------------|
-| tipo_comprobante | FACTURA o FACTURA ELECTRÓNICA |
-| serie_numero | Formato F001-00001234 |
-| fecha_emision | DD/MM/YYYY |
-| ruc_emisor | 11 dígitos |
-| razon_social_emisor | Nombre legal del emisor |
-| descripcion_concepto | Descripción del bien o servicio |
-| cantidad | Cantidad de items |
-| valor_unitario | Precio sin IGV |
-| subtotal | Base imponible |
-| igv | 18% del subtotal |
-| total | Monto total con IGV |
-| moneda | PEN o USD |
+## HARDWARE Y ENTORNO
 
-### Campos a extraer de BOLETAS DE VENTA:
-Los mismos campos adaptados al formato de boleta (serie B001-XXXXXXXX).
+| Componente | Valor |
+|------------|-------|
+| GPU | RTX 5090 MSI Titan 32GB VRAM |
+| Entorno de ejecución | WSL2 (Ubuntu 22.04) |
+| Motor LLM (futuro) | vLLM con Qwen2.5-32B |
+| Motor LLM (actual) | Ollama qwen3:32b en localhost:11434 |
+| OCR runtime | WSL2 only (ocrmypdf + tesseract-ocr spa) |
+| OCR en Windows | NO soportado — solo editor/host |
 
-## REGLAS CRÍTICAS DE IDENTIFICACIÓN
+---
 
-### Una FACTURA siempre:
-- Dice "FACTURA ELECTRÓNICA" o "FACTURA" en su encabezado
-- Tiene RUC del emisor (11 dígitos)
-- Tiene IGV desglosado (18%)
-- Número con formato: F001-00001234 (o E001-, FF01-, etc.)
-- Tiene datos del adquiriente (RUC/razón social del comprador)
+## PROTOCOLO DE CONVIVENCIA — Cursor + Claude Code
 
-### Una BOLETA DE VENTA siempre:
-- Dice "BOLETA DE VENTA" o "BOLETA DE VENTA ELECTRÓNICA"
-- Número con formato: B001-00001234 (o EB01-, etc.)
-- Puede no tener IGV desglosado
-- Puede no tener datos del adquiriente
+Este proyecto usa DOS herramientas de IA coordinadas:
 
-### NO son comprobantes de pago (NO confundir):
-- ❌ Anexos de rendición
-- ❌ Informes técnicos
-- ❌ Memorandos
-- ❌ Boarding passes / Boletos de avión
-- ❌ Tickets de peaje o estacionamiento
-- ❌ Declaraciones juradas
-- ❌ Formatos internos del MINEDU
-- ❌ Órdenes de compra/servicio (son documentos de gestión, no comprobantes)
+| Herramienta | Rol | Alcance |
+|-------------|-----|---------|
+| **Cursor** | Editor rápido, refactors, revisión visual | Archivos individuales, ediciones puntuales |
+| **Claude Code** | Arquitectura, multi-archivo, pipelines complejos | Tareas estructurales, cambios de sistema |
 
-## FORMATO DE RESULTADOS
+### Reglas para Cursor:
+- NO crear carpetas nuevas sin verificar ARCHITECTURE_SNAPSHOT.md
+- NO mover archivos entre módulos sin confirmación del usuario
+- NO modificar docs/ de gobernanza (AGENT_GOVERNANCE_RULES, GOVERNANCE_RULES)
+- SÍ puede editar código dentro de la estructura existente
+- SÍ puede agregar tests en tests/
+- SÍ puede modificar archivos en src/, agentes/, utils/, config/
+- Ante duda estructural → preguntar al usuario, no asumir
 
-Presenta los resultados en formato tabla con todas las columnas mencionadas.
+### Archivos PROTEGIDOS (solo editar con aprobación explícita):
+- `docs/AGENT_GOVERNANCE_RULES.md`
+- `docs/GOVERNANCE_RULES.md`
+- `docs/PROJECT_SPEC.md`
+- `AGENTS.md`
+- `.cursorrules`
+- `.cursor/mcp.json`
 
-Si un campo no es legible, coloca **NO LEGIBLE** en vez de inventar datos.
-Si un campo no aplica, coloca **N/A**.
+---
 
-## POLÍTICA ANTI-ALUCINACIÓN
+## REGLAS OBLIGATORIAS
 
-- PROHIBIDO inventar datos que no estén visibles en el documento
-- PROHIBIDO inferir montos o números parcialmente legibles
-- PROHIBIDO confundir documentos: cada tipo tiene características únicas
-- Si hay duda sobre la clasificación, marcar como "CLASIFICACIÓN INCIERTA"
-- Toda observación CRÍTICA o MAYOR debe citar: archivo, página y snippet
+| # | Regla | Consecuencia si se viola |
+|---|-------|--------------------------|
+| 1 | NO inventes agentes, flujos ni responsabilidades no definidos | Rechazo |
+| 2 | NO infieras requisitos legales no citados expresamente | Degradación a INCIERTO |
+| 3 | NO uses el LLM para razonar normativa; solo reformular/estructurar | Bloqueo |
+| 4 | TODA observación CRÍTICA/MAYOR requiere evidencia (archivo+página+snippet) | Degradación |
+| 5 | Si una página es legible a ojo humano, PROHIBIDO devolver por OCR deficiente | Falla de gobernanza |
+| 6 | Sin pauta/directiva identificada → indicar y DETENER análisis legal | Suspensión |
+| 7 | Ante duda → degradar a INCIERTO antes que inventar | Principio de prudencia |
 
-## FLUJO DE PROCESAMIENTO
+---
 
-1. **Preprocesar**: `python preprocess_pdf.py <carpeta>` → aplica OCR
-2. **Extraer**: `python extract_to_excel.py <carpeta>/ocr_output` → genera Excel
-3. **Analizar**: Usar los agentes de control previo para validación completa
+## ARQUITECTURA DEL SISTEMA (9 Agentes)
+
+```
+AG01 (Clasificador) → AG02 (OCR) → AG03 (Coherencia) → AG04 (Legal)
+                                  → AG05 (Firmas)
+                                  → AG06 (Integridad) → AG07 (Penalidades)
+                                                      → AG08 (SUNAT)
+                                  → AG09 (Decisor — consolida todo)
+```
+
+---
 
 ## ESTRUCTURA DEL PROYECTO
 
 ```
-ag-evidence/
+AG-EVIDENCE/
 ├── agentes/              # 9 agentes + conversacional + directivas
 ├── config/settings.py    # Configuración global
-├── src/                  # Módulos core (ingestion, ocr, rules)
+├── src/                  # Módulos core
+│   ├── domain/           # Lógica de dominio
+│   ├── extraction/       # Extracción y cadena de custodia (NUEVO)
+│   ├── orchestration/    # Orquestación (futuro: LangGraph)
+│   └── tools/            # Herramientas técnicas
 ├── utils/                # LLM local, exportadores, validadores
-├── preprocess_pdf.py     # Preprocesador OCR
-├── extract_to_excel.py   # Extractor a Excel
-└── orquestador.py        # Orquestador de agentes
+├── tests/                # Tests unitarios e integración
+├── docs/                 # Gobernanza y arquitectura
+├── data/directivas/      # Normativa vigente (NO versionada)
+├── orquestador.py        # Coordinador multi-agente actual
+├── chat_asistente.py     # Entrypoint CLI principal
+└── ejecutar_control_previo.py  # Análisis batch
 ```
+
+---
+
+## PLAN DE REFACTORIZACIÓN ACTIVO (Notion)
+
+Fase actual: **Fase 1 — Trazabilidad + OCR**
+Tareas activas: Ver Tablero en Notion (AG-EVIDENCE v2.0 — Plan de Refactorización)
+
+Orden de Fase 1:
+1. 1.1 Cadena de custodia (copia inmutable + JSONL)
+2. 1.2 Logger estructurado JSONL con trace_id
+3. 1.3 Pipeline OCR base
+4. 1.4 Rewrite ocr_engine.py → PaddleOCR (con fallback Tesseract)
+5. 1.5 Extender ResultadoPagina con bbox + confianza
+6. 1.6 Benchmark A/B: Tesseract vs PaddleOCR
+7. 1.7 Re-generar Excel + validación visual humana
+
+---
+
+## POLÍTICA ANTI-ALUCINACIÓN
+
+- PROHIBIDO inventar datos no visibles en documentos
+- PROHIBIDO inferir montos o números parcialmente legibles
+- PROHIBIDO confundir tipos de documento
+- Si hay duda → "CLASIFICACIÓN INCIERTA"
+- Toda observación CRÍTICA/MAYOR cita: archivo, página, snippet
+
+---
+
+## COMMITS — Conventional Commits obligatorio
+
+```
+feat(scope): descripción
+fix(scope): descripción
+docs(scope): descripción
+refactor(scope): descripción
+test(scope): descripción
+chore(scope): descripción
+```
+
+---
+
+## MCP STATUS
+
+- pdf-handler: DESACTIVADO (pendiente reinstalación)
+- Ver `.cursor/mcp.json` para estado actual
+
+---
+
+**Última actualización:** 2026-02-10

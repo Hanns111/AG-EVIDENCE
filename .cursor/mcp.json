@@ -1,16 +1,5 @@
 {
-  "mcpServers": {
-    "pdf-handler": {
-      "command": "C:\\Users\\Hans\\.claude-worktrees\\AG-EVIDENCE\\exciting-lewin\\pdf-mcp-server\\.venv\\Scripts\\python.exe",
-      "args": [
-        "-m",
-        "pdf_mcp.server"
-      ],
-      "cwd": "C:\\Users\\Hans\\.claude-worktrees\\AG-EVIDENCE\\exciting-lewin\\pdf-mcp-server",
-      "env": {
-        "TESSDATA_PREFIX": "C:\\Users\\Hans\\tessdata",
-        "TESSERACT_CMD": "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
-      }
-    }
-  }
+  "_NOTA": "pdf-handler MCP pendiente de reinstalación. Ver docs/CURRENT_STATE.md",
+  "_STATUS": "DESACTIVADO — requiere setup de pdf-mcp-server en tools/pdf-mcp-server/",
+  "mcpServers": {}
 }
