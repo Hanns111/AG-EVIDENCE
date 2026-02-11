@@ -1,0 +1,89 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ag-evidence"
+version = "2.2.0"
+description = "Automated Prior Control System for Administrative Records — Multi-Agent Document Analysis with Evidentiary Standards"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "AG-EVIDENCE Contributors"},
+]
+keywords = [
+    "document-analysis",
+    "multi-agent",
+    "prior-control",
+    "evidentiary-standard",
+    "ocr",
+    "pdf",
+    "audit",
+    "compliance",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Legal Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: General",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "PyMuPDF>=1.23.0",
+    "Pillow>=10.0.0",
+    "requests>=2.31.0",
+    "python-dateutil>=2.8.0",
+]
+
+[project.optional-dependencies]
+ocr = [
+    "easyocr>=1.7.0",
+    "pytesseract>=0.3.10",
+    "opencv-python>=4.8.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+all = [
+    "ag-evidence[ocr,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/Hanns111/AG-EVIDENCE"
+Repository = "https://github.com/Hanns111/AG-EVIDENCE"
+Documentation = "https://github.com/Hanns111/AG-EVIDENCE/tree/main/docs"
+Changelog = "https://github.com/Hanns111/AG-EVIDENCE/blob/main/CHANGELOG.md"
+Issues = "https://github.com/Hanns111/AG-EVIDENCE/issues"
+
+[project.scripts]
+ag-evidence = "ejecutar_control_previo:main"
+ag-chat = "chat_asistente:main"
+
+[tool.setuptools.packages.find]
+include = ["src*", "agentes*", "config*", "utils*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]

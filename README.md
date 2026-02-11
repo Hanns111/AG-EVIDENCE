@@ -1,254 +1,188 @@
-﻿# 🔒 AG-EVIDENCE — Sistema de Análisis Probatorio de Expedientes
+# AG-EVIDENCE
 
-**Ministerio de Educación del Perú**
-
----
-
-## 📋 Descripción
-
-**AG-EVIDENCE** es un sistema multi-agente para análisis probatorio de expedientes administrativos en procesos de control previo.  
-
-El sistema analiza expedientes en formato PDF y emite conclusiones estructuradas (**PROCEDE / PROCEDE CON OBSERVACIONES / NO PROCEDE**) bajo un **estándar probatorio estricto**, con evidencia verificable (archivo, página y extracto literal).
-
-El proyecto está diseñado para operar en entornos críticos, con políticas explícitas de **anti-alucinación**, **trazabilidad documental** y **restricción de inferencias**.
+**Automated Prior Control System for Administrative Records**
+*Multi-Agent Document Analysis with Evidentiary Standards*
 
 ---
 
-## 📌 Documentos Rectores (Autoridad del Proyecto)
+## Overview
 
-Este proyecto se rige obligatoriamente por los siguientes documentos, los cuales tienen **prioridad normativa sobre cualquier sugerencia automática, refactorización o generación de código**:
+AG-EVIDENCE is an automated prior control system that analyzes administrative records (expedientes) using a pipeline of nine specialized AI agents. Each document undergoes classification, text extraction, cross-reference validation, legal compliance verification, and a final decision — all backed by strict evidentiary standards.
 
-### 1. `docs/AGENT_GOVERNANCE_RULES.md`
-Documento normativo de gobernanza del sistema.  
-Define:
-- Reglas obligatorias de comportamiento de los agentes
-- Política anti-alucinación
-- Enrutamiento por naturaleza del expediente
-- Reglas críticas de OCR y legibilidad humana
-- Prohibiciones absolutas del sistema
+The system produces structured verdicts: **PROCEED**, **PROCEED WITH OBSERVATIONS**, or **DO NOT PROCEED** — with every finding traceable to a specific file, page, and text excerpt.
 
-### 2. `docs/ARCHITECTURE_SNAPSHOT.md`
-Fotografía técnica del estado actual del sistema.  
-Describe:
-- Arquitectura multi-agente
-- Flujos operativos
-- Componentes implementados y pendientes
-- Riesgos, deuda técnica y próximos pasos
-
-👉 **Cualquier desarrollo, modificación o análisis debe ser consistente con ambos documentos.**
+Designed for the Ministry of Education of Peru (MINEDU), with architecture and compliance standards suitable for European public sector institutions and international auditing requirements.
 
 ---
 
-## ⚠️ Advertencia Crítica
+## Key Capabilities
 
-Este proyecto **NO es un chatbot genérico**.  
-
-El uso de modelos LLM está **restringido** a reformulación, estructuración y asistencia conversacional **sin inferencia normativa ni creación de requisitos**.
-
-Las observaciones del sistema deben estar respaldadas por evidencia documental. Si no existe evidencia, el sistema debe indicar expresamente: *"No consta información suficiente en los documentos revisados."*
+| Capability | Description |
+|---|---|
+| **9-Agent Pipeline** | Classification, OCR, Coherence, Legal, Signatures, Integrity, Penalties, Tax Authority, Decision |
+| **Evidentiary Standard** | Every critical finding requires: source file + page number + verbatim excerpt |
+| **Chain of Custody** | Immutable PDF copies with SHA-256 hash verification |
+| **Structured Traceability** | JSONL trace logs with UUID per document, correlating all processing steps |
+| **Anti-Hallucination Policy** | Strict prohibition on inferred data; uncertain findings degraded to INCONCLUSIVE |
+| **Local-First Architecture** | All processing runs on-premises; no cloud dependencies; GDPR-aligned |
+| **LLM Integration** | Local inference via Ollama (Qwen3 32B) on NVIDIA RTX 5090 |
 
 ---
 
-## 🏗️ Arquitectura Multi-Agente
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      ORQUESTADOR PRINCIPAL                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐                │
-│  │ AGENTE 01  │  │ AGENTE 02  │  │ AGENTE 03  │                │
-│  │Clasificador│──│    OCR     │──│ Coherencia │                │
-│  └────────────┘  └────────────┘  └────────────┘                │
-│         │              │              │                         │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐                │
-│  │ AGENTE 04  │  │ AGENTE 05  │  │ AGENTE 06  │                │
-│  │   Legal    │──│   Firmas   │──│ Integridad │                │
-│  └────────────┘  └────────────┘  └────────────┘                │
-│         │              │              │                         │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐                │
-│  │ AGENTE 07  │  │ AGENTE 08  │  │ AGENTE 09  │                │
-│  │Penalidades │──│   SUNAT    │──│  Decisor   │                │
-│  └────────────┘  └────────────┘  └────────────┘                │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+                         ORCHESTRATOR
+                             |
+    +--------+--------+------+------+--------+--------+
+    |        |        |      |      |        |        |
+  AG01     AG02     AG03   AG04   AG05     AG06     AG07
+Classify    OCR   Coherence Legal Signatures Integrity Penalties
+    |        |        |      |      |        |        |
+    +--------+--------+------+------+--------+--------+
+                             |
+                      +------+------+
+                      |             |
+                    AG08          AG09
+                 Tax Authority   Decision
 ```
 
-### Descripción de Agentes
-
-| Agente | Nombre | Función |
-|--------|--------|---------|
-| AG01 | Clasificador | Detecta naturaleza: viáticos, caja chica, encargo, pago proveedor |
-| AG02 | OCR Avanzado | Mejora extracción de texto, detecta firmas manuscritas, sellos |
-| AG03 | Coherencia | Cruza SINAD, expediente, orden, contrato. Detecta errores de dígitos |
-| AG04 | Legal | Aplica directiva/pauta correspondiente, verifica requisitos |
-| AG05 | Firmas | Verifica competencia de firmantes según TDR/directiva |
-| AG06 | Integridad | Verifica documentación completa (TDR, CCI, conformidad, etc.) |
-| AG07 | Penalidades | Evalúa si corresponde aplicar penalidad por mora |
-| AG08 | SUNAT | Consulta pública de RUC (estado, condición, actividad) |
-| AG09 | Decisor | Consolida hallazgos y determina PROCEDE/NO PROCEDE |
+| Agent | Role | Output |
+|---|---|---|
+| AG01 Classifier | Detects document type (travel expenses, petty cash, supplier payment, etc.) | Nature + applicable directive |
+| AG02 OCR | Extracts text with quality gating (native PDF / OCR / manual fallback) | Extracted text + confidence score |
+| AG03 Coherence | Cross-references SINAD, record numbers, contract identifiers | Inconsistency report |
+| AG04 Legal | Validates against applicable directive requirements | Compliance checklist |
+| AG05 Signatures | Verifies authorized signatories per applicable regulations | Signature verification report |
+| AG06 Integrity | Checks documentation completeness (TDR, CCI, compliance certificates) | Missing documents list |
+| AG07 Penalties | Evaluates penalty applicability for delivery delays | Penalty assessment |
+| AG08 Tax Authority | Public RUC lookup (status, condition, business activity) | Tax authority report |
+| AG09 Decision | Consolidates all findings into final structured verdict | PROCEED / OBSERVATIONS / DO NOT PROCEED |
 
 ---
 
-## ⚠️ Restricciones de Seguridad
+## Technology Stack
 
-El sistema opera bajo restricciones estrictas:
-
-- ❌ **NO** usa Clave SOL
-- ❌ **NO** integra SIRE autenticado
-- ❌ **NO** usa servicios de pago
-- ❌ **NO** actúa como proveedor autorizado SUNAT
-- ✅ Solo consultas públicas SUNAT / APIs gratuitas
-- ✅ Todos los resultados SUNAT son **INFORMATIVOS**
-- ✅ Si hay duda → reporta **INCERTIDUMBRE** (no inventa)
+| Component | Technology | Purpose |
+|---|---|---|
+| Runtime | Python 3.8+ | Core application |
+| PDF Processing | PyMuPDF (fitz) | Native text extraction |
+| OCR Engine | Tesseract + ocrmypdf | Scanned document processing |
+| LLM Inference | Ollama + Qwen3:32B | Local AI reasoning |
+| GPU | NVIDIA RTX 5090 (32 GB VRAM) | Hardware-accelerated inference |
+| Execution Environment | WSL2 (Ubuntu 22.04) | Production runtime |
+| Integrity | SHA-256 + JSONL registry | Chain of custody |
+| Traceability | JSONL + UUID trace_id | Structured audit trail |
 
 ---
 
-## 🚀 Instalación
+## Installation
 
-### Requisitos
+### Prerequisites
 
-- Python 3.8 o superior
-- Windows 10/11
+- Python 3.8 or higher
+- Windows 10/11 (development) or WSL2 Ubuntu 22.04 (production)
+- Ollama installed with Qwen3:32B model (for AI features)
 
-### Pasos
-
-1. **Instalar dependencias:**
+### Setup
 
 ```bash
+git clone https://github.com/Hanns111/AG-EVIDENCE.git
 cd AG-EVIDENCE
 pip install -r requirements.txt
 ```
 
-2. **Verificar instalación:**
+### Verify Installation
 
 ```bash
 python -c "import fitz; print('PyMuPDF OK')"
+python -m pytest tests/test_custody_chain.py tests/test_trace_logger.py -v
 ```
 
 ---
 
-## 🧪 Tests
+## Usage
 
-### Ejecutar tests estándar (sin EasyOCR/torch):
-
-```bash
-python -m pytest tests/ -v
-```
-
-### Ejecutar tests con EasyOCR (si tienes torch instalado):
+### Batch Analysis
 
 ```bash
-# Primero instalar extras: pip install easyocr torch
-python -m pytest tests/ -v -m "easyocr"
-```
-
-> **Nota:** Los tests de EasyOCR se skipean automáticamente si no están instaladas las dependencias.
-
----
-
-## 📖 Uso
-
-### Modo Simple (Carpeta Downloads)
-
-```bash
+# Analyze documents in default directory
 python ejecutar_control_previo.py
-```
 
-### Especificar Carpeta
+# Specify document folder
+python ejecutar_control_previo.py --carpeta "/path/to/documents"
 
-```bash
-python ejecutar_control_previo.py --carpeta "C:\ruta\expediente"
-```
-
-### Guardar Informe Automáticamente
-
-```bash
+# Save report automatically
 python ejecutar_control_previo.py --guardar
-```
 
-### Modo Silencioso
-
-```bash
+# Silent mode with auto-save
 python ejecutar_control_previo.py --silencioso --guardar
 ```
 
-### Desde Python
+### Conversational Assistant
+
+```bash
+# Natural language queries about documents and directives
+python chat_asistente.py --modo conversacional --backend llm
+
+# Load specific PDFs
+python chat_asistente.py --pdf "document.pdf" --backend llm
+
+# Regex-only mode (no LLM required)
+python chat_asistente.py --backend regex
+```
+
+### Python API
 
 ```python
 from orquestador import ejecutar_control_previo
 
-# Analizar carpeta de expediente
-informe = ejecutar_control_previo("C:\\expedientes\\2025")
+result = ejecutar_control_previo("/path/to/documents")
+print(result.decision)  # PROCEDE / NO_PROCEDE / PROCEDE_CON_OBSERVACIONES
+```
 
-# Acceder a la decisión
-print(informe.decision)  # PROCEDE / NO_PROCEDE / PROCEDE_CON_OBSERVACIONES
+### Chain of Custody
+
+```python
+from src.ingestion import CustodyChain
+
+chain = CustodyChain()
+record = chain.ingest("document.pdf", sinad="EXP-2026-0001")
+verification = chain.verify(record.custody_id)
+assert verification.is_intact
+```
+
+### Structured Tracing
+
+```python
+from src.ingestion import TraceLogger
+
+logger = TraceLogger()
+ctx = logger.start_trace(sinad="EXP-2026-0001", source="batch")
+logger.info("Classification complete", agent_id="AG01", context={"type": "TRAVEL"})
+logger.set_agent("AG02", "ocr_extract")
+logger.info("OCR extraction complete", duration_ms=3200)
+summary = logger.end_trace(status="success")
 ```
 
 ---
 
-## 📊 Formato de Salida
+## Exit Codes
 
-El sistema genera un informe estructurado con:
-
-1. **Naturaleza del expediente** (viáticos, pago proveedor, etc.)
-2. **Directiva/pauta aplicada**
-3. **Resumen ejecutivo**
-4. **Observaciones críticas** (🔴 bloquean pago)
-5. **Observaciones mayores** (🟡 subsanables)
-6. **Observaciones menores** (🟢 informativas)
-7. **Riesgos SUNAT** (informativos)
-8. **Recomendación final**
-9. **Acción requerida y área responsable**
-
-### Ejemplo de Salida
-
-```
-====================================================================================================
-🔴 DECISIÓN: NO PROCEDE
-====================================================================================================
-
-📝 RESUMEN EJECUTIVO:
-❌ El expediente NO PROCEDE por observaciones críticas.
-   Se detectaron 7 observaciones que bloquean el pago.
-
-🔴 OBSERVACIONES CRÍTICAS (Bloquean pago):
-1. Inconsistencia en RUC: 20417494406 vs 20417494409 (error de dígito)
-   📌 Evidencia: Documentos afectados: [lista]
-   ⚡ Acción: VERIFICAR RUC del proveedor
-   👤 Responsable: Oficina de Logística
-
-📋 RECOMENDACIÓN FINAL:
-Se recomienda DEVOLVER el expediente al área correspondiente para subsanación.
-```
+| Code | Meaning |
+|---|---|
+| 0 | PROCEED |
+| 1 | PROCEED WITH OBSERVATIONS |
+| 2 | DO NOT PROCEED |
+| 130 | Cancelled by user (Ctrl+C) |
 
 ---
 
-## 🛡️ Códigos de Salida
-
-El script retorna códigos útiles para automatización:
-
-| Código | Significado |
-|--------|-------------|
-| 0 | ✅ PROCEDE |
-| 1 | 🟡 PROCEDE CON OBSERVACIONES |
-| 2 | 🔴 NO PROCEDE |
-| 130 | Cancelado por usuario (Ctrl+C) |
-
----
-
-## 📁 Estructura del Proyecto
+## Project Structure
 
 ```
 AG-EVIDENCE/
-├── orquestador.py              # Orquestador principal
-├── ejecutar_control_previo.py  # Análisis batch de expedientes
-├── chat_asistente.py           # Chat conversacional (entrypoint CLI)
-├── requirements.txt
-├── README.md
-├── AGENTS.md                   # Instrucciones para agentes IA
-│
-├── agentes/                    # 9 agentes especializados
+├── agentes/                    # 9 specialized agents + conversational + directives
 │   ├── agente_01_clasificador.py
 │   ├── agente_02_ocr.py
 │   ├── agente_03_coherencia.py
@@ -259,304 +193,129 @@ AG-EVIDENCE/
 │   ├── agente_08_sunat.py
 │   └── agente_09_decisor.py
 │
+├── src/                        # Core modules
+│   ├── ingestion/              # PDF extraction + chain of custody + trace logger
+│   │   ├── pdf_text_extractor.py
+│   │   ├── custody_chain.py
+│   │   └── trace_logger.py
+│   ├── ocr/                    # OCR engine (Tesseract/PaddleOCR)
+│   ├── rules/                  # Validation rules
+│   └── tools/                  # Technical tools
+│
 ├── config/
-│   └── settings.py             # Configuración global
+│   └── settings.py             # Global configuration, enums, dataclasses
 │
-├── docs/                       # Documentación del proyecto
-│   ├── AGENT_GOVERNANCE_RULES.md
-│   ├── ARCHITECTURE_SNAPSHOT.md
-│   └── OCR_SPEC.md
+├── utils/                      # LLM client, exporters, validators
+├── tests/                      # Unit and integration tests (82 passing)
+├── docs/                       # Governance and architecture documentation
 │
-├── utils/
-│   ├── pdf_extractor.py        # Extracción de PDFs
-│   ├── llm_local.py            # Cliente LLM (Ollama)
-│   ├── validador_evidencia.py  # Validación probatoria
-│   └── exportador_json.py      # Exportación JSON/TXT
-│
-└── output/                     # Informes generados
+├── orquestador.py              # Multi-agent orchestrator
+├── ejecutar_control_previo.py  # Batch analysis entrypoint
+├── chat_asistente.py           # CLI conversational assistant
+├── requirements.txt            # Python dependencies
+├── pyproject.toml              # Python packaging configuration
+├── CHANGELOG.md                # Version history (Keep a Changelog)
+├── CONTRIBUTING.md             # Contribution guidelines
+└── LICENSE                     # MIT License
 ```
 
 ---
 
-## 🔧 Extensibilidad
+## Documentation
 
-### Agregar Nueva Directiva
-
-1. Editar `config/settings.py`
-2. Agregar keywords en `KEYWORDS_NATURALEZA`
-3. Crear requisitos en `agente_04_legal.py`
-
-### Habilitar SIRE (Futuro)
-
-El sistema está preparado para integrar SIRE cuando se disponga de Clave SOL:
-
-```python
-# config/settings.py
-SUNAT_CONFIG = {
-    "sire_habilitado": True,  # Cambiar a True
-    "sol_habilitado": True,   # Cambiar a True
-    "sol_usuario": "...",
-    "sol_clave": "..."
-}
-```
+| Document | Purpose |
+|---|---|
+| [AGENT_GOVERNANCE_RULES.md](docs/AGENT_GOVERNANCE_RULES.md) | Normative rules governing agent behavior |
+| [ARCHITECTURE_SNAPSHOT.md](docs/ARCHITECTURE_SNAPSHOT.md) | Current system architecture and technical state |
+| [ARCHITECTURE_VISUAL.md](docs/ARCHITECTURE_VISUAL.md) | Visual diagrams of system architecture |
+| [PROJECT_SPEC.md](docs/PROJECT_SPEC.md) | Project specification and objectives |
+| [GOVERNANCE_RULES.md](docs/GOVERNANCE_RULES.md) | Project governance framework |
+| [OCR_SPEC.md](docs/OCR_SPEC.md) | OCR technical specification |
+| [GLOSSARY.md](docs/GLOSSARY.md) | Technical terminology reference |
+| [ADR.md](docs/ADR.md) | Architectural Decision Records |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute to the project |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
 
 ---
 
-## 📞 Soporte
-
-Sistema desarrollado para uso interno del Ministerio de Educación del Perú.
-
-**Control Previo - Oficina General de Administración**
-
----
-
-## 🤖 Chat Asistente (v2.1)
-
-El sistema incluye un **Chat Asistente** que permite consultar directivas y expedientes de manera conversacional.
-
-### Uso Básico
+## Testing
 
 ```bash
-# Modo conversacional con LLM (carga directivas por defecto)
-python chat_asistente.py --modo conversacional --backend llm
+# Run all infrastructure tests (custody chain + trace logger)
+python -m pytest tests/test_custody_chain.py tests/test_trace_logger.py -v
 
-# Con PDFs específicos (--pdf puede repetirse)
-python chat_asistente.py --pdf "data/expedientes/pruebas/archivo.pdf" --backend llm
-
-# Con carpeta de expediente
-python chat_asistente.py --carpeta "data/expedientes/pruebas/01_rendicion" --backend llm
-
-# Con JSON de expediente analizado
-python chat_asistente.py --expediente_json "output/informe.json" --backend llm
-
-# Solo regex (sin LLM)
-python chat_asistente.py --backend regex
+# Run all tests (requires PyMuPDF)
+python -m pytest tests/ -v
 ```
 
-### Ejemplos de Preguntas
+### Test Coverage
 
-| Tipo | Ejemplo |
-|------|---------|
-| Decisión | "¿Por qué no procede?" |
-| Búsqueda | "¿En qué archivo aparece el 54719?" |
-| Inconsistencias | "¿Dónde está la inconsistencia del SINAD?" |
-| Escenarios | "¿Qué pasa si se corrige el RUC?" |
-| Filtros | "Resume solo lo de firmas" |
-| Libre (LLM) | "Explícame los riesgos de este expediente" |
-
-### Backends
-
-| Backend | Descripción | Requisitos |
-|---------|-------------|------------|
-| **regex** | Patrones predefinidos. Rápido pero limitado. | Ninguno |
-| **llm** | Ollama + Qwen. Entiende lenguaje natural libre. | Ollama + modelo |
-| **auto** | Usa LLM si disponible, sino regex (default). | Ninguno |
+| Module | Tests | Status |
+|---|---|---|
+| Chain of Custody (Task #10) | 27 | Passing |
+| Trace Logger (Task #11) | 55 | Passing |
+| **Total Infrastructure** | **82** | **All Passing** |
 
 ---
 
-## 🧠 Requisitos para LLM Local (Opcional)
+## Compliance and Standards
 
-Para habilitar el modo LLM con lenguaje natural libre:
+### Evidentiary Standard
 
-### 1. Instalar Ollama
+Every critical or major finding produced by the system must include:
 
-```bash
-# Windows: Descargar desde https://ollama.ai/download
-# O con winget:
-winget install Ollama.Ollama
-```
+1. **Source file** — which document contains the finding
+2. **Page number** — specific location within the document
+3. **Verbatim excerpt** — exact text supporting the finding
 
-### 2. Descargar Modelo Qwen
+Findings without evidence are automatically degraded to INCONCLUSIVE.
 
-```bash
-# Modelo recomendado (32B, mejor calidad)
-ollama pull qwen3:32b
+### Privacy and Data Protection
 
-# O modelos alternativos
-ollama pull qwen2.5:14b
-ollama pull qwen2.5:7b-instruct
-```
+- **Local-first architecture**: no data leaves the premises
+- **No cloud dependencies**: all processing runs on local hardware
+- **GDPR-aligned**: Privacy by Design principles from the ground up
+- **No paid APIs**: zero operational cost for AI inference
 
-### 3. Verificar Instalación
+### Auditability
 
-```bash
-# Listar modelos
-ollama list
+- **Chain of Custody**: every ingested document is copied to an immutable vault with SHA-256 hash verification
+- **Structured Tracing**: every processing step is recorded in JSONL with UUID correlation
+- **Append-only logs**: audit records cannot be modified after creation
+- **Semantic versioning**: all changes tracked via Conventional Commits
 
-# Verificar desde el sistema
-python -c "from utils.llm_local import verificar_ollama; print(verificar_ollama())"
-```
+### Security Boundaries
 
-### Modelos Compatibles
-
-| Modelo | Tamaño | Recomendación |
-|--------|--------|---------------|
-| qwen3:32b | ~20GB | **Recomendado** - Mejor calidad y comprensiÃ³n |
-| qwen2.5:14b | ~8GB | Mejor comprensión |
-| qwen2.5:7b-instruct | ~4GB | Para equipos con menos VRAM |`n| qwen2.5:3b | ~2GB | Para equipos con poca RAM |
-| llama3.2:3b | ~2GB | Alternativa ligera |
+- No access to Clave SOL (tax authority credentials)
+- No authenticated SIRE integration
+- No paid services or external API dependencies
+- Tax authority queries limited to public RUC lookup
+- All tax authority results marked as INFORMATIONAL
 
 ---
 
-## 📝 Notas de Versión
+## Versioning
 
-### v2.1.0 (Diciembre 2025)
-- ✅ Agente Conversacional con LLM local (Ollama + Qwen)
-- ✅ Búsqueda de valores específicos (SINAD, RUC, etc.)
-- ✅ Modo auto-detección de backend
-- ✅ Preguntas en lenguaje natural libre
+This project follows [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
-### v2.0.0 (Diciembre 2025)
-- ✅ Estándar probatorio con evidencia detallada
-- ✅ Validación automática de hallazgos
-- ✅ Degradación de severidad sin evidencia
-- ✅ Exportación JSON/TXT mejorada
+| Version | Date | Highlights |
+|---|---|---|
+| v2.2.0 | 2026-02-10 | Chain of custody, structured trace logger, project governance |
+| v2.1.0 | 2025-12 | Conversational agent with local LLM (Ollama + Qwen) |
+| v2.0.0 | 2025-12 | Evidentiary standard with strict anti-hallucination policy |
+| v1.0.0 | 2025-12 | Initial release with 9-agent pipeline |
 
-### v1.0.0 (Diciembre 2025)
-- ✅ 9 agentes especializados
-- ✅ OCR con detección de calidad
-- ✅ Verificación de coherencia documental
-- ✅ Consulta pública SUNAT (RUC)
-- ✅ Detección de errores de dígitos
-- ✅ Verificación de firmas
-- ✅ Evaluación de penalidades
-- ✅ Generación de informes estructurados
+See [CHANGELOG.md](CHANGELOG.md) for detailed release notes.
 
 ---
 
-## 📂 Estructura de Carpetas
+## License
 
-```
-AG-EVIDENCE/
-├── agentes/                    # 9 agentes especializados (implementación actual)
-│   ├── agente_01_clasificador.py
-│   ├── agente_02_ocr.py
-│   ├── agente_03_coherencia.py
-│   ├── agente_04_legal.py
-│   ├── agente_05_firmas.py
-│   ├── agente_06_integridad.py
-│   ├── agente_07_penalidades.py
-│   ├── agente_08_sunat.py
-│   ├── agente_09_decisor.py
-│   ├── agente_10_conversacional.py
-│   └── agente_directivas.py
-│
-├── config/                     # Configuración global
-│   └── settings.py            # Enums, dataclasses, configuración
-│
-├── data/                       # Datos (NO versionados - .gitignore)
-│   ├── directivas/            # PDFs de normativas
-│   ├── expedientes/           # Expedientes de prueba
-│   └── normativa/             # Datos normativos estructurados
-│
-├── docs/                       # Documentación de gobernanza
-│   ├── PROJECT_SPEC.md        # Especificación maestra del proyecto
-│   ├── ARCHITECTURE.md        # Arquitectura del sistema
-│   ├── HARDWARE_CONTEXT.md    # Contexto técnico y hardware
-│   ├── GOVERNANCE_RULES.md    # Reglas de gobernanza
-│   ├── ADR.md                 # Decisiones arquitectónicas
-│   ├── CURRENT_STATE.md      # Estado actual del proyecto
-│   ├── CONTEXT_CHAIN.md       # Cadena de continuidad entre IAs
-│   └── AGENT_GOVERNANCE_RULES.md  # Reglas normativas de agentes
-│
-├── scripts/                    # Scripts de utilidad
-│   ├── categorizar_expedientes.py  # Categorización automática
-│   └── README_CATEGORIZAR.md
-│
-├── src/                        # Código fuente estructurado (en desarrollo)
-│   ├── domain/                 # Lógica de dominio
-│   ├── orchestration/          # Orquestación (futuro: LangGraph)
-│   ├── agents/                 # Agentes (futuro)
-│   ├── tools/                  # Herramientas técnicas
-│   ├── rag/                    # RAG y conocimiento
-│   ├── vision/                 # Procesamiento visual
-│   └── reporting/              # Generación de reportes
-│
-├── tests/                      # Tests unitarios e integración
-│   ├── test_agente_directivas.py
-│   ├── test_chat_asistente.py
-│   ├── test_enrutamiento_os_oc.py
-│   ├── test_estandar_probatorio.py
-│   └── README.md               # Documentación de tests
-│
-├── tools/                      # Herramientas de desarrollo
-│   ├── ocr_smoke_test.py
-│   └── run_gating_demo.py
-│
-├── utils/                      # Utilidades
-│   ├── pdf_extractor.py        # Extracción de PDFs
-│   ├── llm_local.py            # Cliente LLM (Ollama)
-│   ├── validador_evidencia.py  # Validación probatoria
-│   └── exportador_json.py      # Exportación JSON/TXT
-│
-├── output/                     # Informes generados (NO versionado)
-│
-├── orquestador.py              # Orquestador principal
-├── ejecutar_control_previo.py # Entrypoint principal
-├── chat_asistente.py           # Chat conversacional
-├── chat_directiva.py           # Chat de directivas
-├── requirements.txt            # Dependencias
-├── pytest.ini                  # Configuración pytest
-├── CHANGELOG.md                # Historial de cambios
-└── README.md                   # Este archivo
-```
+MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
-## 📊 Estado Actual del Proyecto
+## Contact
 
-### ✅ Implementado- Sistema multi-agente funcional (9 agentes)
-- Chat asistente conversacional con LLM local
-- Estándar probatorio estricto (archivo + página + snippet)
-- Política anti-alucinación implementada
-- Integración con Ollama/Qwen para inferencia local
-- Exportación JSON/TXT con evidencia completa
-- Tests unitarios y de integración
-- Documentación de gobernanza completa
-- Sistema de categorización automática de expedientes
-
-### 🟡 En Desarrollo
-
-- Migración a LangGraph para orquestación
-- Integración de vLLM como servidor de inferencia
-- Migración a WSL2/Ubuntu para soporte RTX 5090 (sm_120)
-- Implementación de RAG con Qdrant y BGE-M3
-- Reimplementación de OCR/visión con Qwen2.5-VL
-
-### 📋 Próximos Pasos1. **Configurar entorno WSL2 + GPU funcional**
-   - Validar PyTorch Nightly con RTX 5090
-   - Configurar vLLM para inferencia local
-
-2. **Migrar a LangGraph**
-   - Implementar flujos como grafos
-   - Permitir ciclos y validaciones cruzadas
-
-3. **Implementar RAG completo**
-   - Indexar directivas con BGE-M3
-   - Configurar Qdrant local
-   - Implementar reranking
-
-4. **Golden Tests**
-   - Crear suite de tests con expedientes reales
-   - Validar regresiones
-
-5. **Documentación técnica**
-   - Completar documentación de APIs
-   - Crear guías de desarrollo---## 🎯 Estándar Profesional Europeo
-
-Este proyecto sigue estándares profesionales europeos para consultoría y sector público:
-
-- **Privacy by Design**: Cumplimiento GDPR desde el diseño
-- **Local-first**: Sin dependencias cloud pagadas
-- **Auditabilidad**: Trazabilidad completa de decisiones
-- **Documentación viva**: Gobernanza mediante Markdown
-- **Versionado semántico**: Commits y releases estructurados
-- **Separación de capas**: Dominio, orquestación e infraestructura desacopladas
-
----
-
-## 📄 Licencia
-
-Sistema desarrollado para uso interno del Ministerio de Educación del Perú.
-
-**Control Previo - Oficina General de Administración**
+Developed for the Ministry of Education of Peru.
+Prior Control — General Administration Office (OGA).
