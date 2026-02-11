@@ -11,19 +11,19 @@
 - **Repositorio:** Hanns111/AG-EVIDENCE
 - **Worktree activo:** claude/serene-faraday
 - **Rama de trabajo:** claude/serene-faraday → merge fast-forward a main
-- **Último commit en main:** 04ffc7d (feat: custody chain)
+- **Último commit en main:** ccc5022 (feat: trace logger)
 
 ---
 
 ## Última Tarea Completada
 
-- **Tarea #10** — Cadena de custodia (src/ingestion/custody_chain.py)
-- 529 líneas, 27 tests pasando, mergeada a main
+- **Tarea #11** — Logger estructurado JSONL con trace_id (src/ingestion/trace_logger.py)
+- 638 líneas, 55 tests pasando, mergeada a main (ccc5022)
 
 ## Siguiente Tarea
 
-- **Tarea #11** — Logger estructurado JSONL con trace_id
-- Fase 1: Trazabilidad + OCR
+- **Tarea #12** — (siguiente en Fase 1: Trazabilidad + OCR)
+- Consultar tablero Notion para detalles
 
 ---
 
@@ -103,7 +103,7 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 | Fase | Estado | Tareas |
 |------|--------|--------|
 | 0: Setup | ✅ Completada | #1-9 |
-| 1: Trazabilidad + OCR | 🔵 En progreso | #10 ✅, #11-16 pendientes |
+| 1: Trazabilidad + OCR | 🔵 En progreso | #10 ✅, #11 ✅, #12-16 pendientes |
 | 2: Contrato + Router | ⬜ Pendiente | #17-21 |
 | 3: Qwen Fallback | ⬜ Pendiente | #22-26 |
 | 4: Validaciones | ⬜ Pendiente | #27-29 |
@@ -112,4 +112,4 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 
 ---
 
-*Actualizado: 2026-02-11 por Claude Code*
+*Actualizado: 2026-02-10 por Claude Code*
