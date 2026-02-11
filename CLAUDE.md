@@ -9,25 +9,31 @@
 
 - **Proyecto:** AG-EVIDENCE v2.0 — Sistema multi-agente de control previo
 - **Repositorio:** Hanns111/AG-EVIDENCE
-- **Worktree activo:** claude/serene-faraday
-- **Rama de trabajo:** claude/serene-faraday → merge fast-forward a main
-- **Último commit en main:** ac8ae15 (docs: enterprise README + CHANGELOG + pyproject.toml)
+- **Rama de trabajo:** main (directa, sin worktrees)
+- **Último commit en main:** bb6849c (feat(extraction): add formal abstention policy)
 - **Tag:** v2.2.0 (publicado en GitHub)
+- **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
 
 ---
 
 ## Última Tarea Completada
 
+- **Tarea #12** — Política formal de abstención operativa (src/extraction/abstencion.py)
+- 550 líneas, 66 tests pasando (199/201 regresión total), commit bb6849c
+- Dependencia: Tarea #11 (TraceLogger) integrada
+
+## Tareas Anteriores Relevantes
+
 - **Tarea #11** — Logger estructurado JSONL con trace_id (src/ingestion/trace_logger.py)
-- 638 líneas, 55 tests pasando, mergeada a main (ccc5022)
+- 638 líneas, 55 tests pasando, commit ccc5022
+- **Limpieza legacy v1.0** — 46+ archivos eliminados (agentes/, utils/, scripts/, tools/, root scripts)
+- Commits: ab74c2f, 2bae185
 
 ## Siguiente Sesión — Pendientes
 
-1. **Limpiar archivos legacy** (necesita aprobación de Hans):
-   - Sin trackear: _check_models.py, _check_pdf.py, _generar_imagenes.py, _test_vlm.py, extraer_comprobantes_vlm.py, procesar_comprobantes_skills.py, docs/PLAN_REFACTORIZACION_v2.md, src/tools/calidad_visual.py, src/tools/detector_paginas_comprobantes.py, src/tools/skills/
-   - Tracked legacy: CONTEXTO_PARA_CHATGPT.md, PROBLEMA_READPDFX.md, VALIDACION_OCR_WSL.md, __init__.py (raíz), chat_directiva.py
-2. **Tarea #12** — Siguiente en Fase 1: Trazabilidad + OCR
+1. **Tarea #13** — Rewrite ocr_engine.py (Tesseract → PaddleOCR)
    - Consultar tablero Notion para detalles
+   - Depende de: Tarea #11 (logger) ✅, Tarea #12 (abstención) ✅
 
 ---
 
@@ -107,7 +113,7 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 | Fase | Estado | Tareas |
 |------|--------|--------|
 | 0: Setup | ✅ Completada | #1-9 |
-| 1: Trazabilidad + OCR | 🔵 En progreso | #10 ✅, #11 ✅, #12-16 pendientes |
+| 1: Trazabilidad + OCR | 🔵 En progreso | #10 ✅, #11 ✅, #12 ✅, #13-16 pendientes |
 | 2: Contrato + Router | ⬜ Pendiente | #17-21 |
 | 3: Qwen Fallback | ⬜ Pendiente | #22-26 |
 | 4: Validaciones | ⬜ Pendiente | #27-29 |
@@ -116,4 +122,33 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 
 ---
 
-*Actualizado: 2026-02-10 por Claude Code*
+## Estructura del Codebase (27 archivos .py)
+
+```
+config/
+  __init__.py, settings.py
+src/
+  __init__.py
+  agents/.gitkeep          ← placeholder Fase 2
+  extraction/
+    __init__.py, abstencion.py
+  ingestion/
+    __init__.py, config.py, custody_chain.py,
+    pdf_text_extractor.py, trace_logger.py
+  ocr/
+    __init__.py, core.py
+  rules/
+    __init__.py, detraccion_spot.py, integrador.py, tdr_requirements.py
+  tools/
+    __init__.py, ocr_preprocessor.py
+tests/
+  conftest.py, run_quick_test.py,
+  test_abstencion.py, test_custody_chain.py,
+  test_detraccion_spot.py, test_ocr_preprocessor.py,
+  test_pdf_text_extractor.py, test_tdr_requirements.py,
+  test_trace_logger.py
+```
+
+---
+
+*Actualizado: 2026-02-11 por Claude Code*
