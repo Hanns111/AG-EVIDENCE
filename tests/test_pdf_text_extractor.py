@@ -18,6 +18,18 @@ from src.ingestion.pdf_text_extractor import (
 )
 from src.ingestion.config import GatingThresholds
 
+# Detectar runtime: PyMuPDF solo disponible en WSL2, no en Windows host
+try:
+    import fitz  # noqa: F401
+    FITZ_DISPONIBLE = True
+except ImportError:
+    FITZ_DISPONIBLE = False
+
+requires_pymupdf = pytest.mark.skipif(
+    not FITZ_DISPONIBLE,
+    reason="PyMuPDF (fitz) no disponible — estos tests requieren WSL2 runtime"
+)
+
 
 # Rutas de PDFs de prueba
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -36,6 +48,7 @@ def _get_pdf_nativo():
 class TestDirectTextPath:
     """Tests para PDFs nativos con texto embebido."""
     
+    @requires_pymupdf
     def test_direct_text_detection(self):
         """Un PDF nativo debe detectarse como direct_text."""
         pdf_path = _get_pdf_nativo()
@@ -66,6 +79,7 @@ class TestDirectTextPath:
         assert resultado["evidencia"]["version_modulo"] is not None
         assert resultado["evidencia"]["timestamp_iso"] is not None
     
+    @requires_pymupdf
     def test_direct_text_metrics(self):
         """Las métricas de direct_text deben estar completas."""
         pdf_path = _get_pdf_nativo()
