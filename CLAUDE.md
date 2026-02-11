@@ -75,6 +75,17 @@
 - .cursor/mcp.json
 - CLAUDE.md (este archivo)
 
+### Gobernanza Cursor — Cuándo y cómo usarlo:
+Claude Code es quien decide cuándo Cursor debe actuar.
+Cuando sea necesario, Claude Code le dará a Hans:
+1. El prompt EXACTO para pegar en Cursor
+2. Qué archivo(s) debe editar Cursor
+3. Qué resultado se espera
+4. Hans pega el prompt en Cursor, obtiene resultado, y se lo muestra a Claude Code
+5. Claude Code valida el resultado y lo registra en Notion (Ejecutado Por: Cursor)
+Si Cursor hace algo fuera de protocolo, Hans avisa a Claude Code para corregir.
+Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-G12).
+
 ---
 
 ## Reglas de Proyecto
