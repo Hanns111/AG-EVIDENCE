@@ -1,97 +1,70 @@
-# ESTADO ACTUAL DEL PROYECTO – AG-EVIDENCE
+# ESTADO ACTUAL DEL PROYECTO — AG-EVIDENCE
 
 ## Fecha de Corte
-2026-02-07
+2026-02-11
 
 ---
 
 ## 1. Estado General
 
-🟡 EN REESTRUCTURACIÓN CONTROLADA
+**v2.0 — Fase 1 en progreso (Trazabilidad + OCR)**
 
-El proyecto AG-EVIDENCE se encuentra en transición desde un
-prototipo inicial (Windows + Ollama) hacia una arquitectura
-profesional basada en:
-
-- WSL2 (Ubuntu 22.04)
-- vLLM
-- Modelos cuantizados compatibles con RTX 5090 (sm_120)
-
-No se ha descartado la lógica previa del proyecto.
-Se está **profesionalizando**, no reiniciando.
+El proyecto completo su reestructuracion de v1.0 (prototipo con 9 agentes monoliticos)
+a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
 
 ---
 
-## 2. Lo que YA existe
+## 2. Lo que existe y funciona
 
-- Concepto AG-EVIDENCE definido
-- Enfoque probatorio y de control previo (MINEDU)
-- Experiencia previa con OCR, gating y validaciones
-- Directivas y lógica normativa identificadas
-- Decisión de arquitectura local-first confirmada
-
----
-
-## 3. Cambios Recientes
-
-- Decisión de migrar ejecución a Linux vía WSL2
-- Abandono de Ollama como servidor principal
-- Aprobación de vLLM como motor de inferencia
-- Definición formal de documentos de gobernanza
-- **Integración de nueva Directiva DI-003-01-MINEDU v03 (023-2026-MINEDU)**
-  - Vigente desde 06.02.2026
-  - Sistema ahora determina versión de directiva según fecha de inicio de trámite
-  - Expedientes con fecha >= 06.02.2026 aplican nueva directiva v03
-  - Expedientes con fecha < 06.02.2026 aplican directiva 011-2020 (versión anterior)
-- **Decisión técnica sobre MCPs:**
-  - Se descartó definitivamente `readpdfx`
-  - El proyecto usa **UN solo MCP**: `pdf-handler`
-- **Arquitectura OCR WSL2-Only:**
-  - El OCR se ejecuta exclusivamente en WSL2 (Ubuntu)
-  - Windows actúa solo como host/editor y orquestador
-  - Dependencias OCR instaladas en WSL2:
-    - `ocrmypdf` v13.4.0+dfsg
-    - `tesseract-ocr` con idioma `spa`
-    - `ghostscript`
-  - Los chequeos o warnings de OCR en Windows son irrelevantes y no forman parte del runtime soportado
+| Modulo | Estado | Descripcion |
+|--------|--------|-------------|
+| `src/ingestion/custody_chain.py` | Operativo | Cadena de custodia SHA-256 |
+| `src/ingestion/trace_logger.py` | Operativo | Logger JSONL con trace_id |
+| `src/ingestion/pdf_text_extractor.py` | Operativo | Extraccion texto PDF |
+| `src/extraction/abstencion.py` | Operativo | Politica formal de abstencion |
+| `src/rules/detraccion_spot.py` | Operativo | Validacion SPOT/detracciones |
+| `src/rules/tdr_requirements.py` | Operativo | Requisitos TDR |
+| `src/rules/integrador.py` | Operativo | Consolidacion SPOT+TDR |
+| `src/tools/ocr_preprocessor.py` | Operativo | OCRmyPDF via WSL2 |
+| `src/ocr/core.py` | Pendiente rewrite | Tarea #13 |
 
 ---
 
-## 4. Lo que NO se ha hecho aún
+## 3. Lo que NO existe (y esta planificado)
 
-- Configurar entorno WSL2 limpio y definitivo
-- Desplegar vLLM con modelos aprobados
-- Reimplementar OCR/visión con Qwen2.5-VL
-- Integrar LangGraph con agentes reales
-- Crear golden tests
-- **Próximo paso técnico OCR:**
-  - Implementar el adaptador `src/tools/ocr_preprocessor.py` para integrar OCRmyPDF al pipeline existente
+| Componente | Fase | Estado |
+|------------|------|--------|
+| Motor OCR PaddleOCR | Fase 1 (#13) | Siguiente tarea |
+| Contrato de expediente | Fase 2 (#17) | Pendiente |
+| Router multi-agente | Fase 2 (#18) | Pendiente |
+| Agentes v2.0 | Fase 2 (#19-21) | Pendiente |
+| Qwen fallback LLM | Fase 3 (#22-26) | Pendiente |
+| Validaciones cruzadas | Fase 4 (#27-29) | Pendiente |
+| Motor legal | Fase 6 (#35-40) | Pendiente |
+
+---
+
+## 4. Tests
+
+- **199/201 passed** (0.67s)
+- 2 fallos pre-existentes: PyMuPDF no instalado en Windows (runtime es WSL2)
+- 7 test suites cubriendo todos los modulos activos
 
 ---
 
 ## 5. Riesgos Actuales
 
-- Confusión entre arquitectura antigua y nueva
-- Tentación de "empezar de cero" innecesariamente
-- Saturación de contexto si no se usa este archivo
+- OCR de imagenes escaneadas pendiente (Tarea #13)
+- integrador.py usa Protocol para DocumentoPDF (se definira la clase real en Fase 2)
 
 ---
 
-## 6. Próximos Pasos Inmediatos
+## 6. Proximos Pasos
 
-1. Crear carpeta docs/ con los archivos de gobernanza
-2. Confirmar entorno WSL2 + GPU funcional
-3. Inicializar repositorio limpio manteniendo dominio
-4. Implementar primer agente mínimo funcional
-5. Actualizar este archivo al finalizar cada sesión
+1. Tarea #13: Rewrite src/ocr/core.py (Tesseract a PaddleOCR)
+2. Tarea #14-16: Completar Fase 1
+3. Fase 2: Contrato + Router + Agentes v2.0
 
 ---
 
-## 7. Regla de Cierre de Sesión
-
-Antes de cerrar cualquier sesión con una IA:
-
-- Generar versión actualizada de este archivo
-- Guardar en local
-- Commit:
-  - docs(state): update project state YYYY-MM-DD
+**Ultima actualizacion:** 2026-02-11

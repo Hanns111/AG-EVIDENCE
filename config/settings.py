@@ -21,15 +21,7 @@ from enum import Enum
 # RUTAS DEL SISTEMA
 # ==============================================================================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DOWNLOADS_DIR = os.path.dirname(BASE_DIR)  # C:\Users\hanns\Downloads
 OUTPUT_DIR = os.path.join(BASE_DIR, "output")
-
-# Carpeta de directivas vigentes
-DIRECTIVAS_DIR = os.path.join(DOWNLOADS_DIR, "DIRECITVAS VIGENTES AL 26.11.2025")
-DIRECTIVA_CAJA_CHICA = os.path.join(DIRECTIVAS_DIR, "CAJA CHICA")
-DIRECTIVA_ENCARGO = os.path.join(DIRECTIVAS_DIR, "ENCARGO")
-DIRECTIVA_VIATICOS = os.path.join(DIRECTIVAS_DIR, "VIÁTICO")
-DIRECTIVA_PAUTAS = os.path.join(DIRECTIVAS_DIR, "PAUTAS")
 
 
 # ==============================================================================
@@ -173,19 +165,6 @@ class EvidenciaProbatoria:
         return f'{self.archivo} pág. {self.pagina} -> "{self.snippet[:100]}..."'
 
 
-@dataclass 
-class OcurrenciaValor:
-    """Una ocurrencia de un valor detectado en un documento"""
-    archivo: str
-    pagina: int
-    valor_original: str          # Valor tal como aparece
-    valor_normalizado: str       # Valor normalizado (sin ceros, espacios, etc.)
-    snippet: str                 # Contexto del texto
-    posicion_inicio: int = 0     # Posición en el texto
-    confianza: float = 1.0
-    metodo: MetodoExtraccion = MetodoExtraccion.PDF_TEXT
-
-
 @dataclass
 class Observacion:
     """Estructura para una observación detectada con estándar probatorio"""
@@ -198,7 +177,6 @@ class Observacion:
     # Evidencia probatoria (obligatoria para CRITICA/MAYOR)
     evidencias: List[EvidenciaProbatoria] = field(default_factory=list)
     
-    # Campo legacy para compatibilidad
     evidencia: str = ""
     
     # Flags de validación
@@ -340,70 +318,6 @@ class InformeControlPrevio:
 
 
 # ==============================================================================
-# CONFIGURACIÓN DE APIS SUNAT (PÚBLICAS / GRATUITAS)
-# ==============================================================================
-SUNAT_CONFIG = {
-    # API pública de consulta RUC (terceros gratuitos)
-    "apis_ruc": [
-        {
-            "nombre": "API Peru",
-            "url": "https://api.apis.net.pe/v1/ruc",
-            "token": None,  # Algunas tienen planes gratuitos limitados
-            "activa": True
-        },
-        {
-            "nombre": "Consulta RUC PE", 
-            "url": "https://www.consultaruc.pe/api/",
-            "token": None,
-            "activa": True
-        }
-    ],
-    # Fallback: web scraping de página pública SUNAT
-    "sunat_web_publica": "https://e-consultaruc.sunat.gob.pe/cl-ti-itmrconsruc/jcrS00Alias",
-    
-    # IMPORTANTE: SIRE está DESHABILITADO (requiere SOL)
-    "sire_habilitado": False,
-    "sol_habilitado": False,
-    
-    # Timeouts
-    "timeout_segundos": 10,
-    "reintentos": 2
-}
-
-
-# ==============================================================================
-# KEYWORDS PARA DETECCIÓN DE NATURALEZA
-# ==============================================================================
-KEYWORDS_NATURALEZA = {
-    NaturalezaExpediente.VIATICOS: [
-        "viático", "viáticos", "planilla de viáticos", "comisión de servicio",
-        "pasajes", "hospedaje", "movilidad local", "declaración jurada de gastos",
-        "anexo 3", "rendición de viáticos"
-    ],
-    NaturalezaExpediente.CAJA_CHICA: [
-        "caja chica", "fondo fijo", "reembolso", "gastos menores",
-        "apertura de caja chica", "rendición de caja chica"
-    ],
-    NaturalezaExpediente.ENCARGO: [
-        "encargo", "encargo interno", "rendición de encargo",
-        "fondo en encargo"
-    ],
-    NaturalezaExpediente.PAGO_PROVEEDOR: [
-        "proveedor", "contratista", "factura", "orden de servicio",
-        "orden de compra", "conformidad", "devengado", "armada"
-    ],
-    NaturalezaExpediente.CONTRATO: [
-        "contrato", "licitación", "concurso público", "adjudicación",
-        "buena pro", "bases integradas"
-    ],
-    NaturalezaExpediente.SUBVENCIONES: [
-        "subvención", "subvenciones", "transferencia", "donación",
-        "aporte", "financiamiento", "subsidio"
-    ]
-}
-
-
-# ==============================================================================
 # TOPES Y LÍMITES NORMATIVOS
 # ==============================================================================
 LIMITES_NORMATIVOS = {
@@ -442,20 +356,4 @@ OCR_CONFIG = {
 }
 
 
-# ==============================================================================
-# CONFIGURACIÓN DE LOGGING
-# ==============================================================================
-LOG_CONFIG = {
-    "nivel": "INFO",
-    "formato": "%(asctime)s | %(name)s | %(levelname)s | %(message)s",
-    "archivo": os.path.join(OUTPUT_DIR, "control_previo.log")
-}
-
-
-if __name__ == "__main__":
-    print(f"BASE_DIR: {BASE_DIR}")
-    print(f"DOWNLOADS_DIR: {DOWNLOADS_DIR}")
-    print(f"DIRECTIVAS_DIR: {DIRECTIVAS_DIR}")
-    print(f"UIT 2025: S/ {LIMITES_NORMATIVOS['UIT_2025']:,.2f}")
-    print(f"Límite 8 UIT: S/ {LIMITES_NORMATIVOS['limite_8_uit']:,.2f}")
 

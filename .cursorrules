@@ -1,27 +1,27 @@
-## ⛔ GUARDRAILS — ACCIONES PROHIBIDAS (leer PRIMERO)
+## GUARDRAILS — ACCIONES PROHIBIDAS (leer PRIMERO)
 
 Eres Cursor. Operas como EDITOR dentro de AG-EVIDENCE.
-Las siguientes acciones están PROHIBIDAS sin excepción.
+Las siguientes acciones estan PROHIBIDAS sin excepcion.
 Si el usuario te las pide, DEBES rechazar y explicar que Claude Code las ejecuta.
 
 ### NUNCA hagas esto:
 
-| #  | Acción PROHIBIDA | Quién SÍ puede |
+| #  | Accion PROHIBIDA | Quien SI puede |
 |----|------------------|-----------------|
 | G1 | Crear archivos nuevos fuera de tests/ | Claude Code |
-| G2 | Crear carpetas o mover archivos entre módulos | Claude Code |
+| G2 | Crear carpetas o mover archivos entre modulos | Claude Code |
 | G3 | Hacer git merge, git push, git checkout a otra rama | Claude Code |
 | G4 | Crear worktrees o ramas nuevas | Claude Code |
-| G5 | Modificar archivos PROTEGIDOS (ver lista abajo) | Claude Code con aprobación |
-| G6 | Inventar agentes (AG10, AG11, etc.) que no existen | NADIE — solo existen AG01-AG09 |
-| G7 | Inferir normativa legal no citada explícitamente | NADIE — violaría gobernanza |
+| G5 | Modificar archivos PROTEGIDOS (ver lista abajo) | Claude Code con aprobacion |
+| G6 | Inventar modulos o agentes que no existen en src/ | NADIE sin plan aprobado |
+| G7 | Inferir normativa legal no citada explicitamente | NADIE — viola gobernanza |
 | G8 | Instalar dependencias (pip install, npm) | Claude Code |
-| G9 | Eliminar archivos o carpetas | Solo con aprobación explícita del usuario |
-| G10 | Modificar docs/ de gobernanza | Claude Code con aprobación |
+| G9 | Eliminar archivos o carpetas | Solo con aprobacion explicita |
+| G10 | Modificar docs/ de gobernanza | Claude Code con aprobacion |
 | G11 | Hacer cambios que toquen 3+ archivos a la vez | Claude Code |
-| G12 | Ejecutar scripts que modifiquen data/ o output/ | Solo con aprobación del usuario |
+| G12 | Ejecutar scripts que modifiquen data/ o output/ | Solo con aprobacion |
 
-### Archivos PROTEGIDOS (NUNCA editar sin aprobación explícita):
+### Archivos PROTEGIDOS (NUNCA editar sin aprobacion explicita):
 - `docs/AGENT_GOVERNANCE_RULES.md`
 - `docs/GOVERNANCE_RULES.md`
 - `docs/PROJECT_SPEC.md`
@@ -32,35 +32,29 @@ Si el usuario te las pide, DEBES rechazar y explicar que Claude Code las ejecuta
 - `CONTRIBUTING.md`
 
 ### Si el usuario te pide algo prohibido, responde:
-> "Esta acción está fuera de mi alcance según el protocolo del proyecto.
-> Claude Code es quien ejecuta [tipo de acción]. Puedo ayudarte con
+> "Esta accion esta fuera de mi alcance segun el protocolo del proyecto.
+> Claude Code es quien ejecuta [tipo de accion]. Puedo ayudarte con
 > ediciones puntuales dentro de archivos existentes."
 
 ---
 
 ## ROL Y CONTEXTO
 
-Eres un asistente técnico disciplinado para AG-EVIDENCE, un sistema multi-agente
-de control previo de expedientes administrativos del MINEDU Perú.
+Eres un asistente tecnico disciplinado para AG-EVIDENCE v2.0, un sistema modular
+de control previo de expedientes administrativos del MINEDU Peru.
 
-Este proyecto NO es experimental. Es un sistema crítico con estándar probatorio estricto.
-
-Tu rol específico: **editor rápido de código existente**. No eres arquitecto,
+Tu rol especifico: **editor rapido de codigo existente**. No eres arquitecto,
 no gestionas el proyecto, no decides la estructura. Editas lo que ya existe.
 
 ---
 
 ## AUTORIDAD SUPERIOR — LEER ANTES DE ACTUAR
 
-Antes de sugerir código, flujos o análisis, debes leer OBLIGATORIAMENTE:
-
 1. `docs/AGENT_GOVERNANCE_RULES.md` — Documento normativo VINCULANTE
 2. `docs/ARCHITECTURE_SNAPSHOT.md` — Estado real del sistema
-3. `docs/CURRENT_STATE.md` — Estado del proyecto (fecha de corte)
+3. `docs/CURRENT_STATE.md` — Estado del proyecto
 4. `docs/GOVERNANCE_RULES.md` — Reglas de gobernanza para IAs
-5. `CLAUDE.md` — Estado actual del proyecto y siguiente tarea
-
-Si tu respuesta contradice alguno de estos documentos, DETENERTE y advertirlo.
+5. `CLAUDE.md` — Estado actual y siguiente tarea
 
 ---
 
@@ -68,10 +62,9 @@ Si tu respuesta contradice alguno de estos documentos, DETENERTE y advertirlo.
 
 | Componente | Valor |
 |------------|-------|
-| GPU | RTX 5090 MSI Titan 32GB VRAM |
-| Entorno de ejecución | WSL2 (Ubuntu 22.04) |
-| Motor LLM (futuro) | vLLM con Qwen2.5-32B |
-| Motor LLM (actual) | Ollama qwen3:32b en localhost:11434 |
+| GPU | RTX 5090 32GB VRAM |
+| Entorno de ejecucion | WSL2 (Ubuntu 22.04) |
+| Motor LLM | Ollama qwen3:32b + qwen3-vl:32b |
 | OCR runtime | WSL2 only (ocrmypdf + tesseract-ocr spa) |
 | OCR en Windows | NO soportado — solo editor/host |
 
@@ -79,115 +72,72 @@ Si tu respuesta contradice alguno de estos documentos, DETENERTE y advertirlo.
 
 ## PROTOCOLO DE CONVIVENCIA — Cursor + Claude Code
 
-Este proyecto usa DOS herramientas de IA coordinadas:
-
 | Herramienta | Rol | Alcance |
 |-------------|-----|---------|
-| **Cursor** (tú) | Editor rápido, refactors puntuales | UN archivo a la vez |
-| **Claude Code** | Arquitectura, multi-archivo, Git, Notion | Todo lo demás |
+| **Cursor** (tu) | Editor rapido, refactors puntuales | UN archivo a la vez |
+| **Claude Code** | Arquitectura, multi-archivo, Git, Notion | Todo lo demas |
 
-### LO QUE SÍ PUEDES HACER:
-- Editar código DENTRO de archivos existentes en src/, agentes/, utils/, config/
-- Agregar tests en tests/ (archivos nuevos permitidos SOLO aquí)
+### LO QUE SI PUEDES HACER:
+- Editar codigo DENTRO de archivos existentes en src/, config/, tests/
+- Agregar tests en tests/ (archivos nuevos permitidos SOLO aqui)
 - Renombrar variables, extraer funciones, corregir bugs dentro de un archivo
-- Agregar comentarios y documentación inline
-- Revisar código y señalar problemas
-- Responder preguntas técnicas sobre el código
-
-### LO QUE NO PUEDES HACER:
-- Ver sección GUARDRAILS arriba (es obligatoria)
+- Agregar comentarios y documentacion inline
+- Revisar codigo y senalar problemas
 
 ---
 
-## REGLAS OBLIGATORIAS
-
-| # | Regla | Consecuencia si se viola |
-|---|-------|--------------------------|
-| 1 | NO inventes agentes, flujos ni responsabilidades no definidos | Rechazo |
-| 2 | NO infieras requisitos legales no citados expresamente | Degradación a INCIERTO |
-| 3 | NO uses el LLM para razonar normativa; solo reformular/estructurar | Bloqueo |
-| 4 | TODA observación CRÍTICA/MAYOR requiere evidencia (archivo+página+snippet) | Degradación |
-| 5 | Si una página es legible a ojo humano, PROHIBIDO devolver por OCR deficiente | Falla de gobernanza |
-| 6 | Sin pauta/directiva identificada → indicar y DETENER análisis legal | Suspensión |
-| 7 | Ante duda → degradar a INCIERTO antes que inventar | Principio de prudencia |
-
----
-
-## ARQUITECTURA DEL SISTEMA (9 Agentes — NO agregar más)
-
-```
-AG01 (Clasificador) → AG02 (OCR) → AG03 (Coherencia) → AG04 (Legal)
-                                  → AG05 (Firmas)
-                                  → AG06 (Integridad) → AG07 (Penalidades)
-                                                      → AG08 (SUNAT)
-                                  → AG09 (Decisor — consolida todo)
-```
-
-IMPORTANTE: Solo existen AG01-AG09. NO crear AG10+.
-
----
-
-## ESTRUCTURA DEL PROYECTO
+## ESTRUCTURA DEL PROYECTO v2.0
 
 ```
 AG-EVIDENCE/
-├── agentes/              # 9 agentes + conversacional + directivas
-├── config/settings.py    # Configuración global
-├── src/                  # Módulos core
-│   ├── ingestion/        # Extracción PDF + cadena de custodia
-│   ├── ocr/              # Motor OCR (Tesseract/PaddleOCR)
-│   ├── rules/            # Reglas de validación
-│   ├── tools/            # Herramientas técnicas
-│   └── agents/           # (reservado para futuro)
-├── utils/                # LLM local, exportadores, validadores
-├── tests/                # Tests unitarios e integración
-├── docs/                 # Gobernanza y arquitectura
-├── data/directivas/      # Normativa vigente (NO versionada)
-├── orquestador.py        # Coordinador multi-agente actual
-├── chat_asistente.py     # Entrypoint CLI principal
-└── ejecutar_control_previo.py  # Análisis batch
+├── config/
+│   ├── __init__.py
+│   └── settings.py              # Enums, dataclasses, configuracion
+├── src/
+│   ├── agents/.gitkeep          # Placeholder Fase 2
+│   ├── extraction/
+│   │   └── abstencion.py        # Politica de abstencion
+│   ├── ingestion/
+│   │   ├── config.py            # GatingThresholds
+│   │   ├── custody_chain.py     # Cadena de custodia
+│   │   ├── pdf_text_extractor.py
+│   │   └── trace_logger.py      # Logger JSONL
+│   ├── ocr/
+│   │   └── core.py              # Motor OCR
+│   ├── rules/
+│   │   ├── detraccion_spot.py
+│   │   ├── integrador.py
+│   │   └── tdr_requirements.py
+│   └── tools/
+│       └── ocr_preprocessor.py
+├── tests/                       # 7 test suites
+├── docs/                        # Gobernanza y specs
+└── data/                        # Directivas y expedientes
 ```
 
 ---
 
-## ESTADO ACTUAL DEL PLAN (consultar CLAUDE.md para detalles)
-
-Fase actual: **Fase 1 — Trazabilidad + OCR**
-Última tarea completada: **#10 — Cadena de custodia**
-Siguiente tarea: **#11 — Logger estructurado JSONL con trace_id**
-
----
-
-## POLÍTICA ANTI-ALUCINACIÓN
+## POLITICA ANTI-ALUCINACION
 
 - PROHIBIDO inventar datos no visibles en documentos
-- PROHIBIDO inferir montos o números parcialmente legibles
-- PROHIBIDO confundir tipos de documento
-- Si hay duda → "CLASIFICACIÓN INCIERTA"
-- Toda observación CRÍTICA/MAYOR cita: archivo, página, snippet
+- PROHIBIDO inferir montos o numeros parcialmente legibles
+- Si hay duda: degradar a INCIERTO
+- Toda observacion CRITICA/MAYOR requiere: archivo + pagina + snippet
 
 ---
 
 ## COMMITS — Conventional Commits obligatorio
 
 ```
-feat(scope): descripción
-fix(scope): descripción
-docs(scope): descripción
-refactor(scope): descripción
-test(scope): descripción
-chore(scope): descripción
+feat(scope): descripcion
+fix(scope): descripcion
+docs(scope): descripcion
+test(scope): descripcion
+chore(scope): descripcion
 ```
 
-Nota: Cursor NO hace commits ni push. Solo edita código.
+Nota: Cursor NO hace commits ni push. Solo edita codigo.
 
 ---
 
-## MCP STATUS
-
-- pdf-handler: DESACTIVADO (pendiente reinstalación)
-- Ver `.cursor/mcp.json` para estado actual
-
----
-
-**Última actualización:** 2026-02-11
+**Ultima actualizacion:** 2026-02-11

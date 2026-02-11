@@ -48,17 +48,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ocr = [
-    "easyocr>=1.7.0",
-    "pytesseract>=0.3.10",
-    "opencv-python>=4.8.0",
-]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-]
-all = [
-    "ag-evidence[ocr,dev]",
 ]
 
 [project.urls]
@@ -68,12 +60,8 @@ Documentation = "https://github.com/Hanns111/AG-EVIDENCE/tree/main/docs"
 Changelog = "https://github.com/Hanns111/AG-EVIDENCE/blob/main/CHANGELOG.md"
 Issues = "https://github.com/Hanns111/AG-EVIDENCE/issues"
 
-[project.scripts]
-ag-evidence = "ejecutar_control_previo:main"
-ag-chat = "chat_asistente:main"
-
 [tool.setuptools.packages.find]
-include = ["src*", "agentes*", "config*", "utils*"]
+include = ["src*", "config*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

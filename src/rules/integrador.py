@@ -3,28 +3,49 @@
 INTEGRADOR DE REGLAS — Conexión con el Sistema AG-EVIDENCE
 ===========================================================
 Proporciona funciones para ejecutar las reglas SPOT y TDR
-desde el orquestador o agentes existentes.
+sobre documentos de un expediente administrativo.
 
 Uso:
     from src.rules.integrador import ejecutar_validacion_spot_tdr
-    
+
     resultado = ejecutar_validacion_spot_tdr(documentos, es_primera_armada=True)
 """
 
 import os
 import sys
 import re
-from typing import List, Dict, Tuple, Optional, Set
+from typing import List, Dict, Tuple, Optional, Set, Protocol, runtime_checkable
 from dataclasses import dataclass, field
 
 # Agregar paths
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from config.settings import (
-    Observacion, NivelObservacion, EvidenciaProbatoria, 
+    Observacion, NivelObservacion, EvidenciaProbatoria,
     MetodoExtraccion, ResultadoAgente, NaturalezaExpediente
 )
-from utils.pdf_extractor import DocumentoPDF
+
+
+# =============================================================================
+# PROTOCOLO DE DOCUMENTO PDF
+# =============================================================================
+
+@runtime_checkable
+class PaginaPDF(Protocol):
+    """Protocolo mínimo para una página de documento PDF."""
+    numero: int
+    texto: str
+
+
+@runtime_checkable
+class DocumentoPDF(Protocol):
+    """
+    Protocolo mínimo que debe cumplir cualquier objeto documento PDF
+    pasado al integrador. Cualquier clase con estos atributos es compatible.
+    """
+    nombre: str
+    texto_completo: str
+    paginas: List
 
 # Importar módulos de reglas
 from src.rules.detraccion_spot import (
@@ -341,69 +362,5 @@ def crear_resultado_agente_reglas(
     )
     
     return resultado.to_resultado_agente()
-
-
-# =============================================================================
-# TESTS
-# =============================================================================
-
-if __name__ == "__main__":
-    import sys
-    sys.stdout.reconfigure(encoding='utf-8')
-    
-    print("=" * 70)
-    print("TEST: Integrador de Reglas SPOT/TDR")
-    print("=" * 70)
-    
-    # Simular un DocumentoPDF
-    class MockPagina:
-        def __init__(self, numero, texto):
-            self.numero = numero
-            self.texto = texto
-    
-    class MockDocumentoPDF:
-        def __init__(self, nombre, texto, paginas=None):
-            self.nombre = nombre
-            self.texto_completo = texto
-            self.paginas = paginas or [MockPagina(1, texto)]
-    
-    # Test 1: Documento con SPOT
-    print("\n📋 Test 1: Documento con indicios SPOT")
-    doc1 = MockDocumentoPDF(
-        nombre="factura_001.pdf",
-        texto="FACTURA ELECTRÓNICA\nOperación sujeta al SPOT\nMonto: S/ 5,000.00"
-    )
-    
-    resultado = ejecutar_validacion_spot_tdr([doc1], es_primera_armada=False, verbose=True)
-    print(f"   Resultado: SPOT aplica = {resultado.spot_aplica}")
-    
-    # Test 2: TDR con requisitos
-    print("\n📋 Test 2: TDR con requisitos de CV")
-    doc2 = MockDocumentoPDF(
-        nombre="TDR_consultor.pdf",
-        texto="""
-        TÉRMINOS DE REFERENCIA
-        
-        PERFIL DEL CONSULTOR:
-        - Título profesional de Ingeniero
-        - Experiencia mínima de 5 años
-        - Presentar currículum vitae documentado
-        """
-    )
-    
-    resultado2 = ejecutar_validacion_spot_tdr([doc2], es_primera_armada=True, verbose=True)
-    print(f"   Requisitos TDR: {len(resultado2.tdr_requisitos)}")
-    print(f"   Observaciones TDR: {len(resultado2.tdr_observaciones)}")
-    
-    # Test 3: Crear ResultadoAgente
-    print("\n📋 Test 3: Crear ResultadoAgente para orquestador")
-    resultado_agente = crear_resultado_agente_reglas([doc1, doc2], es_primera_armada=True)
-    print(f"   Agente ID: {resultado_agente.agente_id}")
-    print(f"   Éxito: {resultado_agente.exito}")
-    print(f"   Observaciones: {len(resultado_agente.observaciones)}")
-    
-    print("\n" + "=" * 70)
-    print("✅ Tests de integración completados")
-    print("=" * 70)
 
 

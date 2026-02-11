@@ -122,7 +122,7 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 
 ---
 
-## Estructura del Codebase (27 archivos .py)
+## Estructura del Codebase (26 archivos .py)
 
 ```
 config/
@@ -142,7 +142,7 @@ src/
   tools/
     __init__.py, ocr_preprocessor.py
 tests/
-  conftest.py, run_quick_test.py,
+  conftest.py,
   test_abstencion.py, test_custody_chain.py,
   test_detraccion_spot.py, test_ocr_preprocessor.py,
   test_pdf_text_extractor.py, test_tdr_requirements.py,

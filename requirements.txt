@@ -1,26 +1,17 @@
-# Dependencias del Sistema Multi-Agente AG-EVIDENCE
+# Dependencias del Sistema AG-EVIDENCE v2.0
 # ================================================================
 
-# PDF Processing (obligatorio)
+# PDF Processing (usado por src/ingestion/pdf_text_extractor.py)
 PyMuPDF>=1.23.0
 
-# Procesamiento de imágenes
+# Procesamiento de imágenes (usado por src/ocr/core.py)
 Pillow>=10.0.0
 
-# OCR Avanzado (opcional pero recomendado)
-easyocr>=1.7.0
-
-# OCR con Tesseract (requiere Tesseract instalado en el sistema)
-pytesseract>=0.3.10
-
-# Procesamiento de imágenes para métricas OCR
-opencv-python>=4.8.0
-
-# Requests para consultas SUNAT
+# Requests (usado por src/rules/detraccion_spot.py)
 requests>=2.31.0
 
-# Utilidades
+# Utilidades de fecha
 python-dateutil>=2.8.0
 
-# Para futuras integraciones (actualmente deshabilitado)
-# sunat-api>=1.0.0  # Cuando se habilite SOL/SIRE
+# Testing
+pytest>=7.0.0
