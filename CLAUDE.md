@@ -11,7 +11,8 @@
 - **Repositorio:** Hanns111/AG-EVIDENCE
 - **Worktree activo:** claude/serene-faraday
 - **Rama de trabajo:** claude/serene-faraday → merge fast-forward a main
-- **Último commit en main:** ccc5022 (feat: trace logger)
+- **Último commit en main:** ac8ae15 (docs: enterprise README + CHANGELOG + pyproject.toml)
+- **Tag:** v2.2.0 (publicado en GitHub)
 
 ---
 
@@ -20,10 +21,13 @@
 - **Tarea #11** — Logger estructurado JSONL con trace_id (src/ingestion/trace_logger.py)
 - 638 líneas, 55 tests pasando, mergeada a main (ccc5022)
 
-## Siguiente Tarea
+## Siguiente Sesión — Pendientes
 
-- **Tarea #12** — (siguiente en Fase 1: Trazabilidad + OCR)
-- Consultar tablero Notion para detalles
+1. **Limpiar archivos legacy** (necesita aprobación de Hans):
+   - Sin trackear: _check_models.py, _check_pdf.py, _generar_imagenes.py, _test_vlm.py, extraer_comprobantes_vlm.py, procesar_comprobantes_skills.py, docs/PLAN_REFACTORIZACION_v2.md, src/tools/calidad_visual.py, src/tools/detector_paginas_comprobantes.py, src/tools/skills/
+   - Tracked legacy: CONTEXTO_PARA_CHATGPT.md, PROBLEMA_READPDFX.md, VALIDACION_OCR_WSL.md, __init__.py (raíz), chat_directiva.py
+2. **Tarea #12** — Siguiente en Fase 1: Trazabilidad + OCR
+   - Consultar tablero Notion para detalles
 
 ---
 
