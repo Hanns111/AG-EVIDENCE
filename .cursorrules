@@ -65,7 +65,7 @@ no gestionas el proyecto, no decides la estructura. Editas lo que ya existe.
 | GPU | RTX 5090 32GB VRAM |
 | Entorno de ejecucion | WSL2 (Ubuntu 22.04) |
 | Motor LLM | Ollama qwen3:32b + qwen3-vl:32b |
-| OCR runtime | WSL2 only (ocrmypdf + tesseract-ocr spa) |
+| OCR runtime | WSL2 only (PaddleOCR PP-OCRv5 primary + tesseract-ocr fallback) |
 | OCR en Windows | NO soportado — solo editor/host |
 
 ---
@@ -103,14 +103,14 @@ AG-EVIDENCE/
 │   │   ├── pdf_text_extractor.py
 │   │   └── trace_logger.py      # Logger JSONL
 │   ├── ocr/
-│   │   └── core.py              # Motor OCR
+│   │   └── core.py              # Motor OCR (PaddleOCR PP-OCRv5 + Tesseract fallback)
 │   ├── rules/
 │   │   ├── detraccion_spot.py
 │   │   ├── integrador.py
 │   │   └── tdr_requirements.py
 │   └── tools/
 │       └── ocr_preprocessor.py
-├── tests/                       # 7 test suites
+├── tests/                       # 8 test suites (230 tests)
 ├── docs/                        # Gobernanza y specs
 └── data/                        # Directivas y expedientes
 ```
