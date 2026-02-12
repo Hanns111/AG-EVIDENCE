@@ -10,7 +10,7 @@
 - **Proyecto:** AG-EVIDENCE v2.0 — Sistema multi-agente de control previo
 - **Repositorio:** Hanns111/AG-EVIDENCE
 - **Rama de trabajo:** main (directa, sin worktrees)
-- **Último commit en main:** e6a3229 (feat(ocr): add per-line bbox and confidence to OCR results)
+- **Último commit en main:** 4c09dee (docs(governance): add mandatory testing rule)
 - **Tag:** v2.2.0 (publicado en GitHub)
 - **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
 
