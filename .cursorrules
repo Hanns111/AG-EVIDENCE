@@ -1,3 +1,14 @@
+## INDICACION DE CONTEXTO (OBLIGATORIO)
+
+Al inicio de TODA respuesta, escribe exactamente esta linea:
+
+> 🔒 AG-EVIDENCE v2.0 | Cursor Editor | Guardrails activos
+
+Esto confirma que leiste .cursorrules. Si el usuario no ve esta linea,
+sabe que Cursor esta operando sin contexto y debe recargar.
+
+---
+
 ## GUARDRAILS — ACCIONES PROHIBIDAS (leer PRIMERO)
 
 Eres Cursor. Operas como EDITOR dentro de AG-EVIDENCE.
