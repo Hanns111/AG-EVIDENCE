@@ -22,7 +22,7 @@ a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
 | `src/ingestion/trace_logger.py` | Operativo | Logger JSONL con trace_id |
 | `src/ingestion/pdf_text_extractor.py` | Operativo | Extraccion texto PDF con gating |
 | `src/extraction/abstencion.py` | Operativo | Politica formal de abstencion |
-| `src/ocr/core.py` | Operativo | Motor OCR PaddleOCR PP-OCRv5 + Tesseract fallback |
+| `src/ocr/core.py` | Operativo | Motor OCR PaddleOCR PP-OCRv5 + Tesseract fallback + bbox/confianza por linea |
 | `src/rules/detraccion_spot.py` | Operativo | Validacion SPOT/detracciones |
 | `src/rules/tdr_requirements.py` | Operativo | Requisitos TDR |
 | `src/rules/integrador.py` | Operativo | Consolidacion SPOT+TDR |
@@ -34,7 +34,8 @@ a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
 
 | Componente | Fase | Estado |
 |------------|------|--------|
-| TraceLogger en pipeline OCR | Fase 1 (#14) | Siguiente tarea |
+| Benchmark A/B Tesseract vs PaddleOCR | Fase 1 (#15) | Siguiente tarea |
+| Re-generar Excel + validacion visual | Fase 1 (#16) | Pendiente |
 | Contrato de expediente | Fase 2 (#17) | Pendiente |
 | Router multi-agente | Fase 2 (#18) | Pendiente |
 | Agentes v2.0 | Fase 2 (#19-21) | Pendiente |
@@ -46,7 +47,7 @@ a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
 
 ## 4. Tests
 
-- **230 passed, 18 skipped** (0.69s)
+- **274 passed, 18 skipped** (0.73s)
 - 16 skips: PIL no disponible en Windows (tests OCR que requieren imagen real, runtime WSL2)
 - 2 skips pre-existentes: PyMuPDF no instalado en Windows
 - 8 test suites cubriendo todos los modulos activos
@@ -62,8 +63,8 @@ a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
 
 ## 6. Proximos Pasos
 
-1. Tarea #14: Integrar TraceLogger en pipeline OCR
-2. Tarea #15-16: Completar Fase 1
+1. Tarea #15: Benchmark A/B Tesseract vs PaddleOCR
+2. Tarea #16: Re-generar Excel + validacion visual humana
 3. Fase 2: Contrato + Router + Agentes v2.0
 
 ---

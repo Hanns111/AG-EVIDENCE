@@ -4,7 +4,7 @@
 > Sincronizado con el tablero Notion (DB: 6003e907-28f5-4757-ba93-88aa3efe03e1).
 
 **Ultima actualizacion:** 2026-02-11
-**Progreso global:** 13/40 completadas (32.5%), 0 en progreso
+**Progreso global:** 14/40 completadas (35%), 0 en progreso
 
 ---
 
@@ -24,7 +24,7 @@
 
 ---
 
-## Fase 1: Trazabilidad + OCR — EN PROGRESO (4/7)
+## Fase 1: Trazabilidad + OCR — EN PROGRESO (5/7)
 
 | # | Tarea | Estado | Modulo |
 |---|-------|--------|--------|
@@ -32,7 +32,7 @@
 | 11 | Logger estructurado JSONL con trace_id | ✅ | src/ingestion/trace_logger.py |
 | 12 | Politica formal de abstencion operativa | ✅ | src/extraction/abstencion.py |
 | 13 | Rewrite OCR: Tesseract → PaddleOCR PP-OCRv5 | ✅ | src/ocr/core.py |
-| 14 | Extender ResultadoPagina con bbox + confianza por linea | ⬜ | src/ocr/core.py |
+| 14 | Extender ResultadoPagina con bbox + confianza por linea | ✅ | src/ocr/core.py |
 | 15 | Benchmark A/B: Tesseract vs PaddleOCR | ⬜ | scripts/benchmark_ocr.py |
 | 16 | Re-generar Excel + validacion visual humana | ⬜ | Validacion manual |
 
@@ -112,14 +112,14 @@
 | Extractor PDF | src/ingestion/pdf_text_extractor.py | ~365 | 10 |
 | Config gating | src/ingestion/config.py | ~38 | — |
 | Abstencion | src/extraction/abstencion.py | ~550 | 66 |
-| OCR Core (PaddleOCR PP-OCRv5 + Tesseract fallback) | src/ocr/core.py | ~733 | 47 |
+| OCR Core (PaddleOCR PP-OCRv5 + Tesseract fallback) | src/ocr/core.py | ~880 | 75 |
 | OCR Preprocessor | src/tools/ocr_preprocessor.py | ~301 | 6 |
 | Detraccion SPOT | src/rules/detraccion_spot.py | — | 25 |
 | Requisitos TDR | src/rules/tdr_requirements.py | — | 10 |
 | Integrador SPOT+TDR | src/rules/integrador.py | — | — |
 | Config global | config/settings.py | ~360 | — |
 
-**Total tests:** 230 passed, 18 skipped (16: PIL/Windows, 2: PyMuPDF/Windows)
+**Total tests:** 274 passed, 18 skipped (16: PIL/Windows, 2: PyMuPDF/Windows)
 
 ---
 
@@ -127,7 +127,7 @@
 
 ```
 Fase 0: Setup          [██████████] 9/9  — COMPLETADA
-Fase 1: Trazabilidad   [██████████] 4/7  — EN PROGRESO (#14-16 pendientes)
+Fase 1: Trazabilidad   [██████████] 5/7  — EN PROGRESO (#15-16 pendientes)
 Fase 2: Contrato       [░░░░░░░░░░] 0/5  — PENDIENTE (Integrity Checkpoint en #18)
 Fase 3: Qwen           [░░░░░░░░░░] 0/5  — PENDIENTE
 Fase 4: Validaciones   [░░░░░░░░░░] 0/3  — PENDIENTE

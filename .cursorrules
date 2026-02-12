@@ -110,7 +110,7 @@ AG-EVIDENCE/
 │   │   └── tdr_requirements.py
 │   └── tools/
 │       └── ocr_preprocessor.py
-├── tests/                       # 8 test suites (230 tests)
+├── tests/                       # 8 test suites (274 tests)
 ├── docs/                        # Gobernanza y specs
 └── data/                        # Directivas y expedientes
 ```

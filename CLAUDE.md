@@ -10,7 +10,7 @@
 - **Proyecto:** AG-EVIDENCE v2.0 — Sistema multi-agente de control previo
 - **Repositorio:** Hanns111/AG-EVIDENCE
 - **Rama de trabajo:** main (directa, sin worktrees)
-- **Último commit en main:** 6dfb96f (docs(roadmap): update Task #13 completion and Integrity Checkpoint decision)
+- **Último commit en main:** e6a3229 (feat(ocr): add per-line bbox and confidence to OCR results)
 - **Tag:** v2.2.0 (publicado en GitHub)
 - **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
 
@@ -18,14 +18,18 @@
 
 ## Última Tarea Completada
 
-- **Tarea #13** — Rewrite OCR Engine (Tesseract → PaddleOCR PP-OCRv5)
-- src/ocr/core.py reescrito de 383 a 733 líneas
-- PaddleOCR PP-OCRv5 como motor primario, Tesseract como fallback automático
-- 47 tests nuevos, 230 totales (0 failures), commit 8b5efe6
-- ADR-006 registrada
+- **Tarea #14** — Extender ResultadoPagina con bbox + confianza por linea (+ TraceLogger)
+- LineaOCR dataclass: bbox (Optional), confianza (Optional), motor
+- PaddleOCR: extrae dt_polys → _polygon_to_bbox()
+- Tesseract: agrupa palabras por (block_num, line_num) → lineas con bbox
+- TraceLogger integrado en ejecutar_ocr() via duck typing
+- +815 lineas, 44 tests nuevos (274 totales, 0 failures), commit e6a3229
+- Version: 3.0.0 → 3.1.0
 
 ## Tareas Anteriores Relevantes
 
+- **Tarea #13** — Rewrite OCR Engine (Tesseract → PaddleOCR PP-OCRv5)
+- src/ocr/core.py reescrito de 383 a 733 lineas, 47 tests, commit 8b5efe6
 - **Tarea #12** — Política formal de abstención operativa (src/extraction/abstencion.py)
 - 550 líneas, 66 tests pasando, commit bb6849c
 - **Tarea #11** — Logger estructurado JSONL con trace_id (src/ingestion/trace_logger.py)
@@ -35,10 +39,8 @@
 
 ## Siguiente Sesión — Pendientes
 
-1. **Tarea #14** — Integrar TraceLogger en pipeline OCR
-   - Consultar tablero Notion para detalles
-   - Depende de: Tarea #13 (OCR rewrite) ✅
-2. **Tarea #15-16** — Completar Fase 1
+1. **Tarea #15** — Benchmark A/B: Tesseract vs PaddleOCR
+2. **Tarea #16** — Re-generar Excel + validacion visual humana
 3. **Fase 2** — Contrato + Router + Agentes v2.0
 
 ### Decisión Arquitectónica Pendiente de Implementación
@@ -127,7 +129,7 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 | Fase | Estado | Tareas |
 |------|--------|--------|
 | 0: Setup | ✅ Completada | #1-9 |
-| 1: Trazabilidad + OCR | 🔵 En progreso | #10 ✅, #11 ✅, #12 ✅, #13 ✅, #14-16 pendientes |
+| 1: Trazabilidad + OCR | 🔵 En progreso | #10 ✅, #11 ✅, #12 ✅, #13 ✅, #14 ✅, #15-16 pendientes |
 | 2: Contrato + Router | ⬜ Pendiente | #17-21 |
 | 3: Qwen Fallback | ⬜ Pendiente | #22-26 |
 | 4: Validaciones | ⬜ Pendiente | #27-29 |
