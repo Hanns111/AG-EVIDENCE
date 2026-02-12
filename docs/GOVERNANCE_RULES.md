@@ -200,3 +200,46 @@ Toda violacion de esta politica debe:
 
 Esta politica entra en vigor el 2026-02-11 y aplica a todas las sesiones
 de trabajo futuras. Solo puede ser modificada por Claude Code con aprobacion de Hans.
+
+---
+
+## 11. Regla de Testing Obligatorio
+
+### 11.1 Principio
+
+**Todo cambio de codigo DEBE pasar tests antes de commit. 0 failures obligatorio.**
+
+No se permite hacer commit de codigo que rompa tests existentes o que no
+incluya tests para funcionalidad nueva.
+
+### 11.2 Protocolo de Verificacion
+
+Antes de cada commit, la herramienta ejecutora debe:
+
+1. Ejecutar los tests del modulo afectado: `python -m pytest tests/test_<modulo>.py -v`
+2. Ejecutar la regresion completa: `python -m pytest tests/ -v`
+3. Verificar: **0 failures** (skips permitidos por dependencias de plataforma)
+4. Registrar el resultado en la Bitacora de Notion
+
+### 11.3 Cuando Agregar Tests
+
+| Cambio | Tests requeridos |
+|--------|-----------------|
+| Funcion nueva | Minimo 3 tests (happy path, edge case, error) |
+| Dataclass nueva | Tests de creacion, serializacion, roundtrip |
+| Bug fix | Test que reproduce el bug + verifica la correccion |
+| Refactor | Tests existentes deben seguir pasando, agregar si se descubre gap |
+| Cambio aditivo (nueva key en dict) | Test de backward compatibility + test de la nueva key |
+
+### 11.4 Criterio de Aceptacion
+
+Una tarea NO se puede marcar como ✅ Completado si:
+
+- Hay tests fallando (failures > 0)
+- La funcionalidad nueva no tiene tests
+- No se ejecuto regresion completa
+
+### 11.5 Vigencia
+
+Esta regla entra en vigor el 2026-02-12 y aplica a todas las tareas futuras.
+Aprobada por Hans (solicitud explicita de gobernanza de testing).
