@@ -10,7 +10,7 @@
 - **Proyecto:** AG-EVIDENCE v2.0 — Sistema multi-agente de control previo
 - **Repositorio:** Hanns111/AG-EVIDENCE
 - **Rama de trabajo:** main (directa, sin worktrees)
-- **Último commit en main:** bb6849c (feat(extraction): add formal abstention policy)
+- **Último commit en main:** 8b5efe6 (feat(ocr): rewrite OCR engine from Tesseract to PaddleOCR PP-OCRv5)
 - **Tag:** v2.2.0 (publicado en GitHub)
 - **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
 
@@ -18,22 +18,28 @@
 
 ## Última Tarea Completada
 
-- **Tarea #12** — Política formal de abstención operativa (src/extraction/abstencion.py)
-- 550 líneas, 66 tests pasando (199/201 regresión total), commit bb6849c
-- Dependencia: Tarea #11 (TraceLogger) integrada
+- **Tarea #13** — Rewrite OCR Engine (Tesseract → PaddleOCR PP-OCRv5)
+- src/ocr/core.py reescrito de 383 a 733 líneas
+- PaddleOCR PP-OCRv5 como motor primario, Tesseract como fallback automático
+- 47 tests nuevos, 230 totales (0 failures), commit 8b5efe6
+- ADR-006 registrada
 
 ## Tareas Anteriores Relevantes
 
+- **Tarea #12** — Política formal de abstención operativa (src/extraction/abstencion.py)
+- 550 líneas, 66 tests pasando, commit bb6849c
 - **Tarea #11** — Logger estructurado JSONL con trace_id (src/ingestion/trace_logger.py)
 - 638 líneas, 55 tests pasando, commit ccc5022
-- **Limpieza legacy v1.0** — 46+ archivos eliminados (agentes/, utils/, scripts/, tools/, root scripts)
-- Commits: ab74c2f, 2bae185
+- **Limpieza legacy v1.0** — 46+ archivos eliminados, commits: ab74c2f, 2bae185
+- **Gobernanza** — ROADMAP.md creado, Sección 10 añadida a GOVERNANCE_RULES.md, commit e8244ac
 
 ## Siguiente Sesión — Pendientes
 
-1. **Tarea #13** — Rewrite ocr_engine.py (Tesseract → PaddleOCR)
+1. **Tarea #14** — Integrar TraceLogger en pipeline OCR
    - Consultar tablero Notion para detalles
-   - Depende de: Tarea #11 (logger) ✅, Tarea #12 (abstención) ✅
+   - Depende de: Tarea #13 (OCR rewrite) ✅
+2. **Tarea #15-16** — Completar Fase 1
+3. **Fase 2** — Contrato + Router + Agentes v2.0
 
 ---
 
@@ -113,7 +119,7 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 | Fase | Estado | Tareas |
 |------|--------|--------|
 | 0: Setup | ✅ Completada | #1-9 |
-| 1: Trazabilidad + OCR | 🔵 En progreso | #10 ✅, #11 ✅, #12 ✅, #13-16 pendientes |
+| 1: Trazabilidad + OCR | 🔵 En progreso | #10 ✅, #11 ✅, #12 ✅, #13 ✅, #14-16 pendientes |
 | 2: Contrato + Router | ⬜ Pendiente | #17-21 |
 | 3: Qwen Fallback | ⬜ Pendiente | #22-26 |
 | 4: Validaciones | ⬜ Pendiente | #27-29 |
@@ -144,9 +150,9 @@ src/
 tests/
   conftest.py,
   test_abstencion.py, test_custody_chain.py,
-  test_detraccion_spot.py, test_ocr_preprocessor.py,
-  test_pdf_text_extractor.py, test_tdr_requirements.py,
-  test_trace_logger.py
+  test_detraccion_spot.py, test_ocr_core.py,
+  test_ocr_preprocessor.py, test_pdf_text_extractor.py,
+  test_tdr_requirements.py, test_trace_logger.py
 ```
 
 ---

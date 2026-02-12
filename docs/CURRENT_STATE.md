@@ -20,13 +20,13 @@ a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
 |--------|--------|-------------|
 | `src/ingestion/custody_chain.py` | Operativo | Cadena de custodia SHA-256 |
 | `src/ingestion/trace_logger.py` | Operativo | Logger JSONL con trace_id |
-| `src/ingestion/pdf_text_extractor.py` | Operativo | Extraccion texto PDF |
+| `src/ingestion/pdf_text_extractor.py` | Operativo | Extraccion texto PDF con gating |
 | `src/extraction/abstencion.py` | Operativo | Politica formal de abstencion |
+| `src/ocr/core.py` | Operativo | Motor OCR PaddleOCR PP-OCRv5 + Tesseract fallback |
 | `src/rules/detraccion_spot.py` | Operativo | Validacion SPOT/detracciones |
 | `src/rules/tdr_requirements.py` | Operativo | Requisitos TDR |
 | `src/rules/integrador.py` | Operativo | Consolidacion SPOT+TDR |
 | `src/tools/ocr_preprocessor.py` | Operativo | OCRmyPDF via WSL2 |
-| `src/ocr/core.py` | Pendiente rewrite | Tarea #13 |
 
 ---
 
@@ -34,7 +34,7 @@ a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
 
 | Componente | Fase | Estado |
 |------------|------|--------|
-| Motor OCR PaddleOCR | Fase 1 (#13) | Siguiente tarea |
+| TraceLogger en pipeline OCR | Fase 1 (#14) | Siguiente tarea |
 | Contrato de expediente | Fase 2 (#17) | Pendiente |
 | Router multi-agente | Fase 2 (#18) | Pendiente |
 | Agentes v2.0 | Fase 2 (#19-21) | Pendiente |
@@ -46,23 +46,24 @@ a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
 
 ## 4. Tests
 
-- **199/201 passed** (0.67s)
-- 2 fallos pre-existentes: PyMuPDF no instalado en Windows (runtime es WSL2)
-- 7 test suites cubriendo todos los modulos activos
+- **230 passed, 18 skipped** (0.69s)
+- 16 skips: PIL no disponible en Windows (tests OCR que requieren imagen real, runtime WSL2)
+- 2 skips pre-existentes: PyMuPDF no instalado en Windows
+- 8 test suites cubriendo todos los modulos activos
 
 ---
 
 ## 5. Riesgos Actuales
 
-- OCR de imagenes escaneadas pendiente (Tarea #13)
+- PaddleOCR aun no instalado en Windows (runtime es WSL2), pero motor y tests estan preparados
 - integrador.py usa Protocol para DocumentoPDF (se definira la clase real en Fase 2)
 
 ---
 
 ## 6. Proximos Pasos
 
-1. Tarea #13: Rewrite src/ocr/core.py (Tesseract a PaddleOCR)
-2. Tarea #14-16: Completar Fase 1
+1. Tarea #14: Integrar TraceLogger en pipeline OCR
+2. Tarea #15-16: Completar Fase 1
 3. Fase 2: Contrato + Router + Agentes v2.0
 
 ---
