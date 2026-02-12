@@ -109,3 +109,94 @@ La arquitectura definida en estos documentos
 tiene prioridad sobre cualquier recomendación externa.
 
 La IA es asistente, no decisor final.
+
+---
+
+## 10. Politica de Modificacion de Codigo
+
+### 10.1 Herramientas Autorizadas
+
+Solo tres herramientas de IA estan autorizadas para interactuar con este proyecto:
+
+| Herramienta | Rol | Autoridad |
+|-------------|-----|-----------|
+| **Claude Code** (CLI) | Arquitecto principal | Maxima |
+| **Cursor** (IDE) | Editor puntual | Limitada |
+| **Claude.ai** (chat web) | Consultor | Solo lectura |
+
+### 10.2 Claude Code — Autoridad Maxima
+
+Claude Code es la **unica autoridad** para:
+
+- Crear archivos y carpetas nuevas
+- Mover o renombrar archivos entre modulos
+- Hacer commits y gestionar ramas Git
+- Hacer push al repositorio remoto
+- Modificar documentos de gobernanza (docs/)
+- Actualizar Notion (tablero, bitacora, dashboard)
+- Crear y ejecutar tests
+- Tomar decisiones arquitectonicas
+
+### 10.3 Cursor — Autoridad Limitada
+
+Cursor **solo puede**:
+
+- Editar dentro de archivos existentes (refactors locales)
+- Renombrar variables, extraer funciones
+- Debug rapido con contexto de un solo archivo
+- Completar funciones individuales
+- Revisiones visuales de codigo
+
+Cursor **NO puede**:
+
+- Crear carpetas ni mover archivos entre modulos
+- Modificar documentos de gobernanza (docs/)
+- Crear worktrees, ramas, ni hacer merge
+- Hacer commits ni push
+- Tocar archivos protegidos sin aprobacion de Hans
+
+Cursor opera bajo instrucciones explicitas de Claude Code,
+siguiendo el protocolo definido en CLAUDE.md (seccion "Gobernanza Cursor").
+
+### 10.4 Claude.ai (chat web) — Solo Consulta
+
+Claude.ai **solo puede**:
+
+- Generar prompts/indicaciones para Claude Code
+- Analizar documentacion y responder preguntas
+- Proponer ideas y borradores (que Claude Code valida)
+- Ayudar con investigacion y planificacion
+
+Claude.ai **NO puede bajo ninguna circunstancia**:
+
+- Crear ni modificar archivos del repositorio
+- Generar archivos que se persistan en el filesystem
+- Tomar decisiones que alteren el codigo o la arquitectura
+- Asumir que sus borradores son definitivos
+
+### 10.5 Archivos Protegidos
+
+Los siguientes archivos requieren **aprobacion explicita de Hans**
+antes de cualquier modificacion, independientemente de la herramienta:
+
+- `docs/AGENT_GOVERNANCE_RULES.md`
+- `docs/GOVERNANCE_RULES.md` (este archivo)
+- `docs/PROJECT_SPEC.md`
+- `AGENTS.md`
+- `.cursorrules`
+- `.cursor/mcp.json`
+- `CLAUDE.md`
+
+### 10.6 Registro de Violaciones
+
+Toda violacion de esta politica debe:
+
+1. Ser detectada y reportada por Claude Code
+2. Registrarse en la Bitacora de Actividades de Notion
+3. Incluir: fecha, herramienta infractora, accion no autorizada, correccion aplicada
+4. Si implica archivos creados sin autorizacion: Claude Code valida, corrige y registra
+
+### 10.7 Vigencia
+
+Esta politica entra en vigor el 2026-02-11 y aplica a todas las sesiones
+de trabajo futuras. Solo puede ser modificada por Claude Code con aprobacion de Hans.
