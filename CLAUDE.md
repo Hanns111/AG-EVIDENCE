@@ -37,6 +37,24 @@
 - **Limpieza legacy v1.0** — 46+ archivos eliminados, commits: ab74c2f, 2bae185
 - **Gobernanza** — ROADMAP.md creado, Sección 10 añadida a GOVERNANCE_RULES.md, commit e8244ac
 
+## Prueba Real Completada (2026-02-12)
+
+- **Expediente:** ODI2026-INT-0139051 (viáticos, Piura)
+- Procesado completo: Anexo 3, DJ, 6 facturas, 2 boarding pass, tiquete aéreo
+- Excel generado: `RENDICION_ODI2026-INT-0139051.xlsx` (4 hojas, 20 columnas SUNAT)
+- Script: `scripts/generar_excel_expediente.py`
+- **Hallazgo normativo:** IGV 10% para MYPES restaurantes/hoteles (Ley 31556 + 32219)
+- Documentado: `data/directivas/.../RESUMEN_TASAS_IGV_MYPES.md`
+
+### Conocimiento Normativo Adquirido — IGV MYPES
+
+Para Fase 4 (Validaciones), el sistema debe verificar:
+- IGV 18% = régimen general
+- IGV 10% = MYPE restaurante/hotel/alojamiento (Ley 31556+32219, vigente 2025-2026)
+- IGV 0% = zona Amazonía (Ley 27037)
+- Verificación vía consulta RUC SUNAT: actividad económica + condición MYPE + RUC activo
+- Escala temporal: 10% (2025-2026) → 15% (2027) → 18% (2028+)
+
 ## Siguiente Sesión — Pendientes
 
 1. **Tarea #15** — Benchmark A/B: Tesseract vs PaddleOCR
@@ -121,6 +139,27 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 - **Local-first:** ningún dato sale a cloud (GDPR ready)
 - **Commits:** Conventional Commits obligatorio
 - **Hardware:** RTX 5090 32GB VRAM, WSL2 Ubuntu 22.04, Ollama qwen3:32b
+
+### Extracción de texto de PDFs (WSL2)
+
+Cuando Claude Code necesite leer PDFs y el reader nativo falle, usar estas herramientas en WSL2:
+
+```bash
+# Instalar (una vez)
+sudo apt install poppler-utils
+
+# PDF con texto embebido → extraer directo
+pdftotext "ruta/del/archivo.pdf" "ruta/del/archivo.txt"
+
+# PDF escaneado (imagen) → OCR primero, luego extraer
+ocrmypdf "archivo.pdf" "archivo_ocr.pdf" --force-ocr
+pdftotext "archivo_ocr.pdf" "archivo.txt"
+```
+
+**Flujo recomendado:**
+1. Intentar `pdftotext` directo (más rápido)
+2. Si el .txt sale vacío → el PDF es imagen → usar `ocrmypdf` primero
+3. Luego `pdftotext` sobre el PDF con OCR
 
 ---
 
