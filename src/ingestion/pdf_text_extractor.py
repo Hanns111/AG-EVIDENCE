@@ -167,7 +167,8 @@ def _extraer_texto_ocr(
             resultado["paginas_procesadas"].append({
                 "pagina": page_num,
                 "num_palabras": ocr_result["num_palabras"],
-                "confianza": ocr_result["confianza_promedio"]
+                "confianza": ocr_result["confianza_promedio"],
+                "lineas": ocr_result.get("lineas", []),
             })
         
         texto_completo = "\n\n".join(textos)

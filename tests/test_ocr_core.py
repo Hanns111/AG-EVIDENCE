@@ -74,8 +74,8 @@ class TestDependencyFlags:
     def test_active_engine_is_string(self):
         assert core._ACTIVE_ENGINE in ("paddleocr", "tesseract", "none")
 
-    def test_version_is_3_0_0(self):
-        assert core.__version__ == "3.0.0"
+    def test_version_is_current(self):
+        assert core.__version__ in ("3.0.0", "3.1.0")
 
 
 # =============================================================================
@@ -341,6 +341,7 @@ class TestEjecutarOCR:
             "tiempo_ms": 50,
             "error": None,
             "motor_ocr": "tesseract",
+            "lineas": [],
         }
 
         with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
@@ -375,6 +376,7 @@ class TestEjecutarOCR:
             "tiempo_ms": 30,
             "error": None,
             "motor_ocr": "tesseract",
+            "lineas": [],
         }
 
         with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
@@ -513,6 +515,577 @@ class TestImportsPublicos:
             "renderizar_pagina", "ejecutar_ocr", "preprocesar_rotacion",
             "calcular_metricas_imagen", "verificar_tesseract",
             "verificar_paddleocr", "verificar_ocr", "ensure_lang_available",
+            "LineaOCR",
             "CV2_DISPONIBLE", "TESSERACT_DISPONIBLE", "PADDLEOCR_DISPONIBLE",
         }
         assert set(exports) == expected
+
+    def test_linea_ocr_importable(self):
+        """LineaOCR debe ser importable desde src.ocr."""
+        from src.ocr import LineaOCR
+        assert LineaOCR is not None
+
+    def test_linea_ocr_in_all(self):
+        """LineaOCR debe estar en __all__."""
+        from src.ocr import __all__ as exports
+        assert "LineaOCR" in exports
+
+
+# =============================================================================
+# 13. TestLineaOCR — Dataclass
+# =============================================================================
+
+class TestLineaOCR:
+    """Tests para la dataclass LineaOCR."""
+
+    def test_creation_completa(self):
+        """Crear LineaOCR con todos los campos."""
+        linea = core.LineaOCR(
+            texto="Hola mundo",
+            bbox=(10.0, 20.0, 100.0, 50.0),
+            confianza=0.95,
+            motor="paddleocr",
+        )
+        assert linea.texto == "Hola mundo"
+        assert linea.bbox == (10.0, 20.0, 100.0, 50.0)
+        assert linea.confianza == 0.95
+        assert linea.motor == "paddleocr"
+
+    def test_creation_bbox_none(self):
+        """Crear LineaOCR con bbox=None (motor no provee ubicacion)."""
+        linea = core.LineaOCR(texto="test", bbox=None, confianza=0.8)
+        assert linea.bbox is None
+
+    def test_creation_confianza_none(self):
+        """Crear LineaOCR con confianza=None (score no disponible)."""
+        linea = core.LineaOCR(texto="test", bbox=(0, 0, 10, 10), confianza=None)
+        assert linea.confianza is None
+
+    def test_to_dict_con_bbox(self):
+        """to_dict serializa bbox como lista."""
+        linea = core.LineaOCR(
+            texto="ejemplo",
+            bbox=(5.0, 10.0, 50.0, 30.0),
+            confianza=0.9234,
+            motor="tesseract",
+        )
+        d = linea.to_dict()
+        assert d["texto"] == "ejemplo"
+        assert d["bbox"] == [5.0, 10.0, 50.0, 30.0]
+        assert d["confianza"] == 0.9234
+        assert d["motor"] == "tesseract"
+
+    def test_to_dict_bbox_none(self):
+        """to_dict con bbox=None serializa como None."""
+        linea = core.LineaOCR(texto="x", bbox=None, confianza=0.5)
+        d = linea.to_dict()
+        assert d["bbox"] is None
+
+    def test_to_dict_confianza_none(self):
+        """to_dict con confianza=None serializa como None."""
+        linea = core.LineaOCR(texto="x", bbox=(0, 0, 1, 1), confianza=None)
+        d = linea.to_dict()
+        assert d["confianza"] is None
+
+    def test_from_dict_con_bbox_lista(self):
+        """from_dict convierte lista a tupla para bbox."""
+        data = {
+            "texto": "hola",
+            "bbox": [1.0, 2.0, 3.0, 4.0],
+            "confianza": 0.88,
+            "motor": "paddleocr",
+        }
+        linea = core.LineaOCR.from_dict(data)
+        assert isinstance(linea.bbox, tuple)
+        assert linea.bbox == (1.0, 2.0, 3.0, 4.0)
+        assert linea.confianza == 0.88
+
+    def test_from_dict_bbox_none(self):
+        """from_dict con bbox=None."""
+        data = {"texto": "x", "bbox": None, "confianza": 0.5, "motor": ""}
+        linea = core.LineaOCR.from_dict(data)
+        assert linea.bbox is None
+
+    def test_from_dict_ignora_campos_extra(self):
+        """from_dict ignora campos que no son del dataclass."""
+        data = {
+            "texto": "hola",
+            "bbox": [1, 2, 3, 4],
+            "confianza": 0.9,
+            "motor": "test",
+            "campo_extra": "ignorar",
+        }
+        linea = core.LineaOCR.from_dict(data)
+        assert linea.texto == "hola"
+        assert not hasattr(linea, "campo_extra")
+
+    def test_roundtrip_to_from_dict(self):
+        """Roundtrip: LineaOCR → dict → LineaOCR."""
+        original = core.LineaOCR(
+            texto="roundtrip",
+            bbox=(10.5, 20.3, 100.7, 50.1),
+            confianza=0.8765,
+            motor="paddleocr",
+        )
+        d = original.to_dict()
+        restored = core.LineaOCR.from_dict(d)
+        assert restored.texto == original.texto
+        assert restored.bbox == original.bbox
+        assert restored.confianza == round(original.confianza, 4)
+        assert restored.motor == original.motor
+
+    def test_to_dict_json_serializable(self):
+        """to_dict debe ser serializable a JSON."""
+        import json
+        linea = core.LineaOCR(
+            texto="json test",
+            bbox=(1, 2, 3, 4),
+            confianza=0.99,
+            motor="paddleocr",
+        )
+        serialized = json.dumps(linea.to_dict())
+        assert isinstance(serialized, str)
+        parsed = json.loads(serialized)
+        assert parsed["texto"] == "json test"
+
+
+# =============================================================================
+# 14. TestPolygonToBbox
+# =============================================================================
+
+class TestPolygonToBbox:
+    """Tests para _polygon_to_bbox."""
+
+    def test_rectangulo_simple(self):
+        """Poligono rectangular → bbox correcto."""
+        polygon = [[10, 20], [100, 20], [100, 50], [10, 50]]
+        bbox = core._polygon_to_bbox(polygon)
+        assert bbox == (10, 20, 100, 50)
+
+    def test_poligono_rotado(self):
+        """Poligono rotado → bbox envolvente."""
+        polygon = [[50, 10], [90, 50], [50, 90], [10, 50]]
+        bbox = core._polygon_to_bbox(polygon)
+        assert bbox == (10, 10, 90, 90)
+
+    def test_punto_degenerado(self):
+        """Todos los puntos iguales → bbox de tamanio cero."""
+        polygon = [[50, 50], [50, 50], [50, 50], [50, 50]]
+        bbox = core._polygon_to_bbox(polygon)
+        assert bbox == (50, 50, 50, 50)
+
+    def test_coordenadas_float(self):
+        """Coordenadas flotantes se preservan."""
+        polygon = [[10.5, 20.3], [100.7, 20.3], [100.7, 50.1], [10.5, 50.1]]
+        bbox = core._polygon_to_bbox(polygon)
+        assert bbox == (10.5, 20.3, 100.7, 50.1)
+
+
+# =============================================================================
+# 15. TestAgruparPalabrasEnLineas
+# =============================================================================
+
+class TestAgruparPalabrasEnLineas:
+    """Tests para _agrupar_palabras_en_lineas."""
+
+    def _make_tesseract_data(self, words_info):
+        """
+        Helper para crear estructura de datos Tesseract.
+
+        words_info: lista de (text, block, line, left, top, width, height, conf)
+        """
+        data = {
+            "text": [],
+            "block_num": [],
+            "line_num": [],
+            "left": [],
+            "top": [],
+            "width": [],
+            "height": [],
+            "conf": [],
+        }
+        for word in words_info:
+            text, block, line, left, top, width, height, conf = word
+            data["text"].append(text)
+            data["block_num"].append(block)
+            data["line_num"].append(line)
+            data["left"].append(left)
+            data["top"].append(top)
+            data["width"].append(width)
+            data["height"].append(height)
+            data["conf"].append(conf)
+        return data
+
+    def test_dos_lineas(self):
+        """Agrupa correctamente 2 lineas con 2 palabras cada una."""
+        data = self._make_tesseract_data([
+            ("Hello", 1, 1, 10, 10, 50, 20, 95),
+            ("World", 1, 1, 70, 10, 50, 20, 90),
+            ("Foo", 1, 2, 10, 40, 30, 20, 80),
+            ("Bar", 1, 2, 50, 40, 30, 20, 85),
+        ])
+        lineas = core._agrupar_palabras_en_lineas(data)
+        assert len(lineas) == 2
+        assert lineas[0].texto == "Hello World"
+        assert lineas[1].texto == "Foo Bar"
+        assert lineas[0].motor == "tesseract"
+
+    def test_filtra_vacios(self):
+        """Palabras vacias son ignoradas."""
+        data = self._make_tesseract_data([
+            ("Hello", 1, 1, 10, 10, 50, 20, 90),
+            ("", 1, 1, 70, 10, 50, 20, -1),
+            ("  ", 1, 1, 130, 10, 50, 20, -1),
+            ("World", 1, 2, 10, 40, 50, 20, 85),
+        ])
+        lineas = core._agrupar_palabras_en_lineas(data)
+        assert len(lineas) == 2
+        assert lineas[0].texto == "Hello"
+        assert lineas[1].texto == "World"
+
+    def test_union_bbox_correcta(self):
+        """Union de bboxes calcula envolvente correcta."""
+        data = self._make_tesseract_data([
+            ("A", 1, 1, 10, 10, 30, 20, 90),
+            ("B", 1, 1, 50, 15, 40, 25, 80),
+        ])
+        lineas = core._agrupar_palabras_en_lineas(data)
+        assert len(lineas) == 1
+        bbox = lineas[0].bbox
+        assert bbox is not None
+        # x_min = min(10, 50) = 10
+        assert bbox[0] == 10.0
+        # y_min = min(10, 15) = 10
+        assert bbox[1] == 10.0
+        # x_max = max(10+30, 50+40) = max(40, 90) = 90
+        assert bbox[2] == 90.0
+        # y_max = max(10+20, 15+25) = max(30, 40) = 40
+        assert bbox[3] == 40.0
+
+    def test_confianza_promedio(self):
+        """Confianza por linea es el promedio normalizado 0-1."""
+        data = self._make_tesseract_data([
+            ("A", 1, 1, 0, 0, 10, 10, 90),
+            ("B", 1, 1, 20, 0, 10, 10, 80),
+        ])
+        lineas = core._agrupar_palabras_en_lineas(data)
+        assert len(lineas) == 1
+        # promedio = (90/100 + 80/100) / 2 = 0.85
+        assert lineas[0].confianza is not None
+        assert abs(lineas[0].confianza - 0.85) < 0.001
+
+    def test_confianza_none_cuando_todos_minus_1(self):
+        """Confianza es None si todas las confs son -1."""
+        data = self._make_tesseract_data([
+            ("X", 1, 1, 0, 0, 10, 10, -1),
+        ])
+        lineas = core._agrupar_palabras_en_lineas(data)
+        assert len(lineas) == 1
+        assert lineas[0].confianza is None
+
+    def test_datos_vacios(self):
+        """Sin palabras validas, retorna lista vacia."""
+        data = self._make_tesseract_data([
+            ("", 1, 1, 0, 0, 10, 10, -1),
+            ("  ", 1, 2, 0, 0, 10, 10, -1),
+        ])
+        lineas = core._agrupar_palabras_en_lineas(data)
+        assert lineas == []
+
+
+# =============================================================================
+# 16. TestEjecutarOCR_Lineas — Integracion con lineas
+# =============================================================================
+
+class TestEjecutarOCR_Lineas:
+    """Tests de integracion: ejecutar_ocr retorna lineas."""
+
+    def test_sin_motores_lineas_vacia(self):
+        """Sin motores disponibles, lineas debe ser lista vacia."""
+        img = _create_mock_image()
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+            result = core.ejecutar_ocr(img, "eng")
+            assert "lineas" in result
+            assert result["lineas"] == []
+
+    def test_paddleocr_retorna_lineas(self):
+        """PaddleOCR retorna lineas con bbox y confianza."""
+        img = _create_mock_image()
+
+        mock_result = {
+            "lang": "eng",
+            "texto_completo": "Hello World",
+            "snippet_200": "Hello World",
+            "confianza_promedio": 0.95,
+            "num_palabras": 2,
+            "tiempo_ms": 100,
+            "error": None,
+            "motor_ocr": "paddleocr",
+            "lineas": [
+                {"texto": "Hello", "bbox": [10, 20, 100, 50], "confianza": 0.95, "motor": "paddleocr"},
+                {"texto": "World", "bbox": [10, 60, 100, 90], "confianza": 0.92, "motor": "paddleocr"},
+            ],
+        }
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
+             patch.object(core, '_ejecutar_ocr_paddleocr', return_value=mock_result):
+            result = core.ejecutar_ocr(img, "eng")
+            assert "lineas" in result
+            assert len(result["lineas"]) == 2
+            assert result["lineas"][0]["texto"] == "Hello"
+            assert result["lineas"][0]["bbox"] is not None
+
+    def test_tesseract_retorna_lineas(self):
+        """Tesseract retorna lineas con bbox y confianza."""
+        img = _create_mock_image()
+
+        mock_result = {
+            "lang": "eng",
+            "texto_completo": "Test text",
+            "snippet_200": "Test text",
+            "confianza_promedio": 0.88,
+            "num_palabras": 2,
+            "tiempo_ms": 50,
+            "error": None,
+            "motor_ocr": "tesseract",
+            "lineas": [
+                {"texto": "Test text", "bbox": [10, 10, 90, 30], "confianza": 0.88, "motor": "tesseract"},
+            ],
+        }
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', True), \
+             patch.object(core, '_ejecutar_ocr_tesseract', return_value=mock_result):
+            result = core.ejecutar_ocr(img, "eng")
+            assert "lineas" in result
+            assert len(result["lineas"]) == 1
+
+    def test_fallback_tiene_lineas(self):
+        """Fallback PaddleOCR→Tesseract tambien retorna lineas."""
+        img = _create_mock_image()
+
+        mock_result = {
+            "lang": "eng",
+            "texto_completo": "fallback text",
+            "snippet_200": "fallback text",
+            "confianza_promedio": 0.80,
+            "num_palabras": 2,
+            "tiempo_ms": 40,
+            "error": None,
+            "motor_ocr": "tesseract",
+            "lineas": [{"texto": "fallback text", "bbox": [0, 0, 50, 20], "confianza": 0.80, "motor": "tesseract"}],
+        }
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', True), \
+             patch.object(core, '_ejecutar_ocr_paddleocr', side_effect=RuntimeError("GPU")), \
+             patch.object(core, '_ejecutar_ocr_tesseract', return_value=mock_result):
+            result = core.ejecutar_ocr(img, "eng")
+            assert result["motor_ocr"] == "tesseract_fallback"
+            assert "lineas" in result
+            assert len(result["lineas"]) == 1
+
+    def test_paddleocr_falla_sin_tesseract_lineas_vacia(self):
+        """PaddleOCR falla + sin Tesseract: lineas debe ser []."""
+        img = _create_mock_image()
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', False), \
+             patch.object(core, '_ejecutar_ocr_paddleocr', side_effect=RuntimeError("fail")):
+            result = core.ejecutar_ocr(img, "eng")
+            assert result["lineas"] == []
+            assert result["motor_ocr"] == "none"
+
+    def test_backward_compat_8_keys_present(self):
+        """Las 8 claves originales siguen presentes."""
+        img = _create_mock_image()
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+            result = core.ejecutar_ocr(img, "eng")
+            claves_originales = [
+                "lang", "texto_completo", "snippet_200",
+                "confianza_promedio", "num_palabras",
+                "tiempo_ms", "error", "motor_ocr"
+            ]
+            for clave in claves_originales:
+                assert clave in result, f"Falta clave original '{clave}'"
+
+    def test_lineas_son_json_serializable(self):
+        """Las lineas retornadas deben ser serializables a JSON."""
+        import json
+        img = _create_mock_image()
+
+        mock_result = {
+            "lang": "eng",
+            "texto_completo": "test",
+            "snippet_200": "test",
+            "confianza_promedio": 0.9,
+            "num_palabras": 1,
+            "tiempo_ms": 10,
+            "error": None,
+            "motor_ocr": "paddleocr",
+            "lineas": [
+                {"texto": "test", "bbox": [10, 20, 100, 50], "confianza": 0.9, "motor": "paddleocr"},
+            ],
+        }
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
+             patch.object(core, '_ejecutar_ocr_paddleocr', return_value=mock_result):
+            result = core.ejecutar_ocr(img, "eng")
+            serialized = json.dumps(result["lineas"])
+            assert isinstance(serialized, str)
+
+    def test_contrato_retorno_9_keys(self):
+        """El resultado debe tener exactamente 9 keys (8 originales + lineas)."""
+        img = _create_mock_image()
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+            result = core.ejecutar_ocr(img, "eng")
+            expected_keys = {
+                "lang", "texto_completo", "snippet_200",
+                "confianza_promedio", "num_palabras",
+                "tiempo_ms", "error", "motor_ocr", "lineas"
+            }
+            assert set(result.keys()) == expected_keys
+
+    def test_linea_bbox_none_valido(self):
+        """Una linea con bbox=None es valida en el resultado."""
+        linea = core.LineaOCR(texto="test", bbox=None, confianza=0.5, motor="paddleocr")
+        d = linea.to_dict()
+        assert d["bbox"] is None
+        # Verificar que se puede meter en resultado sin error
+        resultado = {"lineas": [d]}
+        assert resultado["lineas"][0]["bbox"] is None
+
+    def test_linea_confianza_none_valido(self):
+        """Una linea con confianza=None es valida."""
+        linea = core.LineaOCR(texto="test", bbox=(0, 0, 10, 10), confianza=None, motor="tesseract")
+        d = linea.to_dict()
+        assert d["confianza"] is None
+
+
+# =============================================================================
+# 17. TestTraceLoggerIntegration — TraceLogger en OCR
+# =============================================================================
+
+class TestTraceLoggerIntegration:
+    """Tests para integracion de TraceLogger en ejecutar_ocr."""
+
+    def test_sin_trace_logger_no_falla(self):
+        """ejecutar_ocr sin trace_logger funciona normal."""
+        img = _create_mock_image()
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+            result = core.ejecutar_ocr(img, "eng")
+            assert result is not None
+            assert "error" in result
+
+    def test_sin_trace_logger_backward_compat(self):
+        """Llamada sin trace_logger (backward compat) funciona."""
+        img = _create_mock_image()
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+            # Llamada sin tercer argumento (backward compat)
+            result = core.ejecutar_ocr(img, "eng")
+            assert isinstance(result, dict)
+
+    def test_trace_logger_mock_registra(self):
+        """TraceLogger mock recibe llamadas info/warning."""
+        img = _create_mock_image()
+        mock_logger = MagicMock()
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+            core.ejecutar_ocr(img, "eng", trace_logger=mock_logger)
+            # Debe haber al menos 1 llamada (info inicio + error sin motores)
+            assert mock_logger.info.called or mock_logger.error.called
+
+    def test_trace_logger_roto_no_crashea(self):
+        """Un trace_logger que lanza excepciones no debe crashear OCR."""
+        img = _create_mock_image()
+        mock_logger = MagicMock()
+        mock_logger.info.side_effect = Exception("logger roto")
+        mock_logger.error.side_effect = Exception("logger roto")
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+            # No debe lanzar excepcion
+            result = core.ejecutar_ocr(img, "eng", trace_logger=mock_logger)
+            assert result is not None
+            assert result["motor_ocr"] == "none"
+
+    def test_fallback_registra_warning(self):
+        """Fallback PaddleOCR→Tesseract registra warning."""
+        img = _create_mock_image()
+        mock_logger = MagicMock()
+
+        mock_result = {
+            "lang": "eng",
+            "texto_completo": "fb",
+            "snippet_200": "fb",
+            "confianza_promedio": 0.8,
+            "num_palabras": 1,
+            "tiempo_ms": 10,
+            "error": None,
+            "motor_ocr": "tesseract",
+            "lineas": [],
+        }
+
+        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
+             patch.object(core, 'TESSERACT_DISPONIBLE', True), \
+             patch.object(core, '_ejecutar_ocr_paddleocr', side_effect=RuntimeError("GPU")), \
+             patch.object(core, '_ejecutar_ocr_tesseract', return_value=mock_result):
+            core.ejecutar_ocr(img, "eng", trace_logger=mock_logger)
+            # Debe haber un warning por el fallback
+            assert mock_logger.warning.called
+
+
+# =============================================================================
+# 18. TestLogOCR — Helper _log_ocr
+# =============================================================================
+
+class TestLogOCR:
+    """Tests para el helper _log_ocr."""
+
+    def test_none_logger_no_falla(self):
+        """Con trace_logger=None no debe hacer nada ni fallar."""
+        # No debe lanzar excepcion
+        core._log_ocr(None, "info", "test message")
+
+    def test_level_info(self):
+        """level=info llama a logger.info."""
+        mock = MagicMock()
+        core._log_ocr(mock, "info", "mensaje")
+        mock.info.assert_called_once()
+
+    def test_level_warning(self):
+        """level=warning llama a logger.warning."""
+        mock = MagicMock()
+        core._log_ocr(mock, "warning", "advertencia")
+        mock.warning.assert_called_once()
+
+    def test_level_error(self):
+        """level=error llama a logger.error."""
+        mock = MagicMock()
+        core._log_ocr(mock, "error", "error msg")
+        mock.error.assert_called_once()
+
+    def test_logger_roto_silencioso(self):
+        """Logger que lanza excepciones no crashea."""
+        mock = MagicMock()
+        mock.info.side_effect = RuntimeError("boom")
+        # No debe lanzar excepcion
+        core._log_ocr(mock, "info", "test")
+
+    def test_context_pasado_correctamente(self):
+        """El context se pasa al logger."""
+        mock = MagicMock()
+        ctx = {"key": "value"}
+        core._log_ocr(mock, "info", "msg", context=ctx)
+        call_args = mock.info.call_args
+        assert call_args[1]["context"] == ctx

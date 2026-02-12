@@ -10,9 +10,9 @@ Motor fallback: Tesseract via pytesseract (si PaddleOCR no disponible)
 La interfaz publica se mantiene identica para compatibilidad con
 pdf_text_extractor.py y futuros consumidores.
 
-Referencia: ADR-006, Tarea #13.
+Referencia: ADR-006, Tarea #13, Tarea #14.
 
-Version: 3.0.0
+Version: 3.1.0
 Fecha: 2026-02-11
 """
 
@@ -20,6 +20,8 @@ import io
 import time
 import subprocess
 import logging
+from dataclasses import dataclass
+from collections import defaultdict
 from typing import Dict, Any, Optional, Tuple, List
 from pathlib import Path
 
@@ -89,7 +91,161 @@ else:
     _ACTIVE_ENGINE = "none"
 
 
-__version__ = "3.0.0"
+__version__ = "3.1.0"
+
+
+# =============================================================================
+# DATACLASS — LINEA OCR CON BBOX Y CONFIANZA
+# =============================================================================
+
+@dataclass
+class LineaOCR:
+    """
+    Una linea de texto detectada por OCR con ubicacion y confianza.
+
+    Attributes:
+        texto: Texto de la linea.
+        bbox: Bounding box (x_min, y_min, x_max, y_max) en pixeles, o None
+              si el motor no provee datos de ubicacion.
+        confianza: Score de confianza 0.0–1.0, o None si no disponible.
+        motor: Motor que produjo esta linea ("paddleocr" o "tesseract").
+    """
+    texto: str
+    bbox: Optional[Tuple[float, float, float, float]]  # (x_min, y_min, x_max, y_max) o None
+    confianza: Optional[float]                          # 0.0 - 1.0 o None
+    motor: str = ""                                     # "paddleocr" o "tesseract"
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializa a dict JSON-compatible."""
+        return {
+            "texto": self.texto,
+            "bbox": list(self.bbox) if self.bbox is not None else None,
+            "confianza": round(self.confianza, 4) if self.confianza is not None else None,
+            "motor": self.motor,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "LineaOCR":
+        """Deserializa desde dict."""
+        data = dict(data)
+        if "bbox" in data and isinstance(data["bbox"], list):
+            data["bbox"] = tuple(data["bbox"])
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
+# =============================================================================
+# HELPERS PRIVADOS — BBOX Y TRACELOGGER
+# =============================================================================
+
+def _polygon_to_bbox(polygon: List[List[float]]) -> Tuple[float, float, float, float]:
+    """
+    Convierte poligono PaddleOCR [[x1,y1],[x2,y2],...] a (x_min, y_min, x_max, y_max).
+
+    PaddleOCR retorna dt_polys como lista de 4 puntos [x,y] que forman un
+    cuadrilatero. Esta funcion extrae el rectangulo envolvente.
+    """
+    xs = [p[0] for p in polygon]
+    ys = [p[1] for p in polygon]
+    return (min(xs), min(ys), max(xs), max(ys))
+
+
+def _agrupar_palabras_en_lineas(data: Dict[str, Any]) -> List[LineaOCR]:
+    """
+    Agrupa palabras Tesseract en lineas usando block_num/line_num.
+
+    Tesseract retorna datos por palabra individual. Esta funcion:
+    1. Agrupa palabras por (block_num, line_num)
+    2. Une los textos de cada linea con espacios
+    3. Calcula la union de bboxes por linea
+    4. Promedia las confianzas por linea
+
+    Limitacion conocida: documentos multi-columna pueden generar lineas
+    incorrectas si Tesseract asigna el mismo block_num a columnas distintas.
+
+    Args:
+        data: Dict de pytesseract.image_to_data(output_type=Output.DICT)
+
+    Returns:
+        List[LineaOCR] con una entrada por linea detectada.
+    """
+    # Agrupar por (block_num, line_num)
+    lineas_agrupadas: Dict[Tuple[int, int], List[int]] = defaultdict(list)
+
+    n = len(data.get("text", []))
+    for i in range(n):
+        texto = data["text"][i]
+        if not texto.strip():
+            continue
+        block = data.get("block_num", [0] * n)[i]
+        line = data.get("line_num", [0] * n)[i]
+        lineas_agrupadas[(block, line)].append(i)
+
+    resultado: List[LineaOCR] = []
+    for key in sorted(lineas_agrupadas.keys()):
+        indices = lineas_agrupadas[key]
+        textos = [data["text"][i] for i in indices]
+        texto_linea = " ".join(textos)
+
+        # Union de bboxes
+        x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
+        for i in indices:
+            left = data.get("left", [0] * n)[i]
+            top = data.get("top", [0] * n)[i]
+            width = data.get("width", [0] * n)[i]
+            height = data.get("height", [0] * n)[i]
+            x_mins.append(float(left))
+            y_mins.append(float(top))
+            x_maxs.append(float(left + width))
+            y_maxs.append(float(top + height))
+
+        bbox: Optional[Tuple[float, float, float, float]] = None
+        if x_mins:
+            bbox = (min(x_mins), min(y_mins), max(x_maxs), max(y_maxs))
+
+        # Promedio de confianzas (Tesseract: 0-100, normalizar a 0-1)
+        confs = []
+        for i in indices:
+            conf = data.get("conf", [-1] * n)[i]
+            if conf != -1:
+                confs.append(conf / 100.0)
+
+        confianza: Optional[float] = None
+        if confs:
+            confianza = sum(confs) / len(confs)
+
+        resultado.append(LineaOCR(
+            texto=texto_linea,
+            bbox=bbox,
+            confianza=confianza,
+            motor="tesseract",
+        ))
+
+    return resultado
+
+
+def _log_ocr(trace_logger: Any, level: str, message: str, context: Optional[Dict] = None) -> None:
+    """
+    Log OCR event via TraceLogger (duck typing). Silent on error.
+
+    No importa TraceLogger directamente — se recibe como parametro opcional.
+    Patron copiado de abstencion.py.
+    """
+    if not trace_logger:
+        return
+    try:
+        log_method = getattr(trace_logger, level.lower(), None)
+        if log_method is None:
+            log_method = getattr(trace_logger, "info", None)
+        if log_method is None:
+            return
+        log_method(
+            message,
+            agent_id="AG-OCR",
+            operation="ejecutar_ocr",
+            context=context or {},
+        )
+    except Exception:
+        pass  # TraceLogger nunca debe crashear OCR
 
 
 # =============================================================================
@@ -555,7 +711,7 @@ def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, 
 
     Returns:
         Dict con: lang, texto_completo, snippet_200, confianza_promedio,
-                  num_palabras, tiempo_ms, error, motor_ocr
+                  num_palabras, tiempo_ms, error, motor_ocr, lineas
     """
     resultado = {
         "lang": lang,
@@ -566,6 +722,7 @@ def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, 
         "tiempo_ms": 0,
         "error": None,
         "motor_ocr": "paddleocr",
+        "lineas": [],
     }
 
     paddle_lang = _map_lang_to_paddle(lang)
@@ -589,13 +746,26 @@ def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, 
 
     textos = []
     confianzas = []
+    lineas_ocr: List[LineaOCR] = []
 
     for res in result:
         json_data = res.json
         rec_texts = json_data.get("rec_texts", [])
         rec_scores = json_data.get("rec_scores", [])
+        dt_polys = json_data.get("dt_polys", [])
         textos.extend(rec_texts)
         confianzas.extend(rec_scores)
+
+        # Construir LineaOCR por cada linea detectada
+        for i, texto in enumerate(rec_texts):
+            bbox = _polygon_to_bbox(dt_polys[i]) if i < len(dt_polys) else None
+            score = rec_scores[i] if i < len(rec_scores) else None
+            lineas_ocr.append(LineaOCR(
+                texto=texto,
+                bbox=bbox,
+                confianza=score,
+                motor="paddleocr",
+            ))
 
     # Filtrar textos vacios
     textos_filtrados = [t for t in textos if t.strip()]
@@ -604,6 +774,7 @@ def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, 
     resultado["texto_completo"] = texto_completo
     resultado["snippet_200"] = texto_completo[:200] if texto_completo else ""
     resultado["num_palabras"] = len(textos_filtrados)
+    resultado["lineas"] = [l.to_dict() for l in lineas_ocr]
 
     if confianzas:
         # PaddleOCR scores ya estan en rango 0-1
@@ -620,7 +791,7 @@ def _ejecutar_ocr_tesseract(img: "Image.Image", lang: str = "eng") -> Dict[str, 
 
     Returns:
         Dict con: lang, texto_completo, snippet_200, confianza_promedio,
-                  num_palabras, tiempo_ms, error, motor_ocr
+                  num_palabras, tiempo_ms, error, motor_ocr, lineas
     """
     resultado = {
         "lang": lang,
@@ -631,6 +802,7 @@ def _ejecutar_ocr_tesseract(img: "Image.Image", lang: str = "eng") -> Dict[str, 
         "tiempo_ms": 0,
         "error": None,
         "motor_ocr": "tesseract",
+        "lineas": [],
     }
 
     if not TESSERACT_DISPONIBLE:
@@ -663,6 +835,10 @@ def _ejecutar_ocr_tesseract(img: "Image.Image", lang: str = "eng") -> Dict[str, 
             # Tesseract retorna 0-100, normalizamos a 0-1
             resultado["confianza_promedio"] = round(sum(confianzas) / len(confianzas) / 100, 3)
 
+        # Agrupar palabras en lineas con bbox y confianza
+        lineas_ocr = _agrupar_palabras_en_lineas(data)
+        resultado["lineas"] = [l.to_dict() for l in lineas_ocr]
+
     except Exception as e:
         resultado["error"] = str(e)
 
@@ -673,7 +849,11 @@ def _ejecutar_ocr_tesseract(img: "Image.Image", lang: str = "eng") -> Dict[str, 
 # FUNCION PUBLICA — DISPATCH CON FALLBACK
 # =============================================================================
 
-def ejecutar_ocr(img: "Image.Image", lang: str = "eng") -> Dict[str, Any]:
+def ejecutar_ocr(
+    img: "Image.Image",
+    lang: str = "eng",
+    trace_logger: Any = None,
+) -> Dict[str, Any]:
     """
     Ejecuta OCR con el motor disponible (PaddleOCR primario, Tesseract fallback).
 
@@ -683,27 +863,63 @@ def ejecutar_ocr(img: "Image.Image", lang: str = "eng") -> Dict[str, Any]:
     2. Si solo Tesseract: usar Tesseract
     3. Si ninguno: retornar error
 
+    Args:
+        img: Imagen PIL a procesar.
+        lang: Codigo de idioma Tesseract (ej: "spa", "eng").
+        trace_logger: Instancia opcional de TraceLogger (duck typing).
+                      Si se provee, registra eventos OCR. Si es None, silencioso.
+
     Returns:
         Dict con: lang, texto_completo, snippet_200, confianza_promedio,
-                  num_palabras, tiempo_ms, error, motor_ocr
+                  num_palabras, tiempo_ms, error, motor_ocr, lineas
 
         motor_ocr puede ser: "paddleocr", "tesseract", "tesseract_fallback", "none"
+        lineas: List[Dict] con bbox + confianza por linea detectada
     """
+    # Log inicio
+    img_dims = None
+    try:
+        img_dims = {"width": img.size[0], "height": img.size[1]}
+    except Exception:
+        pass
+    _log_ocr(trace_logger, "info", "OCR iniciado", {
+        "lang": lang,
+        "imagen": img_dims,
+        "motor_activo": _ACTIVE_ENGINE,
+    })
+
     # Ruta 1: PaddleOCR primario
     if PADDLEOCR_DISPONIBLE:
         try:
-            return _ejecutar_ocr_paddleocr(img, lang)
+            result = _ejecutar_ocr_paddleocr(img, lang)
+            _log_ocr(trace_logger, "info", "OCR completado", {
+                "motor": result.get("motor_ocr"),
+                "num_palabras": result.get("num_palabras"),
+                "confianza_promedio": result.get("confianza_promedio"),
+                "num_lineas": len(result.get("lineas", [])),
+                "tiempo_ms": result.get("tiempo_ms"),
+            })
+            return result
         except Exception as e:
             logger.warning(
                 "PaddleOCR fallo en runtime (%s), fallback a Tesseract...",
                 str(e)[:100]
             )
+            _log_ocr(trace_logger, "warning", f"PaddleOCR fallo, fallback a Tesseract: {str(e)[:100]}")
             # Auto-fallback a Tesseract
             if TESSERACT_DISPONIBLE:
                 result = _ejecutar_ocr_tesseract(img, lang)
                 result["motor_ocr"] = "tesseract_fallback"
+                _log_ocr(trace_logger, "info", "OCR completado via fallback", {
+                    "motor": "tesseract_fallback",
+                    "num_palabras": result.get("num_palabras"),
+                    "confianza_promedio": result.get("confianza_promedio"),
+                    "num_lineas": len(result.get("lineas", [])),
+                    "tiempo_ms": result.get("tiempo_ms"),
+                })
                 return result
             else:
+                _log_ocr(trace_logger, "error", "PaddleOCR fallo y Tesseract no disponible")
                 return {
                     "lang": lang,
                     "texto_completo": "",
@@ -713,13 +929,23 @@ def ejecutar_ocr(img: "Image.Image", lang: str = "eng") -> Dict[str, Any]:
                     "tiempo_ms": 0,
                     "error": f"PaddleOCR fallo y Tesseract no disponible: {str(e)[:100]}",
                     "motor_ocr": "none",
+                    "lineas": [],
                 }
 
     # Ruta 2: Tesseract unico motor
     if TESSERACT_DISPONIBLE:
-        return _ejecutar_ocr_tesseract(img, lang)
+        result = _ejecutar_ocr_tesseract(img, lang)
+        _log_ocr(trace_logger, "info", "OCR completado", {
+            "motor": result.get("motor_ocr"),
+            "num_palabras": result.get("num_palabras"),
+            "confianza_promedio": result.get("confianza_promedio"),
+            "num_lineas": len(result.get("lineas", [])),
+            "tiempo_ms": result.get("tiempo_ms"),
+        })
+        return result
 
     # Ruta 3: Ningun motor disponible
+    _log_ocr(trace_logger, "error", "Ningun motor OCR disponible")
     return {
         "lang": lang,
         "texto_completo": "",
@@ -729,4 +955,5 @@ def ejecutar_ocr(img: "Image.Image", lang: str = "eng") -> Dict[str, Any]:
         "tiempo_ms": 0,
         "error": "Ningun motor OCR disponible (instalar paddleocr o pytesseract)",
         "motor_ocr": "none",
+        "lineas": [],
     }
