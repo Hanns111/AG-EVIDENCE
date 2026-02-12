@@ -10,7 +10,7 @@
 - **Proyecto:** AG-EVIDENCE v2.0 — Sistema multi-agente de control previo
 - **Repositorio:** Hanns111/AG-EVIDENCE
 - **Rama de trabajo:** main (directa, sin worktrees)
-- **Último commit en main:** 8b5efe6 (feat(ocr): rewrite OCR engine from Tesseract to PaddleOCR PP-OCRv5)
+- **Último commit en main:** 6dfb96f (docs(roadmap): update Task #13 completion and Integrity Checkpoint decision)
 - **Tag:** v2.2.0 (publicado en GitHub)
 - **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
 
@@ -40,6 +40,14 @@
    - Depende de: Tarea #13 (OCR rewrite) ✅
 2. **Tarea #15-16** — Completar Fase 1
 3. **Fase 2** — Contrato + Router + Agentes v2.0
+
+### Decisión Arquitectónica Pendiente de Implementación
+
+**Integrity Checkpoint** (se implementa en Tarea #18):
+- Nodo formal en el Router LangGraph, NO módulo monolítico separado (ADR-005)
+- Evalúa `integrity_status = OK | WARNING | CRITICAL`. Si CRITICAL → pipeline se detiene
+- Incluye EvidenceEnforcer (snippet + página + regla) post-contrato tipado
+- Decisión consensuada en sesión multi-IA (2026-02-11)
 
 ---
 
