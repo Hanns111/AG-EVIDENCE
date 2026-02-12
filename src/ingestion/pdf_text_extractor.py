@@ -6,7 +6,7 @@ Fase 2 del pipeline OCR — Integración controlada.
 
 Decide automáticamente entre:
 - direct_text: PDF nativo con texto embebido
-- ocr: PDF escaneado procesado con Tesseract
+- ocr: PDF escaneado procesado con PaddleOCR o Tesseract
 - fallback_manual: Cuando ambos fallan, requiere revisión humana
 
 Principio de gobernanza: NUNCA inventa contenido. Si falla, retorna
@@ -28,11 +28,15 @@ try:
         preprocesar_rotacion,
         calcular_metricas_imagen,
         verificar_tesseract,
+        verificar_ocr,
         TESSERACT_DISPONIBLE,
+        PADDLEOCR_DISPONIBLE,
     )
-    OCR_DISPONIBLE = TESSERACT_DISPONIBLE
+    OCR_DISPONIBLE = PADDLEOCR_DISPONIBLE or TESSERACT_DISPONIBLE
 except ImportError:
     OCR_DISPONIBLE = False
+    PADDLEOCR_DISPONIBLE = False
+    TESSERACT_DISPONIBLE = False
 
 # Importar PyMuPDF para extracción directa
 try:
@@ -114,16 +118,16 @@ def _extraer_texto_ocr(
     }
     
     if not OCR_DISPONIBLE:
-        resultado["error"] = "OCR (Tesseract) no disponible"
+        resultado["error"] = "Ningun motor OCR disponible"
         return resultado
-    
+
     try:
         inicio = time.time()
-        
-        # Verificar Tesseract
-        tess_ok, tess_msg = verificar_tesseract()
-        if not tess_ok:
-            resultado["error"] = f"Tesseract no disponible: {tess_msg}"
+
+        # Verificar motor OCR activo
+        ocr_ok, ocr_msg, motor_nombre = verificar_ocr()
+        if not ocr_ok:
+            resultado["error"] = f"OCR no disponible: {ocr_msg}"
             return resultado
         
         # Abrir PDF para contar páginas
@@ -309,7 +313,9 @@ def extract_text_with_gating(
             },
             "version_modulo": __version__,
             "timestamp_iso": datetime.now(timezone.utc).isoformat(),
-            "tesseract_disponible": OCR_DISPONIBLE,
+            "ocr_disponible": OCR_DISPONIBLE,
+            "paddleocr_disponible": PADDLEOCR_DISPONIBLE,
+            "tesseract_disponible": TESSERACT_DISPONIBLE,
             "pymupdf_disponible": FITZ_DISPONIBLE
         }
     }

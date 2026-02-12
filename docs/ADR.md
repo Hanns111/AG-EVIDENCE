@@ -90,6 +90,33 @@ Alta portabilidad del sistema a otros países o instituciones.
 
 ---
 
+## ADR-006 — PaddleOCR PP-OCRv5 como Motor OCR Primario
+
+**Estado:** Aceptada
+**Fecha:** 2026-02-11
+
+### Contexto
+Tesseract OCR era el motor OCR inicial. Pruebas con documentos administrativos
+peruanos (expedientes con sellos, tablas y firmas) mostraron que PaddleOCR PP-OCRv5
+logra mayor precision para texto espanol mixto. PP-OCRv5 reporta +13% accuracy
+sobre PP-OCRv4 y soporta 106 idiomas.
+
+### Decision
+PaddleOCR PP-OCRv5 (modelos server: PP-OCRv5_server_det + PP-OCRv5_server_rec)
+es el motor OCR primario, con GPU acelerado via RTX 5090 (CUDA).
+Tesseract se mantiene como fallback automatico si PaddleOCR no esta disponible
+o falla en runtime. La interfaz publica de `src/ocr/core.py` no cambia
+(solo se agrega campo `motor_ocr` al resultado, cambio aditivo).
+
+### Consecuencias
+- Mayor precision OCR para documentos administrativos en espanol
+- Uso de GPU (CUDA) para inferencia acelerada
+- Dependencia adicional: `paddlepaddle-gpu` + `paddleocr` (~2GB disco)
+- Tesseract sigue siendo necesario como fallback
+- Patron singleton para instancias PaddleOCR (carga pesada de modelos)
+
+---
+
 ## Regla de Actualización
 
 Si una decisión:
