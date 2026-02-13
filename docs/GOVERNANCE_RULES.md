@@ -26,6 +26,9 @@ Antes de responder, la IA debe asumir que ha leído y entendido:
 5. ADR.md
 6. CONTEXT_CHAIN.md
 7. Este archivo
+8. OCR_FALLBACK_STRATEGY.md
+9. REGLAS_VERIFICACION_COMPROBANTES.md
+10. VALIDACION_ANEXO3_VS_FACTURAS.md
 
 Si una respuesta contradice alguno de ellos, debe detenerse y advertirlo.
 
@@ -243,3 +246,86 @@ Una tarea NO se puede marcar como ✅ Completado si:
 
 Esta regla entra en vigor el 2026-02-12 y aplica a todas las tareas futuras.
 Aprobada por Hans (solicitud explicita de gobernanza de testing).
+
+---
+
+## 12. Formato Obligatorio de Excel para Rendicion de Viaticos
+
+### 12.1 Principio
+
+**Todo expediente de viaticos procesado DEBE generar un archivo Excel (.xlsx) con exactamente 4 hojas.**
+No se acepta salida parcial. Si falta una hoja, el procesamiento se considera incompleto.
+
+### 12.2 Estructura Obligatoria de 4 Hojas
+
+| Hoja | Nombre | Contenido |
+|------|--------|-----------|
+| **1** | `Anexo3` | Rendicion de cuentas (Anexo N°3): datos generales del comisionado, tabla de gastos con fecha/documento/numero/razon social/concepto/importe, resumen de totales |
+| **2** | `DeclaracionJurada` | Declaracion Jurada del comisionado: datos personales, detalle de gastos sin comprobante (si los hay), o nota indicando que no aplica |
+| **3** | `Comprobantes` | Registro de TODOS los comprobantes de pago tipo SUNAT: 20 columnas minimo (N°, Fecha, Tipo, Electronico, Serie-Numero, RUC Proveedor, Razon Social, Direccion, Cliente, RUC Cliente, Dir Cliente, Concepto, Detalle Items, Forma Pago, Base Imponible, IGV, %IGV, Otros Cargos, Importe Total, Observaciones) |
+| **4** | `BoardingPass` | Boarding pass + tiquete aereo: datos del pasajero, detalle de cada vuelo (ida/retorno), desglose de pago, lista de pasajeros si es grupal |
+
+### 12.3 Regla de Completitud al 100%
+
+- **Comprobantes:** Se extraen TODOS los campos visibles de cada factura. Si el ojo humano puede leerlo, la maquina tambien debe poder.
+- **Fallbacks de extraccion:** Si pdftotext falla → ocrmypdf --force-ocr → si aun falla → Ollama/Qwen como ultimo recurso.
+- **No se aceptan campos "OCR ilegible" o "no capturado"** como resultado final. Se debe iterar con todos los fallbacks hasta obtener el dato.
+- **Cada comprobante debe incluir:** serie-numero, RUC, razon social, direccion, fecha, detalle de items con precios individuales, base imponible, IGV, % IGV, otros cargos (RC, servicio, propina), importe total.
+
+### 12.4 Regla de Extraccion Fiel
+
+- Se extrae lo que dice la factura, EXACTAMENTE como aparece en el documento fuente.
+- NO se cruza ni se compara con el Anexo 3 en esta etapa (eso es Fase 4 — Validaciones).
+- NO se corrigen datos del comprobante. Si hay un error en la factura, se extrae tal cual y se anota en Observaciones.
+
+### 12.5 Vigencia
+
+Esta regla entra en vigor el 2026-02-12 y aplica a todo procesamiento de expedientes de viaticos.
+Aprobada por Hans (solicitud explicita durante sesion de validacion de comprobantes).
+
+---
+
+## 13. Estrategia Obligatoria de Fallback OCR
+
+**Documento completo:** `docs/OCR_FALLBACK_STRATEGY.md`
+
+**Regla:** Antes de procesar cualquier PDF, la IA DEBE seguir la cadena de fallbacks:
+
+1. `pdftotext` directo (rapido, para PDFs con texto embebido)
+2. `ocrmypdf --force-ocr` + `pdftotext` (para PDFs escaneados o con texto corrupto)
+3. `pdftotext -f $i -l $i` por pagina (para mapeo preciso documento-por-pagina)
+4. Ollama/Qwen (ULTIMO recurso, solo si pasos 1-3 fallan)
+
+**Principio:** Si el ojo humano puede leerlo, la maquina tambien DEBE poder.
+No se acepta "OCR ilegible" como resultado final.
+
+### 13.1 Vigencia
+
+Esta regla entra en vigor el 2026-02-13. Documentada tras exito en expediente
+OPRE2026-INT-0131766 donde `ocrmypdf --force-ocr` rescato 12 comprobantes
+de un PDF con OCR degradado (mejora de 1640 a 2147 lineas).
+Aprobada por Hans (solicitud explicita de documentar la tecnica exitosa).
+
+---
+
+## 14. Reglas de Verificacion Visual de Comprobantes
+
+**Documento completo:** `docs/REGLAS_VERIFICACION_COMPROBANTES.md`
+
+**Regla:** Toda verificacion visual de comprobantes debe aplicar las reglas RV-XXX
+documentadas en el archivo de referencia. Las reglas son acumulativas y se actualizan
+con cada expediente procesado.
+
+**Reglas activas a la fecha:**
+
+| Codigo | Regla | Clasificacion |
+|--------|-------|---------------|
+| RV-001 | Comprobante parcialmente cortado/recortado → devolver al area usuaria | ALERTA |
+| RV-002 | Gasto desproporcionado para comision individual (ej: 2 platos principales para 1 persona) | OBSERVACION |
+| RV-003 | Servicio de transporte exonerado de IGV → correcto, no marcar como error | INFORMATIVO |
+| RV-004 | Declaracion Jurada con gastos sin comprobante → SIEMPRE verificar Anexo N°4 | CRITICO |
+
+### 14.1 Vigencia
+
+Esta regla entra en vigor el 2026-02-13 y se actualiza incrementalmente.
+Aprobada por Hans (hallazgos identificados durante revision visual de OPRE2026-INT-0131766).

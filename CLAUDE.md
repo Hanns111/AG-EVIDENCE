@@ -140,6 +140,21 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 - **Commits:** Conventional Commits obligatorio
 - **Hardware:** RTX 5090 32GB VRAM, WSL2 Ubuntu 22.04, Ollama qwen3:32b
 
+### Documentos de Gobernanza Obligatorios — LEER SIEMPRE al procesar expedientes
+
+Al procesar cualquier expediente de viáticos, Claude Code DEBE haber leído estos documentos ANTES de ejecutar:
+
+| N° | Documento | Contenido | Obligatorio |
+|----|-----------|-----------|-------------|
+| 1 | `docs/OCR_FALLBACK_STRATEGY.md` | Cadena de fallbacks OCR: pdftotext → ocrmypdf --force-ocr → Ollama/Qwen | SÍ — antes de tocar cualquier PDF |
+| 2 | `docs/REGLAS_VERIFICACION_COMPROBANTES.md` | Reglas RV-001 a RV-XXX de verificación visual de comprobantes | SÍ — antes de generar Excel |
+| 3 | `docs/VALIDACION_ANEXO3_VS_FACTURAS.md` | Reglas de validación cruzada Anexo 3 vs facturas (Fase 4) | Cuando corresponda |
+| 4 | `docs/GOVERNANCE_RULES.md` Sección 12 | Formato obligatorio Excel 4 hojas | SÍ — antes de generar Excel |
+| 5 | `docs/GOVERNANCE_RULES.md` Sección 13 | Estrategia obligatoria de fallback OCR | SÍ — antes de tocar cualquier PDF |
+| 6 | `docs/GOVERNANCE_RULES.md` Sección 14 | Reglas de verificación visual (tabla resumen) | SÍ — antes de generar Excel |
+
+**REGLA:** Si Claude Code no ha leído estos documentos, NO puede procesar expedientes.
+
 ### Extracción de texto de PDFs (WSL2)
 
 Cuando Claude Code necesite leer PDFs y el reader nativo falle, usar estas herramientas en WSL2:
@@ -206,4 +221,4 @@ tests/
 
 ---
 
-*Actualizado: 2026-02-12 por Claude Code*
+*Actualizado: 2026-02-13 por Claude Code*

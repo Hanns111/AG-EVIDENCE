@@ -64,8 +64,11 @@ no gestionas el proyecto, no decides la estructura. Editas lo que ya existe.
 1. `docs/AGENT_GOVERNANCE_RULES.md` — Documento normativo VINCULANTE
 2. `docs/ARCHITECTURE_SNAPSHOT.md` — Estado real del sistema
 3. `docs/CURRENT_STATE.md` — Estado del proyecto
-4. `docs/GOVERNANCE_RULES.md` — Reglas de gobernanza para IAs
+4. `docs/GOVERNANCE_RULES.md` — Reglas de gobernanza para IAs (Secciones 1-14)
 5. `CLAUDE.md` — Estado actual y siguiente tarea
+6. `docs/OCR_FALLBACK_STRATEGY.md` — Cadena obligatoria de fallbacks OCR
+7. `docs/REGLAS_VERIFICACION_COMPROBANTES.md` — Reglas RV-XXX de verificacion visual
+8. `docs/VALIDACION_ANEXO3_VS_FACTURAS.md` — Validacion cruzada Anexo 3 vs facturas
 
 ---
 
@@ -128,6 +131,33 @@ AG-EVIDENCE/
 
 ---
 
+## GOBERNANZA DE PROCESAMIENTO DE EXPEDIENTES
+
+### Formato Excel Obligatorio (GOVERNANCE_RULES.md Seccion 12)
+Todo expediente de viaticos genera Excel con EXACTAMENTE 4 hojas:
+1. `Anexo3` — Rendicion de cuentas
+2. `DeclaracionJurada` — DJ con gastos sin comprobante (Anexo N°4)
+3. `Comprobantes` — 20 columnas minimo tipo SUNAT
+4. `BoardingPass` — Vuelos + tiquete aereo
+
+### Estrategia OCR Obligatoria (GOVERNANCE_RULES.md Seccion 13)
+Cadena de fallbacks — NUNCA saltarse un paso:
+1. `pdftotext` directo
+2. `ocrmypdf --force-ocr` + `pdftotext` (si paso 1 falla o sale garbled)
+3. `pdftotext -f $i -l $i` por pagina (mapeo preciso)
+4. Ollama/Qwen (ULTIMO recurso)
+**Principio:** Si el ojo humano puede leerlo, la maquina DEBE poder.
+
+### Reglas de Verificacion Visual (GOVERNANCE_RULES.md Seccion 14)
+| Codigo | Regla | Tipo |
+|--------|-------|------|
+| RV-001 | Comprobante cortado → devolver al area usuaria | ALERTA |
+| RV-002 | Gasto desproporcionado para 1 persona (ej: 2 platos principales) | OBSERVACION |
+| RV-003 | Transporte exonerado IGV → correcto, no es error | INFORMATIVO |
+| RV-004 | DJ con gastos sin comprobante → SIEMPRE verificar Anexo N°4 | CRITICO |
+
+---
+
 ## POLITICA ANTI-ALUCINACION
 
 - PROHIBIDO inventar datos no visibles en documentos
@@ -151,4 +181,4 @@ Nota: Cursor NO hace commits ni push. Solo edita codigo.
 
 ---
 
-**Ultima actualizacion:** 2026-02-11
+**Ultima actualizacion:** 2026-02-13
