@@ -59,13 +59,23 @@ no gestionas el proyecto, no decides la estructura. Editas lo que ya existe.
 
 ---
 
+## CONTEXTO EN TIEMPO REAL
+
+Si el usuario necesita que entiendas el estado actual del proyecto,
+leeras `docs/CURRENT_STATE.md`. Este archivo se actualiza al final
+de cada sesion de Claude Code con: ultimo commit, tareas completadas,
+decisiones recientes, y proximos pasos.
+
+Si el usuario te dice "lee el estado actual" o "ponte al dia",
+lee `@docs/CURRENT_STATE.md` y resume lo relevante para la tarea.
+
 ## AUTORIDAD SUPERIOR — LEER ANTES DE ACTUAR
 
-1. `docs/AGENT_GOVERNANCE_RULES.md` — Documento normativo VINCULANTE
-2. `docs/ARCHITECTURE_SNAPSHOT.md` — Estado real del sistema
-3. `docs/CURRENT_STATE.md` — Estado del proyecto
+1. `docs/CURRENT_STATE.md` — **Estado actual del proyecto (LEER PRIMERO)**
+2. `docs/AGENT_GOVERNANCE_RULES.md` — Documento normativo VINCULANTE
+3. `docs/ARCHITECTURE_SNAPSHOT.md` — Estado real del sistema
 4. `docs/GOVERNANCE_RULES.md` — Reglas de gobernanza para IAs
-5. `CLAUDE.md` — Estado actual y siguiente tarea
+5. `CLAUDE.md` — Contexto completo y siguiente tarea
 
 ---
 
