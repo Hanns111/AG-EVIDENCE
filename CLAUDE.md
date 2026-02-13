@@ -139,6 +139,25 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 - **Local-first:** ningún dato sale a cloud (GDPR ready)
 - **Commits:** Conventional Commits obligatorio
 - **Hardware:** RTX 5090 32GB VRAM, WSL2 Ubuntu 22.04, Ollama qwen3:32b
+- **Session Protocol:** Ver governance/SESSION_PROTOCOL.md (commit incremental obligatorio)
+
+### Directiva Vigente de Viáticos (FUENTE PRINCIPAL)
+
+| Documento | Ruta Local | Estado |
+|-----------|-----------|--------|
+| **NUEVA Directiva de Viáticos RGS 023-2026-MINEDU** | `data/directivas/vigentes_2025_11_26/VIÁTICO/NUEVA DIRECTIVA DE VIÁTICOS_{Res_de_Secretaría_General Nro. 023-2026-MINEDU.pdf` | **FUENTE PRINCIPAL** |
+| Directiva de Viáticos 011-2020 (DEROGADA) | misma carpeta | Solo contexto, NO usar para validación |
+
+**Regla:** Toda validación de viáticos se hace contra la NUEVA directiva (RGS 023-2026).
+La directiva anterior (011-2020) queda como referencia histórica únicamente.
+
+### Gestión de Archivos y Backups
+
+- **PDFs de directivas NO se versionan en git** (ver data/directivas/INVENTARIO_DIRECTIVAS.md)
+- **PDFs de expedientes NO se versionan en git** (datos sensibles del Estado)
+- **Backup completo:** `python scripts/backup_local.py` (ZIP con timestamp)
+- **GitHub contiene:** solo código, docs .md, configs, tests, scripts
+- **Inventario de directivas:** data/directivas/INVENTARIO_DIRECTIVAS.md
 
 ### Extracción de texto de PDFs (WSL2)
 
@@ -177,14 +196,16 @@ pdftotext "archivo_ocr.pdf" "archivo.txt"
 
 ---
 
-## Estructura del Codebase (26 archivos .py)
+## Estructura del Codebase
 
 ```
 config/
   __init__.py, settings.py
+governance/
+  SESSION_PROTOCOL.md       ← protocolo de apertura/cierre de sesión
 src/
   __init__.py
-  agents/.gitkeep          ← placeholder Fase 2
+  agents/.gitkeep           ← placeholder Fase 2
   extraction/
     __init__.py, abstencion.py
   ingestion/
@@ -196,14 +217,22 @@ src/
     __init__.py, detraccion_spot.py, integrador.py, tdr_requirements.py
   tools/
     __init__.py, ocr_preprocessor.py
+scripts/
+  backup_local.py           ← backup ZIP del proyecto completo
+  generar_excel_expediente.py
+  generar_excel_OTIC2026.py
 tests/
   conftest.py,
   test_abstencion.py, test_custody_chain.py,
   test_detraccion_spot.py, test_ocr_core.py,
   test_ocr_preprocessor.py, test_pdf_text_extractor.py,
   test_tdr_requirements.py, test_trace_logger.py
+data/
+  directivas/               ← PDFs locales (NO en git, ver INVENTARIO_DIRECTIVAS.md)
+  expedientes/              ← PDFs sensibles (NO en git)
+  normativa/                ← JSON de reglas (SÍ en git)
 ```
 
 ---
 
-*Actualizado: 2026-02-12 por Claude Code*
+*Actualizado: 2026-02-13 por Claude Code*

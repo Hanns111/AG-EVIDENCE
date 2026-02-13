@@ -88,6 +88,11 @@ desktop.ini
 *.doc
 
 # ------------------------------------------------------------------------------
+# Backups locales (generados por scripts/backup_local.py)
+# ------------------------------------------------------------------------------
+exports/
+
+# ------------------------------------------------------------------------------
 # Archivos de prueba y debug (NO versionar)
 # ------------------------------------------------------------------------------
 debug_*
@@ -111,9 +116,19 @@ CONTROL_PREVIO*/
 # Datos de expedientes (NO versionar - contienen PDFs sensibles)
 # ------------------------------------------------------------------------------
 data/expedientes/
-data/directivas/*.pdf
-data/directivas/*.docx
-data/directivas/*.xlsx
+
+# ------------------------------------------------------------------------------
+# Directivas y normativa (PDFs NO se versionan, documentacion .md SI)
+# Los PDFs originales se obtienen de fuentes oficiales del MINEDU.
+# Ver data/directivas/INVENTARIO_DIRECTIVAS.md para lista completa.
+# ------------------------------------------------------------------------------
+data/directivas/**/*.pdf
+data/directivas/**/*.PDF
+data/directivas/**/*.docx
+data/directivas/**/*.xlsx
+data/directivas/**/*.jpeg
+data/directivas/**/*.jpg
+data/directivas/**/*.png
 
 # ------------------------------------------------------------------------------
 # Archivos temporales del proyecto
