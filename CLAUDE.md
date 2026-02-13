@@ -10,7 +10,7 @@
 - **Proyecto:** AG-EVIDENCE v2.0 — Sistema multi-agente de control previo
 - **Repositorio:** Hanns111/AG-EVIDENCE
 - **Rama de trabajo:** main (directa, sin worktrees)
-- **Último commit en main:** f598e3a (chore(cursor): add context verification indicator)
+- **Último commit en main:** b598cf5 (feat(governance): add session protocol, backup script, and untrack PDFs)
 - **Tag:** v2.2.0 (publicado en GitHub)
 - **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
 
