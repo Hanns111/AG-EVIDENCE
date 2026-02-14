@@ -1089,3 +1089,166 @@ class TestLogOCR:
         core._log_ocr(mock, "info", "msg", context=ctx)
         call_args = mock.info.call_args
         assert call_args[1]["context"] == ctx
+
+
+# =============================================================================
+# 19. TestValidarDimensiones — Regla 2
+# =============================================================================
+
+class TestValidarDimensiones:
+    """Tests para _validar_dimensiones (Regla 2: robustez frente a limites externos)."""
+
+    def test_imagen_dentro_de_limite_no_cambia(self):
+        """Imagen dentro del limite se retorna sin modificar."""
+        img = _create_white_image(1500, 1000)
+        if img is None:
+            pytest.skip("PIL no disponible")
+        result = core._validar_dimensiones(img, max_dim=2000)
+        assert result.size == (1500, 1000)
+        assert result is img  # Misma referencia, no se copio
+
+    def test_imagen_exacta_limite_no_cambia(self):
+        """Imagen exactamente en el limite no se redimensiona."""
+        img = _create_white_image(2000, 2000)
+        if img is None:
+            pytest.skip("PIL no disponible")
+        result = core._validar_dimensiones(img, max_dim=2000)
+        assert result.size == (2000, 2000)
+        assert result is img
+
+    def test_imagen_ancha_excede_redimensiona(self):
+        """Imagen mas ancha que el limite se reduce."""
+        img = _create_white_image(4000, 2000)
+        if img is None:
+            pytest.skip("PIL no disponible")
+        result = core._validar_dimensiones(img, max_dim=2000)
+        assert result.size[0] == 2000
+        assert result.size[1] == 1000  # Mantiene aspect ratio
+
+    def test_imagen_alta_excede_redimensiona(self):
+        """Imagen mas alta que el limite se reduce."""
+        img = _create_white_image(1500, 3000)
+        if img is None:
+            pytest.skip("PIL no disponible")
+        result = core._validar_dimensiones(img, max_dim=2000)
+        assert result.size[1] == 2000
+        assert result.size[0] == 1000  # Mantiene aspect ratio
+
+    def test_ambas_dimensiones_exceden(self):
+        """Ambas dimensiones exceden: la mayor se lleva al limite."""
+        img = _create_white_image(4000, 3000)
+        if img is None:
+            pytest.skip("PIL no disponible")
+        result = core._validar_dimensiones(img, max_dim=2000)
+        assert result.size[0] == 2000
+        assert result.size[1] == 1500
+
+    def test_aspecto_ratio_preservado(self):
+        """El aspect ratio se preserva tras redimensionamiento."""
+        img = _create_white_image(3000, 2000)
+        if img is None:
+            pytest.skip("PIL no disponible")
+        ratio_original = 3000 / 2000
+        result = core._validar_dimensiones(img, max_dim=2000)
+        ratio_resultado = result.size[0] / result.size[1]
+        assert abs(ratio_original - ratio_resultado) < 0.01
+
+    def test_max_dim_custom(self):
+        """Funciona con max_dim personalizado."""
+        img = _create_white_image(2000, 1000)
+        if img is None:
+            pytest.skip("PIL no disponible")
+        result = core._validar_dimensiones(img, max_dim=1000)
+        assert result.size[0] == 1000
+        assert result.size[1] == 500
+
+    def test_max_dim_none_usa_config(self):
+        """Con max_dim=None, usa VISION_CONFIG."""
+        img = _create_white_image(3000, 1500)
+        if img is None:
+            pytest.skip("PIL no disponible")
+        # Patchear config para asegurar valor conocido
+        with patch.dict('config.settings.VISION_CONFIG', {"max_dimension_px": 2000}):
+            result = core._validar_dimensiones(img, max_dim=None)
+            assert result.size[0] == 2000
+            assert result.size[1] == 1000
+
+    def test_minimo_1px_garantizado(self):
+        """Una dimension muy pequena nunca baja de 1px."""
+        img = _create_white_image(10000, 1)
+        if img is None:
+            pytest.skip("PIL no disponible")
+        result = core._validar_dimensiones(img, max_dim=2000)
+        assert result.size[0] == 2000
+        assert result.size[1] >= 1
+
+    def test_imagen_pequena_sin_cambio(self):
+        """Imagen mucho menor al limite no se toca."""
+        img = _create_white_image(100, 100)
+        if img is None:
+            pytest.skip("PIL no disponible")
+        result = core._validar_dimensiones(img, max_dim=2000)
+        assert result.size == (100, 100)
+        assert result is img
+
+
+# =============================================================================
+# 20. TestRenderizarPaginaValidaDimensiones — Integracion Regla 2
+# =============================================================================
+
+class TestRenderizarPaginaValidaDimensiones:
+    """Verifica que renderizar_pagina integra _validar_dimensiones."""
+
+    def test_renderizar_llama_validar_dimensiones(self):
+        """renderizar_pagina debe llamar a _validar_dimensiones."""
+        mock_img = _create_mock_image()
+        mock_img.size = (3000, 2000)
+
+        with patch.object(core, 'fitz') as mock_fitz, \
+             patch.object(core, 'Image') as mock_pil, \
+             patch.object(core, '_validar_dimensiones', return_value=mock_img) as mock_val:
+            # Setup mock fitz
+            mock_doc = MagicMock()
+            mock_doc.__len__ = MagicMock(return_value=5)
+            mock_page = MagicMock()
+            mock_pix = MagicMock()
+            mock_pix.tobytes.return_value = b"fake_png_data"
+            mock_page.get_pixmap.return_value = mock_pix
+            mock_doc.__getitem__ = MagicMock(return_value=mock_page)
+            mock_fitz.open.return_value = mock_doc
+            mock_fitz.Matrix.return_value = MagicMock()
+
+            # Setup mock PIL
+            mock_pil.open.return_value = mock_img
+
+            result = core.renderizar_pagina(Path("/fake.pdf"), 1, dpi=200)
+
+            # _validar_dimensiones DEBE haber sido llamada
+            mock_val.assert_called_once_with(mock_img)
+
+    def test_renderizar_retorna_imagen_validada(self):
+        """El resultado de renderizar_pagina es la imagen validada."""
+        mock_img_original = MagicMock()
+        mock_img_original.size = (4000, 3000)
+
+        mock_img_validada = MagicMock()
+        mock_img_validada.size = (2000, 1500)
+
+        with patch.object(core, 'fitz') as mock_fitz, \
+             patch.object(core, 'Image') as mock_pil, \
+             patch.object(core, '_validar_dimensiones', return_value=mock_img_validada):
+            mock_doc = MagicMock()
+            mock_doc.__len__ = MagicMock(return_value=5)
+            mock_page = MagicMock()
+            mock_pix = MagicMock()
+            mock_pix.tobytes.return_value = b"fake"
+            mock_page.get_pixmap.return_value = mock_pix
+            mock_doc.__getitem__ = MagicMock(return_value=mock_page)
+            mock_fitz.open.return_value = mock_doc
+            mock_fitz.Matrix.return_value = MagicMock()
+            mock_pil.open.return_value = mock_img_original
+
+            result = core.renderizar_pagina(Path("/fake.pdf"), 1)
+
+            # El resultado debe ser la imagen validada, no la original
+            assert result is mock_img_validada

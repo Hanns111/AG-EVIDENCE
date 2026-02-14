@@ -239,5 +239,71 @@ class TestThresholdsConfig:
         assert th["ocr_min_confidence"] == 0.60
 
 
+class TestRegla2PostRotacion:
+    """Tests para validación obligatoria de dimensiones post-rotación (Regla 2)."""
+
+    def test_validar_dimensiones_importado(self):
+        """_validar_dimensiones debe estar importado en pdf_text_extractor."""
+        from src.ingestion import pdf_text_extractor as mod
+        # Si OCR está disponible, debe ser callable
+        if mod.OCR_DISPONIBLE:
+            assert callable(mod._validar_dimensiones)
+        else:
+            # Si no hay OCR, puede ser None
+            assert mod._validar_dimensiones is None or callable(mod._validar_dimensiones)
+
+    def test_post_rotacion_validacion_en_codigo(self):
+        """El código fuente debe contener la validación post-rotación."""
+        import inspect
+        from src.ingestion import pdf_text_extractor as mod
+        source = inspect.getsource(mod._extraer_texto_ocr)
+        assert "_validar_dimensiones" in source, (
+            "La función _extraer_texto_ocr debe llamar a _validar_dimensiones "
+            "después de preprocesar_rotacion (Regla 2)"
+        )
+
+    def test_post_rotacion_usa_validar_dimensiones(self):
+        """_extraer_texto_ocr debe llamar _validar_dimensiones post-rotación."""
+        from unittest.mock import patch, MagicMock
+        from src.ingestion import pdf_text_extractor as mod
+
+        if not mod.OCR_DISPONIBLE:
+            pytest.skip("OCR no disponible")
+
+        mock_img = MagicMock()
+        mock_img.size = (3000, 2000)
+        mock_img_rotada = MagicMock()
+        mock_img_rotada.size = (3000, 2000)
+        mock_img_validada = MagicMock()
+        mock_img_validada.size = (2000, 1333)
+
+        mock_ocr_result = {
+            "texto_completo": "test",
+            "snippet_200": "test",
+            "confianza_promedio": 0.9,
+            "num_palabras": 1,
+            "tiempo_ms": 10,
+            "error": None,
+            "motor_ocr": "paddleocr",
+            "lineas": [],
+        }
+
+        with patch.object(mod, 'renderizar_pagina', return_value=mock_img), \
+             patch.object(mod, 'preprocesar_rotacion', return_value=(mock_img_rotada, {"rotacion_grados": 0})), \
+             patch.object(mod, '_validar_dimensiones', return_value=mock_img_validada) as mock_val, \
+             patch.object(mod, 'ejecutar_ocr', return_value=mock_ocr_result), \
+             patch.object(mod, 'verificar_ocr', return_value=(True, "ok", "paddleocr")), \
+             patch.object(mod, 'fitz') as mock_fitz:
+
+            mock_doc = MagicMock()
+            mock_doc.__len__ = MagicMock(return_value=1)
+            mock_fitz.open.return_value = mock_doc
+
+            result = mod._extraer_texto_ocr(Path("/fake.pdf"), sample_pages=1)
+
+            # _validar_dimensiones DEBE haber sido llamada con la imagen rotada
+            mock_val.assert_called_once_with(mock_img_rotada)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

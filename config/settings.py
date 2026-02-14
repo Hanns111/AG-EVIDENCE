@@ -356,4 +356,13 @@ OCR_CONFIG = {
 }
 
 
-
+# ==============================================================================
+# CONFIGURACIÓN DE VISIÓN (preprocesamiento de imágenes para proveedores)
+# ==============================================================================
+VISION_CONFIG = {
+    "max_dimension_px": 2000,         # Máximo ancho o alto permitido por el proveedor
+    "formato_salida": "PNG",          # Formato de la imagen redimensionada
+    "calidad_jpeg": 95,               # Calidad si se usa JPEG (0-100)
+    "metodo_resample": "LANCZOS",     # Método de interpolación (LANCZOS = alta calidad)
+    "dpi_render_pdf": 200,            # DPI para renderizar páginas de PDF a imagen
+}

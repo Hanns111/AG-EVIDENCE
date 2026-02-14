@@ -29,6 +29,7 @@ try:
         calcular_metricas_imagen,
         verificar_tesseract,
         verificar_ocr,
+        _validar_dimensiones,
         TESSERACT_DISPONIBLE,
         PADDLEOCR_DISPONIBLE,
     )
@@ -37,6 +38,7 @@ except ImportError:
     OCR_DISPONIBLE = False
     PADDLEOCR_DISPONIBLE = False
     TESSERACT_DISPONIBLE = False
+    _validar_dimensiones = None  # No disponible si OCR no se importó
 
 # Importar PyMuPDF para extracción directa
 try:
@@ -152,7 +154,12 @@ def _extraer_texto_ocr(
             # Preprocesar rotación
             img_corregida, rot_info = preprocesar_rotacion(img, lang)
             rotacion_info_ultima = rot_info
-            
+
+            # Regla 2: validación post-rotación obligatoria
+            # La rotación con expand=True puede cambiar dimensiones
+            if _validar_dimensiones is not None:
+                img_corregida = _validar_dimensiones(img_corregida)
+
             # Ejecutar OCR
             ocr_result = ejecutar_ocr(img_corregida, lang)
             

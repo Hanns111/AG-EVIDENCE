@@ -452,12 +452,59 @@ def ensure_lang_available(requested_lang: str) -> Tuple[bool, str, List[str]]:
 
 
 # =============================================================================
-# RENDERIZADO PDF (SIN CAMBIOS — solo usa PyMuPDF)
+# RENDERIZADO PDF — con validacion obligatoria de dimensiones (Regla 2)
 # =============================================================================
+
+def _validar_dimensiones(img: "Image.Image", max_dim: Optional[int] = None) -> "Image.Image":
+    """
+    Valida y redimensiona imagen si excede el limite del proveedor.
+
+    Regla 2: Ningun imagen renderizada puede continuar en el pipeline
+    sin pasar por esta validacion. El original no se modifica — se
+    retorna una copia redimensionada si es necesario.
+
+    Args:
+        img: Imagen PIL a validar.
+        max_dim: Limite maximo en px (ancho o alto). Si None, usa VISION_CONFIG.
+
+    Returns:
+        Imagen PIL dentro del limite (puede ser la misma si no excede).
+    """
+    from config.settings import VISION_CONFIG
+
+    if max_dim is None:
+        max_dim = VISION_CONFIG.get("max_dimension_px", 2000)
+
+    ancho, alto = img.size
+
+    if ancho <= max_dim and alto <= max_dim:
+        return img
+
+    # Calcular nuevas dimensiones manteniendo aspect ratio
+    if ancho >= alto:
+        nuevo_ancho = max_dim
+        nuevo_alto = max(1, int(alto * (max_dim / ancho)))
+    else:
+        nuevo_alto = max_dim
+        nuevo_ancho = max(1, int(ancho * (max_dim / alto)))
+
+    logger.info(
+        "vision_check: redimensionando %dx%d -> %dx%d (max=%dpx)",
+        ancho, alto, nuevo_ancho, nuevo_alto, max_dim,
+    )
+
+    resample = Image.LANCZOS if hasattr(Image, "LANCZOS") else Image.BICUBIC
+    return img.resize((nuevo_ancho, nuevo_alto), resample)
+
 
 def renderizar_pagina(pdf_path: Path, page_num: int, dpi: int = 200) -> Optional["Image.Image"]:
     """
     Renderiza una pagina PDF a imagen PIL usando PyMuPDF.
+
+    Incluye validacion obligatoria de dimensiones (Regla 2):
+    si la imagen renderizada excede el limite configurado en
+    VISION_CONFIG["max_dimension_px"], se redimensiona automaticamente
+    antes de retornarla. El PDF original no se modifica.
 
     Args:
         pdf_path: Ruta al archivo PDF (Path o str)
@@ -465,7 +512,7 @@ def renderizar_pagina(pdf_path: Path, page_num: int, dpi: int = 200) -> Optional
         dpi: Resolucion de renderizado
 
     Returns:
-        Imagen PIL o None si hay error
+        Imagen PIL (dentro del limite de dimensiones) o None si hay error
     """
     if fitz is None or Image is None:
         return None
@@ -484,6 +531,10 @@ def renderizar_pagina(pdf_path: Path, page_num: int, dpi: int = 200) -> Optional
         img = Image.open(io.BytesIO(img_data))
 
         doc.close()
+
+        # Regla 2: validacion obligatoria de dimensiones
+        img = _validar_dimensiones(img)
+
         return img
 
     except Exception:
