@@ -366,3 +366,24 @@ VISION_CONFIG = {
     "metodo_resample": "LANCZOS",     # Método de interpolación (LANCZOS = alta calidad)
     "dpi_render_pdf": 200,            # DPI para renderizar páginas de PDF a imagen
 }
+
+
+# ==============================================================================
+# CONFIGURACION DE IA LOCAL (Capa C — Analista opcional)
+# ==============================================================================
+LOCAL_ANALYST_CONFIG = {
+    "enabled": False,                    # Feature flag: True para activar Capa C
+    "model": "qwen3:32b",               # Modelo Ollama (Fase 3, no conectado aun)
+    "ollama_url": "http://localhost:11434",
+    "timeout_seconds": 60,
+    "max_tokens": 2048,
+    "campos_probatorios_bloqueados": [   # Campos que la IA NUNCA puede escribir
+        "ruc", "monto", "serie_numero", "fecha",
+        "razon_social", "igv", "valor_venta",
+        "base_imponible", "total", "subtotal",
+        "numero_documento", "ruc_proveedor", "ruc_emisor",
+        "monto_total", "monto_parcial",
+        "fecha_emision", "fecha_pago",
+        "serie", "numero",
+    ],
+}

@@ -88,6 +88,22 @@ FRASE_ABSTENCION_ESTANDAR = (
 # ==============================================================================
 # ENUMERACIONES
 # ==============================================================================
+class EvidenceStatus(Enum):
+    """
+    Estado probatorio de un campo extraido.
+
+    Clasificacion de 3 niveles que determina si un dato extraido
+    puede usarse como evidencia en control previo.
+
+    - LEGIBLE: Extraccion confiable, valor completo y verificable.
+    - INCOMPLETO: Valor parcial o confianza intermedia, requiere revision.
+    - ILEGIBLE: No se pudo extraer (abstencion formal).
+    """
+    LEGIBLE = "LEGIBLE"
+    INCOMPLETO = "INCOMPLETO"
+    ILEGIBLE = "ILEGIBLE"
+
+
 class RazonAbstencion(Enum):
     """
     Razones formales por las cuales un campo entra en abstención.
@@ -150,6 +166,11 @@ class CampoExtraido:
     valor_normalizado: str = ""
     tipo_campo: str = ""
 
+    # Patron de 3 capas (backward compatible — todos opcionales con default)
+    status: Optional["EvidenceStatus"] = None
+    bbox: Optional[Tuple[float, float, float, float]] = None
+    motor_ocr: str = ""
+
     def es_abstencion(self) -> bool:
         """
         Indica si este campo representa una abstención formal.
@@ -159,14 +180,53 @@ class CampoExtraido:
         """
         return self.valor is None and self.confianza == 0.0
 
+    def clasificar_status(self) -> "EvidenceStatus":
+        """
+        Determina el EvidenceStatus basado en el estado actual del campo.
+
+        Logica determinista:
+          - valor=None o confianza=0.0 -> ILEGIBLE
+          - confianza < umbral del tipo_campo -> INCOMPLETO
+          - confianza >= umbral -> LEGIBLE
+
+        Los umbrales por tipo se delegan a UmbralesAbstencion.
+
+        Returns:
+            EvidenceStatus clasificado.
+        """
+        if self.valor is None or self.confianza == 0.0:
+            return EvidenceStatus.ILEGIBLE
+
+        # Obtener umbral por tipo de campo
+        umbrales = UmbralesAbstencion()
+        umbral = umbrales.get_umbral(self.tipo_campo)
+
+        if self.confianza < umbral:
+            return EvidenceStatus.INCOMPLETO
+
+        return EvidenceStatus.LEGIBLE
+
+    def es_probatorio(self) -> bool:
+        """
+        Indica si este campo tiene valor probatorio verificable.
+
+        Solo campos con status LEGIBLE son probatorios.
+        Campos sin status clasificado se clasifican automaticamente.
+
+        Returns:
+            True si status es LEGIBLE.
+        """
+        status = self.status if self.status is not None else self.clasificar_status()
+        return status == EvidenceStatus.LEGIBLE
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Serializa a diccionario para JSON/JSONL.
 
         Returns:
-            Dict con todos los campos, incluyendo es_abstencion.
+            Dict con todos los campos, incluyendo es_abstencion y status.
         """
-        return {
+        result = {
             "nombre_campo": self.nombre_campo,
             "valor": self.valor,
             "archivo": self.archivo,
@@ -183,6 +243,14 @@ class CampoExtraido:
             "tipo_campo": self.tipo_campo,
             "es_abstencion": self.es_abstencion(),
         }
+        # Campos del patron de 3 capas (solo si tienen valor)
+        if self.status is not None:
+            result["status"] = self.status.value
+        if self.bbox is not None:
+            result["bbox"] = list(self.bbox)
+        if self.motor_ocr:
+            result["motor_ocr"] = self.motor_ocr
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "CampoExtraido":
@@ -204,6 +272,15 @@ class CampoExtraido:
                 data["metodo"] = MetodoExtraccion(data["metodo"])
             except ValueError:
                 data["metodo"] = MetodoExtraccion.MANUAL
+        # Convertir status string a enum si es necesario
+        if "status" in data and isinstance(data["status"], str):
+            try:
+                data["status"] = EvidenceStatus(data["status"])
+            except ValueError:
+                data["status"] = None
+        # Convertir bbox list a tuple si es necesario
+        if "bbox" in data and isinstance(data["bbox"], list):
+            data["bbox"] = tuple(data["bbox"])
         # Filtrar campos que no son del dataclass
         valid_fields = cls.__dataclass_fields__
         return cls(**{k: v for k, v in data.items() if k in valid_fields})

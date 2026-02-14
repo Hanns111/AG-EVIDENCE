@@ -272,6 +272,46 @@ Falta propagacion completa al contrato tipado.
 
 ---
 
+## REGLA 8 — Separacion de capas: Extraccion, Validacion, Analisis
+
+### Enunciado
+
+El sistema opera en 3 capas con responsabilidades estrictamente segregadas:
+
+**Capa A — Extraccion determinista:**
+- OCR + regex + validadores + abstencion.
+- Output: CampoExtraido con EvidenceStatus (LEGIBLE / INCOMPLETO / ILEGIBLE).
+- Evidencia obligatoria: archivo, pagina, bbox (cuando disponible), confianza OCR.
+- Prohibido: inferencia, estimacion, completar digitos.
+
+**Capa B — Validacion determinista:**
+- Validaciones formales por tipo de campo (RUC=11 digitos, patrones
+  serie/numero, checks aritmeticos subtotal+IGV=total).
+- Produce ValidationResult con flags y needs_human_review.
+- Modulo: `src/rules/field_validators.py`.
+
+**Capa C — IA local como analista (opcional, confinada):**
+- Feature flag: `LOCAL_ANALYST_CONFIG["enabled"]` en config/settings.py.
+- Input: records + flags + texto OCR raw.
+- Output permitido: notas, tags de riesgo, sugerencias de revision humana.
+- **Output prohibido: valores probatorios** (RUC, montos, serie, numero,
+  fecha, razon social, IGV, valor venta, total).
+- Si la IA intenta proponer valores probatorios, el sistema los bloquea
+  automaticamente con `NO_AUTORIZADO` y registra WARNING en TraceLogger.
+- Modulo: `src/extraction/local_analyst.py`.
+
+### Criterio de cumplimiento
+
+La Capa C **nunca puede escribir campos definidos como probatorios**.
+La funcion `_bloquear_valores_probatorios()` inspecciona toda salida de IA
+y reemplaza cualquier campo probatorio con `NO_AUTORIZADO`.
+Existen tests de seguridad explicitos que verifican este bloqueo.
+
+### Estado: IMPLEMENTADA como capacidad opcional (enabled=False por defecto).
+Motor de IA no conectado aun (Fase 3, Tareas #22-26).
+
+---
+
 ## Registro de Pendientes
 
 ### Manana (proxima sesion):
@@ -295,6 +335,7 @@ Los 3 scripts pasaran a consumir JSON intermedio generado por el pipeline.
 
 | Version | Fecha | Cambio |
 |---------|-------|--------|
+| 1.1.0 | 2026-02-14 | Regla 8: Separacion de 3 capas (Extraccion/Validacion/Analisis) |
 | 1.0.0 | 2026-02-13 | Documento inicial con 7 reglas formalizadas |
 
 ---
