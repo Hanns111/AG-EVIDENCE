@@ -10,9 +10,11 @@
 - **Proyecto:** AG-EVIDENCE v2.0 — Sistema multi-agente de control previo
 - **Repositorio:** Hanns111/AG-EVIDENCE
 - **Rama de trabajo:** main (directa, sin worktrees)
-- **Último commit en main:** b598cf5 (feat(governance): add session protocol, backup script, and untrack PDFs)
+- **Último commit en main:** (ver git log, se actualiza frecuentemente)
 - **Tag:** v2.2.0 (publicado en GitHub)
 - **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
+- **OCR Engine:** PaddleOCR 2.9.1 CPU (ADR-007) + Tesseract fallback
+- **DuckDB:** 1.4.4 instalado (base analitica)
 
 ---
 
@@ -55,9 +57,34 @@ Para Fase 4 (Validaciones), el sistema debe verificar:
 - Verificación vía consulta RUC SUNAT: actividad económica + condición MYPE + RUC activo
 - Escala temporal: 10% (2025-2026) → 15% (2027) → 18% (2028+)
 
+## Benchmark OCR Completado (2026-02-17)
+
+Prueba empirica con Caja Chica N.3 (112 paginas, 16 comprobantes):
+
+| Metrica | Tesseract | PaddleOCR 2.9.1 | Mejora |
+|---------|-----------|-----------------|--------|
+| Precision total | 20.3% | 36.2% | +78% |
+| Match exacto | 14/69 | 25/69 | +79% |
+| Serie/Numero | 5/16 | 10/16 | +100% |
+| IGV | 1/9 | 7/9 | +600% |
+| Fecha | 2/16 | 6/16 | +200% |
+| RUC | 1/12 | 1/12 | sin cambio |
+
+**RTX 5090 GPU:** No compatible con PaddlePaddle CUDA 12.6 (sm_120 Blackwell).
+Se usa CPU. Pendiente hasta soporte sm_120.
+
+## Qwen-VL Evaluacion (2026-02-17)
+
+- **Disponible en Ollama:** qwen3-vl:32b (20GB) + qwen3-vl:8b (6.1GB)
+- **VRAM RTX 5090:** 24.5 GB total, ~22.8 GB libre
+- **Recomendacion:** Activar qwen3-vl:8b como segundo motor de extraccion
+  para paginas con confianza PaddleOCR < 0.6 (Confidence Router, Tarea #18)
+- **Caso de uso principal:** Campos que OCR falla consistentemente (RUC, tablas complejas)
+- **Activacion:** Fase 3 (Tareas #22-26), requiere Contrato JSON tipado (Fase 2)
+
 ## Siguiente Sesión — Pendientes
 
-1. **Tarea #15** — Benchmark A/B: Tesseract vs PaddleOCR
+1. **Tarea #15** — Benchmark A/B: Tesseract vs PaddleOCR (datos recopilados, falta formalizar)
 2. **Tarea #16** — Re-generar Excel + validacion visual humana
 3. **Fase 2** — Contrato + Router + Agentes v2.0
 

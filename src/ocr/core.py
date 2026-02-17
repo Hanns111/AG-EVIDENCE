@@ -4,16 +4,17 @@ OCR Core — Motor OCR con PaddleOCR PP-OCRv5 + Tesseract Fallback
 =================================================================
 Modulo central de OCR para AG-EVIDENCE v2.0.
 
-Motor primario: PaddleOCR PP-OCRv5 (GPU acelerado via RTX 5090)
+Motor primario: PaddleOCR 2.9.1 (CPU, API 2.x — ADR-007)
 Motor fallback: Tesseract via pytesseract (si PaddleOCR no disponible)
+Nota: RTX 5090 (sm_120) no compatible con PaddlePaddle CUDA 12.6
 
 La interfaz publica se mantiene identica para compatibilidad con
 pdf_text_extractor.py y futuros consumidores.
 
-Referencia: ADR-006, Tarea #13, Tarea #14.
+Referencia: ADR-006, ADR-007, Tarea #13, Tarea #14.
 
-Version: 3.1.0
-Fecha: 2026-02-11
+Version: 3.2.0
+Fecha: 2026-02-17
 """
 
 import io
@@ -91,7 +92,7 @@ else:
     _ACTIVE_ENGINE = "none"
 
 
-__version__ = "3.1.0"
+__version__ = "3.2.0"
 
 
 # =============================================================================
@@ -294,7 +295,10 @@ def _get_paddleocr_instance(paddle_lang: str) -> Any:
     """
     Obtiene (o crea) una instancia singleton de PaddleOCR por idioma.
 
-    Intenta GPU primero, si falla usa CPU.
+    Usa PaddleOCR 2.x API (use_angle_cls, lang, show_log).
+    GPU via PaddlePaddle no es compatible con RTX 5090 (sm_120 Blackwell),
+    por lo que se usa CPU con PaddleOCR PP-OCRv3 que tiene excelente precision.
+
     Los modelos se descargan automaticamente en la primera ejecucion.
     """
     if paddle_lang in _paddleocr_instances:
@@ -303,36 +307,17 @@ def _get_paddleocr_instance(paddle_lang: str) -> Any:
     if _PaddleOCRClass is None:
         raise ImportError("paddleocr no esta instalado")
 
-    # Intentar con GPU
     try:
         instance = _PaddleOCRClass(
+            use_angle_cls=True,
             lang=paddle_lang,
-            text_detection_model_name="PP-OCRv5_server_det",
-            text_recognition_model_name="PP-OCRv5_server_rec",
-            use_doc_orientation_classify=True,
-            use_doc_unwarping=False,
-            use_textline_orientation=False,
-            device="gpu:0",
+            show_log=False,
         )
-        logger.info("PaddleOCR inicializado con GPU para lang=%s", paddle_lang)
-    except Exception as e_gpu:
-        logger.warning("PaddleOCR GPU fallo (%s), intentando CPU...", str(e_gpu)[:80])
-        try:
-            instance = _PaddleOCRClass(
-                lang=paddle_lang,
-                text_detection_model_name="PP-OCRv5_server_det",
-                text_recognition_model_name="PP-OCRv5_server_rec",
-                use_doc_orientation_classify=True,
-                use_doc_unwarping=False,
-                use_textline_orientation=False,
-                device="cpu",
-            )
-            logger.info("PaddleOCR inicializado con CPU para lang=%s", paddle_lang)
-        except Exception as e_cpu:
-            raise RuntimeError(
-                f"PaddleOCR no pudo inicializarse ni con GPU ni CPU: "
-                f"GPU={str(e_gpu)[:60]}, CPU={str(e_cpu)[:60]}"
-            ) from e_cpu
+        logger.info("PaddleOCR inicializado (CPU) para lang=%s", paddle_lang)
+    except Exception as e:
+        raise RuntimeError(
+            f"PaddleOCR no pudo inicializarse: {str(e)[:100]}"
+        ) from e
 
     _paddleocr_instances[paddle_lang] = instance
     return instance
@@ -781,7 +766,7 @@ def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, 
 
     inicio = time.time()
 
-    # PaddleOCR acepta numpy arrays
+    # PaddleOCR 2.x acepta numpy arrays
     if np is not None:
         img_input = np.array(img)
     else:
@@ -791,7 +776,9 @@ def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, 
             img.save(f, format="PNG")
             img_input = f.name
 
-    result = ocr_instance.predict(img_input)
+    # PaddleOCR 2.x API: ocr.ocr(img, cls=True)
+    # Retorna: [[[box, (text, score)], ...]] (lista de paginas, cada una lista de lineas)
+    result = ocr_instance.ocr(img_input, cls=True)
 
     resultado["tiempo_ms"] = int((time.time() - inicio) * 1000)
 
@@ -799,20 +786,19 @@ def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, 
     confianzas = []
     lineas_ocr: List[LineaOCR] = []
 
-    for res in result:
-        json_data = res.json
-        rec_texts = json_data.get("rec_texts", [])
-        rec_scores = json_data.get("rec_scores", [])
-        dt_polys = json_data.get("dt_polys", [])
-        textos.extend(rec_texts)
-        confianzas.extend(rec_scores)
+    if result and result[0]:
+        for line in result[0]:
+            box = line[0]  # [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
+            text = line[1][0]
+            score = line[1][1]
 
-        # Construir LineaOCR por cada linea detectada
-        for i, texto in enumerate(rec_texts):
-            bbox = _polygon_to_bbox(dt_polys[i]) if i < len(dt_polys) else None
-            score = rec_scores[i] if i < len(rec_scores) else None
+            textos.append(text)
+            confianzas.append(score)
+
+            # Convertir polygon (4 puntos) a bbox
+            bbox = _polygon_to_bbox(box) if box else None
             lineas_ocr.append(LineaOCR(
-                texto=texto,
+                texto=text,
                 bbox=bbox,
                 confianza=score,
                 motor="paddleocr",

@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO — AG-EVIDENCE
 
 ## Fecha de Corte
-2026-02-14
+2026-02-17
 
 ---
 
@@ -14,7 +14,7 @@ a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
 Se implemento el patron de 3 capas (Extraccion/Validacion/Analisis) como diseno
 estructural transversal.
 
-**Ultimo commit:** 9cdf65c (chore: structural governance baseline + enforced image validation pipeline)
+**Ultimo commit:** f642403 (test(ocr): add empirical OCR precision test for Caja Chica N.3)
 
 ---
 
@@ -27,7 +27,7 @@ estructural transversal.
 | `src/ingestion/pdf_text_extractor.py` | Operativo | Extraccion texto PDF con gating + validacion post-rotacion (Regla 2) |
 | `src/extraction/abstencion.py` | Operativo | Politica formal de abstencion + EvidenceStatus + clasificar_status() |
 | `src/extraction/local_analyst.py` | Nuevo | Capa C: IA local confinada con bloqueo de campos probatorios |
-| `src/ocr/core.py` | Operativo | Motor OCR PaddleOCR PP-OCRv5 + Tesseract fallback + bbox/confianza + Regla 2 |
+| `src/ocr/core.py` | Operativo | Motor OCR PaddleOCR 2.9.1 (CPU) + Tesseract fallback + bbox/confianza + Regla 2 |
 | `src/tools/vision.py` | Nuevo | Preprocesamiento de imagen (337 lineas) |
 | `src/rules/detraccion_spot.py` | Operativo | Validacion SPOT/detracciones |
 | `src/rules/tdr_requirements.py` | Operativo | Requisitos TDR |
@@ -71,7 +71,7 @@ estructural transversal.
 
 ## 5. Tests
 
-- **Total esperado:** ~400+ tests (se actualiza post-pytest)
+- **Total:** 473 passed, 0 failures (2026-02-17)
 - 11 test suites cubriendo todos los modulos activos
 - Tests de seguridad: bloqueo de campos probatorios en Capa C
 - Tests de backward compatibility: CampoExtraido sin nuevos campos
@@ -88,6 +88,10 @@ estructural transversal.
 
 ## 7. Decisiones Recientes
 
+- **ADR-007:** PaddleOCR 2.9.1 CPU reemplaza PP-OCRv5 GPU (RTX 5090 sm_120 incompatible)
+- **Benchmark OCR:** PaddleOCR 36.2% vs Tesseract 20.3% (+78% precision)
+- **DuckDB 1.4.4** instalado como base analitica (padron RUC futuro)
+- **Qwen3-VL** disponible en Ollama (32b@20GB + 8b@6.1GB) — pendiente activacion Fase 3
 - Patron de 3 capas formalizado (Regla 8 en Gobernanza Transversal)
 - LOCAL_ANALYST_ENABLED=False por defecto (Capa C no conectada a motor)
 - Bloqueo de campos probatorios en salida de IA: NO_AUTORIZADO
@@ -111,13 +115,29 @@ estructural transversal.
 
 ---
 
-## 9. Proximos Pasos
+## 9. Stack de Herramientas (instalado en WSL2)
 
-1. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
-2. Tarea #15: Benchmark A/B Tesseract vs PaddleOCR
-3. Tarea #16: Cerrar validacion visual de expedientes
+| Herramienta | Version | Estado | Uso |
+|-------------|---------|--------|-----|
+| PaddleOCR | 2.9.1 (CPU) | Operativo | Motor OCR primario |
+| PaddlePaddle | 3.0.0 (CPU) | Operativo | Backend PaddleOCR |
+| Tesseract | 5.x | Operativo | Motor OCR fallback |
+| DuckDB | 1.4.4 | Instalado | Base analitica (padron RUC) |
+| Qwen3-VL | 32b + 8b | Disponible (Ollama) | Vision Fase 3 |
+| PyMuPDF | 1.x | Operativo | Renderizado PDF |
+
+**Nota:** RTX 5090 (sm_120 Blackwell) NO compatible con PaddlePaddle CUDA 12.6.
+GPU pendiente hasta PaddlePaddle soporte sm_120 o CUDA Toolkit 13.x.
+
+---
+
+## 10. Proximos Pasos
+
+1. Tarea #15: Benchmark A/B Tesseract vs PaddleOCR (datos recopilados, falta formalizar)
+2. Tarea #16: Cerrar validacion visual de expedientes
+3. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
 4. Fase 2: Contrato JSON tipado + Router + Agentes v2.0
 
 ---
 
-**Ultima actualizacion:** 2026-02-14 por Claude Code
+**Ultima actualizacion:** 2026-02-17 por Claude Code
