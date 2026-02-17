@@ -90,6 +90,79 @@ Requiere `export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH` en WSL2.
 2. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
 3. **Fase 2** — Contrato + Router + Agentes v2.0
 
+### Investigacion Pendiente — TensorRT (pedido por Hans 2026-02-17)
+
+**Estado actual:**
+- PaddlePaddle 3.3.0 cu129 tiene **TensorRT compilado** como version `1.0.500`
+  (valor interno de PaddlePaddle, NO es la version publica de NVIDIA TensorRT)
+- `paddle.version.with_pip_tensorrt = OFF` — NO incluye TensorRT via pip
+- `paddle.inference.Config.enable_tensorrt_engine()` existe como metodo pero **falla en runtime**
+  porque **libnvinfer NO esta instalado** (ni en `/usr/lib/`, ni en `/usr/local/cuda/`)
+- `paddle.is_compiled_with_tensorrt()` NO existe como atributo
+
+**Por que falla:**
+- PaddlePaddle GPU cu129 fue compilado con soporte TensorRT opcional, pero el
+  paquete pip NO incluye las librerias runtime de TensorRT (`libnvinfer.so`)
+- Para activar TensorRT hay que instalar NVIDIA TensorRT separadamente
+  (dpkg/apt desde NVIDIA repos, o pip `tensorrt-cu12`)
+- Sin `libnvinfer.so`, `enable_tensorrt_engine()` lanza error en runtime
+
+**Accion sugerida para Hans:**
+1. Verificar si TensorRT aceleraria significativamente PaddleOCR
+   (actualmente ~1.5s/pagina GPU vs ~3-5s CPU; TensorRT podria bajar a ~0.5s)
+2. Si vale la pena: `pip install tensorrt-cu12 tensorrt-dispatch-cu12 tensorrt-lean-cu12`
+3. Riesgo: compatibilidad cu129 + sm_120 (Blackwell) no garantizada con TensorRT
+4. Prioridad: BAJA — el cuello de botella actual es precision, no velocidad
+
+### Analisis Pendiente — RUC 0% y Fecha 31% (pedido por Hans 2026-02-17)
+
+**RUC — 0/11 (0.0%): OCR lee RUCs pero selecciona el EQUIVOCADO**
+
+El problema NO es que el OCR no lee numeros de RUC. Los lee correctamente.
+El problema es que cada pagina tiene MULTIPLES RUCs (proveedor, pagador, intermediario)
+y la funcion `buscar_ruc()` simplemente toma el primero que no sea del MINEDU:
+
+| Gasto | Esperado | Extraido | Problema |
+|-------|----------|----------|----------|
+| #2 | 20610827171 | 20613530577 | Lee RUC de otro ente en la pagina |
+| #5 | 20604955498 | 20602200761 | Lee RUC de pagador/intermediario |
+| #7 | 20609780451 | 20613032101 | Lee otro RUC visible en la pagina |
+| #8 | 20606697091 | 20563313952 | Lee otro RUC |
+| #9 | 10701855406 | 10707855466 | Casi correcto — error OCR de digitos |
+| #10 | 20440493781 | 20132272418 | Lee RUC del pagador |
+| #14 | 20508565934 | 20131370998 | Lee RUC del MINEDU (no filtrado) |
+| #16 | 10073775006 | 20131370998 | Lee RUC del MINEDU |
+
+**Soluciones propuestas (en orden de viabilidad):**
+1. **Heuristica posicional (Fase 1):** buscar RUC CERCA de la etiqueta "RUC" o
+   "R.U.C." usando bbox de LineaOCR — el RUC del proveedor esta al inicio del
+   comprobante, junto a razon social. Requiere las lineas+bbox de Tarea #14.
+2. **Padron RUC SUNAT via DuckDB (Fase 2):** validar que el RUC extraido existe
+   y corresponde a una razon social coherente con el contexto del comprobante.
+3. **Qwen-VL vision (Fase 3):** modelo VLM entiende estructura visual de facturas
+   y puede distinguir "RUC del emisor" vs "RUC del comprador".
+4. **Filtro ampliado:** Expandir `rucs_pagador` con mas RUCs conocidos del Estado
+   (20131370998, 20304634781, etc.) — solucion parcial.
+
+**Fecha — 5/16 (31.2%): OCR lee fechas pero selecciona la EQUIVOCADA**
+
+Mismo patron: cada comprobante tiene multiples fechas (emision, vencimiento,
+recepcion, impresion) y `buscar_fecha()` toma la primera que encuentra.
+
+| Gasto | Esperado | Extraido | Problema |
+|-------|----------|----------|----------|
+| #1 | 06/02/2026 | 04/02/2026 | Lee fecha de recepcion, no emision |
+| #2 | 03/02/2026 | 30/01/2026 | Lee fecha de otra factura en la pagina |
+| #5 | 30/01/2026 | 06/02/2026 | Lee fecha de recepcion |
+| #6 | 07/02/2026 | 06/02/2020 | Error OCR: 2026→2020 + fecha equivocada |
+| #7 | 07/02/2026 | 06/02/2026 | Lee otra fecha |
+
+**Soluciones propuestas:**
+1. **Heuristica contextual:** buscar fecha DESPUES de "FECHA DE EMISION",
+   "F. EMISION", "FECHA:" usando contexto de lineas adyacentes.
+2. **Filtro por rango temporal:** descartar fechas fuera del rango del expediente
+   (ej: 2020 en un expediente 2026 = error evidente).
+
 ### Decisión Arquitectónica Pendiente de Implementación
 
 **Integrity Checkpoint** (se implementa en Tarea #18):
