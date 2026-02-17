@@ -14,7 +14,7 @@ a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
 Se implemento el patron de 3 capas (Extraccion/Validacion/Analisis) como diseno
 estructural transversal.
 
-**Ultimo commit:** f642403 (test(ocr): add empirical OCR precision test for Caja Chica N.3)
+**OCR Engine:** PaddleOCR 3.4.0 PP-OCRv5 server (GPU RTX 5090 via CUDA 12.9)
 
 ---
 
@@ -27,7 +27,7 @@ estructural transversal.
 | `src/ingestion/pdf_text_extractor.py` | Operativo | Extraccion texto PDF con gating + validacion post-rotacion (Regla 2) |
 | `src/extraction/abstencion.py` | Operativo | Politica formal de abstencion + EvidenceStatus + clasificar_status() |
 | `src/extraction/local_analyst.py` | Nuevo | Capa C: IA local confinada con bloqueo de campos probatorios |
-| `src/ocr/core.py` | Operativo | Motor OCR PaddleOCR 2.9.1 (CPU) + Tesseract fallback + bbox/confianza + Regla 2 |
+| `src/ocr/core.py` | Operativo | Motor OCR PP-OCRv5 server GPU + Tesseract fallback + bbox/confianza + Regla 2 (v4.0.0) |
 | `src/tools/vision.py` | Nuevo | Preprocesamiento de imagen (337 lineas) |
 | `src/rules/detraccion_spot.py` | Operativo | Validacion SPOT/detracciones |
 | `src/rules/tdr_requirements.py` | Operativo | Requisitos TDR |
@@ -57,7 +57,7 @@ estructural transversal.
 
 | Componente | Fase | Estado |
 |------------|------|--------|
-| Benchmark A/B Tesseract vs PaddleOCR | Fase 1 (#15) | Pendiente |
+| Benchmark A/B Tesseract vs PaddleOCR | Fase 1 (#15) | Completado (ADR-008) |
 | Re-generar Excel + validacion visual | Fase 1 (#16) | En progreso (3 expedientes procesados) |
 | Reprocesar Caja Chica N.3 con pipeline formal | Pre-Fase 2 | Pendiente (proxima sesion) |
 | Contrato de expediente (JSON tipado) | Fase 2 (#17) | Pendiente |
@@ -88,8 +88,8 @@ estructural transversal.
 
 ## 7. Decisiones Recientes
 
-- **ADR-007:** PaddleOCR 2.9.1 CPU reemplaza PP-OCRv5 GPU (RTX 5090 sm_120 incompatible)
-- **Benchmark OCR:** PaddleOCR 36.2% vs Tesseract 20.3% (+78% precision)
+- **ADR-008:** PaddleOCR PP-OCRv5 GPU restaurado (RTX 5090 via CUDA 12.9 cu129)
+- **Benchmark OCR:** PP-OCRv5 GPU 42.0% vs PaddleOCR 2.9.1 CPU 36.2% vs Tesseract 20.3%
 - **DuckDB 1.4.4** instalado como base analitica (padron RUC futuro)
 - **Qwen3-VL** disponible en Ollama (32b@20GB + 8b@6.1GB) — pendiente activacion Fase 3
 - Patron de 3 capas formalizado (Regla 8 en Gobernanza Transversal)
@@ -119,24 +119,23 @@ estructural transversal.
 
 | Herramienta | Version | Estado | Uso |
 |-------------|---------|--------|-----|
-| PaddleOCR | 2.9.1 (CPU) | Operativo | Motor OCR primario |
-| PaddlePaddle | 3.0.0 (CPU) | Operativo | Backend PaddleOCR |
+| PaddleOCR | 3.4.0 (GPU) | Operativo | Motor OCR primario PP-OCRv5 server |
+| PaddlePaddle | 3.3.0 GPU cu129 | Operativo | Backend PaddleOCR (CUDA 12.9, sm_120) |
 | Tesseract | 5.x | Operativo | Motor OCR fallback |
 | DuckDB | 1.4.4 | Instalado | Base analitica (padron RUC) |
 | Qwen3-VL | 32b + 8b | Disponible (Ollama) | Vision Fase 3 |
 | PyMuPDF | 1.x | Operativo | Renderizado PDF |
 
-**Nota:** RTX 5090 (sm_120 Blackwell) NO compatible con PaddlePaddle CUDA 12.6.
-GPU pendiente hasta PaddlePaddle soporte sm_120 o CUDA Toolkit 13.x.
+**RTX 5090 GPU:** Operativo con PaddlePaddle cu129. Requiere
+`export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH` en WSL2.
 
 ---
 
 ## 10. Proximos Pasos
 
-1. Tarea #15: Benchmark A/B Tesseract vs PaddleOCR (datos recopilados, falta formalizar)
-2. Tarea #16: Cerrar validacion visual de expedientes
-3. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
-4. Fase 2: Contrato JSON tipado + Router + Agentes v2.0
+1. Tarea #16: Cerrar validacion visual de expedientes
+2. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
+3. Fase 2: Contrato JSON tipado + Router + Agentes v2.0
 
 ---
 

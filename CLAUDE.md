@@ -13,7 +13,7 @@
 - **Último commit en main:** (ver git log, se actualiza frecuentemente)
 - **Tag:** v2.2.0 (publicado en GitHub)
 - **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
-- **OCR Engine:** PaddleOCR 2.9.1 CPU (ADR-007) + Tesseract fallback
+- **OCR Engine:** PaddleOCR 3.4.0 PP-OCRv5 server GPU (ADR-008) + Tesseract fallback
 - **DuckDB:** 1.4.4 instalado (base analitica)
 
 ---
@@ -61,17 +61,19 @@ Para Fase 4 (Validaciones), el sistema debe verificar:
 
 Prueba empirica con Caja Chica N.3 (112 paginas, 16 comprobantes):
 
-| Metrica | Tesseract | PaddleOCR 2.9.1 | Mejora |
-|---------|-----------|-----------------|--------|
-| Precision total | 20.3% | 36.2% | +78% |
-| Match exacto | 14/69 | 25/69 | +79% |
-| Serie/Numero | 5/16 | 10/16 | +100% |
-| IGV | 1/9 | 7/9 | +600% |
-| Fecha | 2/16 | 6/16 | +200% |
-| RUC | 1/12 | 1/12 | sin cambio |
+| Metrica | Tesseract | PaddleOCR 2.9.1 CPU | PP-OCRv5 GPU |
+|---------|-----------|---------------------|--------------|
+| Precision total | 20.3% | 36.2% | **42.0%** |
+| Match exacto | 14/69 | 25/69 | **29/69** |
+| No extraido | 31 | 17 | **15** |
+| Serie/Numero | — | 10/16 | 10/16 |
+| IGV | — | 7/10 | 7/10 |
+| Total (monto) | — | — | 7/16 |
+| Fecha | — | 6/16 | 5/16 |
+| RUC | — | 0/11 | 0/11 |
 
-**RTX 5090 GPU:** No compatible con PaddlePaddle CUDA 12.6 (sm_120 Blackwell).
-Se usa CPU. Pendiente hasta soporte sm_120.
+**RTX 5090 GPU:** Operativo con PaddlePaddle 3.3.0 cu129 (CUDA 12.9, sm_120).
+Requiere `export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH` en WSL2.
 
 ## Qwen-VL Evaluacion (2026-02-17)
 
@@ -84,8 +86,8 @@ Se usa CPU. Pendiente hasta soporte sm_120.
 
 ## Siguiente Sesión — Pendientes
 
-1. **Tarea #15** — Benchmark A/B: Tesseract vs PaddleOCR (datos recopilados, falta formalizar)
-2. **Tarea #16** — Re-generar Excel + validacion visual humana
+1. **Tarea #16** — Re-generar Excel + validacion visual humana
+2. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
 3. **Fase 2** — Contrato + Router + Agentes v2.0
 
 ### Decisión Arquitectónica Pendiente de Implementación

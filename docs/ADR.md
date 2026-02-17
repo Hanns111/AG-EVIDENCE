@@ -119,7 +119,7 @@ o falla en runtime. La interfaz publica de `src/ocr/core.py` no cambia
 
 ## ADR-007 — PaddleOCR 2.9.1 CPU reemplaza PP-OCRv5 GPU (RTX 5090 incompatible)
 
-**Estado:** Aceptada
+**Estado:** Superseded por ADR-008
 **Fecha:** 2026-02-17
 **Supersede:** ADR-006
 
@@ -170,6 +170,75 @@ con sm_120 (Blackwell) o hasta que NVIDIA CUDA Toolkit 13.x lo soporte.
 - Interfaz publica `ejecutar_ocr()` no cambia (cambio interno transparente)
 - RUC sigue siendo el campo mas dificil (1/12) — requiere post-procesamiento
   o validacion SUNAT via DuckDB
+
+---
+
+## ADR-008 — PaddleOCR PP-OCRv5 GPU restaurado (RTX 5090 via CUDA 12.9)
+
+**Estado:** Aceptada
+**Fecha:** 2026-02-17
+**Supersede:** ADR-007
+
+### Contexto
+ADR-007 declaro GPU incompatible porque PaddlePaddle 3.3.0 con CUDA 12.6
+no soportaba sm_120 (Blackwell). Se descubrio que:
+
+1. **PaddlePaddle GPU 3.3.0 con CUDA 12.9** (cu129) SI soporta sm_120.
+   Instalacion desde indice oficial: `pip install paddlepaddle-gpu==3.3.0
+   -i https://www.paddlepaddle.org.cn/packages/stable/cu129/`
+
+2. El problema original era un **conflicto de paquetes**: `paddlepaddle==3.0.0`
+   (CPU) y `paddlepaddle-gpu==3.3.0` coexistian, y Python cargaba la version CPU.
+   Solucion: desinstalar ambos y reinstalar solo `paddlepaddle-gpu` desde cu129.
+
+3. **PaddleOCR 3.4.0** con API 3.x (`.predict()`) funciona correctamente con
+   modelos PP-OCRv5 server en GPU RTX 5090.
+
+4. **Diferencia de API**: PaddleOCR 3.x retorna `OCRResult` con `json["res"]`
+   conteniendo `rec_texts`, `rec_scores`, `dt_polys`. Distinto de la API 2.x
+   que retornaba `[[[box, (text, score)], ...]]`.
+
+5. **LD_LIBRARY_PATH**: WSL2 requiere `export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH`
+   para acceder a libcuda.so.
+
+### Prueba empirica (Caja Chica N.3, 112 paginas, 16 comprobantes)
+
+| Metrica | Tesseract | PaddleOCR 2.9.1 CPU | PP-OCRv5 GPU | Mejora GPU vs Tess |
+|---------|-----------|---------------------|--------------|-------------------|
+| Precision total | 20.3% | 36.2% | 42.0% | +107% |
+| Match exacto | 14 | 25 | 29 | +107% |
+| No extraido | 31 | 17 | 15 | -52% |
+| Error | 24 | 27 | 25 | — |
+
+**Por campo (PP-OCRv5 GPU):**
+
+| Campo | Evaluables | Match | Error | NoExtr | Precision |
+|-------|-----------|-------|-------|--------|-----------|
+| Serie/Numero | 16 | 10 | 2 | 4 | 62.5% |
+| IGV | 10 | 7 | 1 | 2 | 70.0% |
+| Total (monto) | 16 | 7 | 3 | 6 | 43.8% |
+| Fecha | 16 | 5 | 8 | 3 | 31.2% |
+| RUC | 11 | 0 | 11 | 0 | 0.0% |
+
+### Decision
+PaddleOCR 3.4.0 PP-OCRv5 server (GPU RTX 5090 via CUDA 12.9) es el motor OCR primario.
+
+**Stack:**
+- `paddlepaddle-gpu==3.3.0` (cu129, soporta sm_120 Blackwell)
+- `paddleocr==3.4.0` + `paddlex==3.4.2`
+- Modelos: `PP-OCRv5_server_det` + `PP-OCRv5_server_rec`
+- API 3.x: `PaddleOCR(..., device="gpu:0").predict(img)`
+
+Tesseract se mantiene como fallback automatico si PaddleOCR falla.
+
+### Consecuencias
+- +107% precision vs Tesseract, +16% vs PaddleOCR 2.9.1 CPU
+- GPU acelerado: ~1.5s por pagina (primera pagina ~8s por carga de modelos)
+- PP-OCRv5 server = maxima precision disponible en PaddleOCR
+- CPU fallback para PP-OCRv5 NO funciona (NotImplementedError) — fallback va a Tesseract
+- RUC sigue siendo 0% — requiere validacion SUNAT via DuckDB o Qwen-VL (Fase 3)
+- Fechas 31.2% — OCR lee fechas pero confunde entre multiples fechas en documento
+- `LD_LIBRARY_PATH` debe incluir `/usr/lib/wsl/lib` en WSL2
 
 ---
 

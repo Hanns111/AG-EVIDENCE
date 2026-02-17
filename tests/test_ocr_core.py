@@ -75,7 +75,7 @@ class TestDependencyFlags:
         assert core._ACTIVE_ENGINE in ("paddleocr", "tesseract", "none")
 
     def test_version_is_current(self):
-        assert core.__version__ in ("3.0.0", "3.1.0", "3.2.0")
+        assert core.__version__ in ("3.0.0", "3.1.0", "3.2.0", "4.0.0")
 
 
 # =============================================================================

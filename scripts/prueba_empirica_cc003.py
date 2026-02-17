@@ -611,7 +611,7 @@ def ejecutar_prueba():
         "expediente": "OT2026-INT-0179550",
         "tipo": "Caja Chica N.0000003",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "pipeline_version": "OCR core v3.1.0",
+        "pipeline_version": "OCR core v4.0.0 (PP-OCRv5 GPU)",
         "dpi": DPI,
         "total_paginas_pdf": 112,
         "total_comprobantes": len(GROUND_TRUTH),
