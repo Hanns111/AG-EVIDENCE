@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.2.0] - 2026-02-18
+
+### Added
+- **Qwen2.5-VL-7B via Ollama** (`scripts/extraer_con_qwen_vl.py`): Motor VLM para extraccion visual de comprobantes de pago. Modelo qwen2.5vl:7b (Q4_K_M, 6GB) operando en RTX 5090 Laptop GPU via Ollama 0.16.2. Prompt forense de 11 grupos (A-K) con validacion aritmetica Python (Grupo J).
+- **PARSING_COMPROBANTES_SPEC.md** (`docs/`): Especificacion obligatoria para parseo de comprobantes peruanos. 11 grupos de campos, Regla de Oro de Literalidad Forense.
+- **ADR-009**: Decision arquitectonica de adoptar Qwen2.5-VL como motor VLM con estrategia mixta PyMuPDF + Qwen-VL.
+- **Scripts de exploracion**: `explorar_expediente.py`, `extraer_expediente_diri.py`, `setup_ollama.sh` para procesamiento de expedientes DIRI2026-INT-0068815.
+- **Fase A completada**: 3 facturas de referencia extraidas con >90% campos correctos.
+
+### Changed
+- CLAUDE.md actualizado con permisos completos de proyecto, stack Ollama/Qwen-VL, resultados Fase A.
+- ARCHITECTURE_SNAPSHOT.md actualizado con nuevo motor VLM y estrategia mixta.
+
+---
+
 ## [2.2.0] - 2026-02-10
 
 ### Added

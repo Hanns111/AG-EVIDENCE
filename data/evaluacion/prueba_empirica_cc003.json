@@ -1,0 +1,739 @@
+{
+  "prueba": "empirica_cc003",
+  "expediente": "OT2026-INT-0179550",
+  "tipo": "Caja Chica N.0000003",
+  "timestamp": "2026-02-17T06:14:45.281290+00:00",
+  "pipeline_version": "OCR core v3.1.0",
+  "dpi": 300,
+  "total_paginas_pdf": 112,
+  "total_comprobantes": 16,
+  "metodo_extraccion": "100% OCR (todas las paginas son imagenes escaneadas)",
+  "metricas": {
+    "total_campos_evaluados": 69,
+    "campos_gt_null_skip": 11,
+    "match_exacto": 29,
+    "match_parcial": 0,
+    "error": 25,
+    "no_extraido": 15,
+    "precision_pct": 42.0
+  },
+  "errores": [
+    {
+      "gasto": 1,
+      "campo": "serie_numero",
+      "extraido": "F001-00000468",
+      "esperado": "F001-1488"
+    },
+    {
+      "gasto": 1,
+      "campo": "total",
+      "extraido": 16.1,
+      "esperado": 19.0
+    },
+    {
+      "gasto": 1,
+      "campo": "fecha",
+      "extraido": "04/02/2026",
+      "esperado": "06/02/2026"
+    },
+    {
+      "gasto": 2,
+      "campo": "ruc",
+      "extraido": "20613530577",
+      "esperado": "20610827171"
+    },
+    {
+      "gasto": 2,
+      "campo": "fecha",
+      "extraido": "30/01/2026",
+      "esperado": "03/02/2026"
+    },
+    {
+      "gasto": 4,
+      "campo": "total",
+      "extraido": 45.8,
+      "esperado": 42.9
+    },
+    {
+      "gasto": 5,
+      "campo": "ruc",
+      "extraido": "20602200761",
+      "esperado": "20604955498"
+    },
+    {
+      "gasto": 5,
+      "campo": "fecha",
+      "extraido": "06/02/2026",
+      "esperado": "30/01/2026"
+    },
+    {
+      "gasto": 6,
+      "campo": "fecha",
+      "extraido": "06/02/2020",
+      "esperado": "07/02/2026"
+    },
+    {
+      "gasto": 7,
+      "campo": "ruc",
+      "extraido": "20613032101",
+      "esperado": "20609780451"
+    },
+    {
+      "gasto": 7,
+      "campo": "total",
+      "extraido": 29.66,
+      "esperado": 35.0
+    },
+    {
+      "gasto": 7,
+      "campo": "fecha",
+      "extraido": "06/02/2026",
+      "esperado": "07/02/2026"
+    },
+    {
+      "gasto": 8,
+      "campo": "ruc",
+      "extraido": "20563313952",
+      "esperado": "20606697091"
+    },
+    {
+      "gasto": 8,
+      "campo": "serie_numero",
+      "extraido": "F001-2152",
+      "esperado": "F001-2192"
+    },
+    {
+      "gasto": 9,
+      "campo": "ruc",
+      "extraido": "10707855466",
+      "esperado": "10701855406"
+    },
+    {
+      "gasto": 10,
+      "campo": "ruc",
+      "extraido": "20132272418",
+      "esperado": "20440493781"
+    },
+    {
+      "gasto": 10,
+      "campo": "fecha",
+      "extraido": "06/02/2026",
+      "esperado": "07/02/2026"
+    },
+    {
+      "gasto": 11,
+      "campo": "ruc",
+      "extraido": "20566545421",
+      "esperado": "20664646143"
+    },
+    {
+      "gasto": 11,
+      "campo": "igv",
+      "extraido": 15.59,
+      "esperado": 26.16
+    },
+    {
+      "gasto": 13,
+      "campo": "ruc",
+      "extraido": "20100030595",
+      "esperado": "20131370998"
+    },
+    {
+      "gasto": 14,
+      "campo": "ruc",
+      "extraido": "20131370998",
+      "esperado": "20508565934"
+    },
+    {
+      "gasto": 15,
+      "campo": "ruc",
+      "extraido": "20613530577",
+      "esperado": "20610827171"
+    },
+    {
+      "gasto": 15,
+      "campo": "fecha",
+      "extraido": "13/01/2026",
+      "esperado": "03/02/2026"
+    },
+    {
+      "gasto": 16,
+      "campo": "ruc",
+      "extraido": "20131370998",
+      "esperado": "10073775006"
+    },
+    {
+      "gasto": 16,
+      "campo": "fecha",
+      "extraido": "04/02/2026",
+      "esperado": "10/02/2026"
+    }
+  ],
+  "resultados_por_comprobante": [
+    {
+      "gasto": 1,
+      "pagina": 6,
+      "motor": "paddleocr",
+      "confianza": 0.937,
+      "chars": 1282,
+      "campos": {
+        "ruc": {
+          "extraido": "20614797402",
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "serie_numero": {
+          "extraido": "F001-00000468",
+          "esperado": "F001-1488",
+          "resultado": "ERROR"
+        },
+        "total": {
+          "extraido": 16.1,
+          "esperado": 19.0,
+          "resultado": "ERROR"
+        },
+        "igv": {
+          "extraido": 2.9,
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "fecha": {
+          "extraido": "04/02/2026",
+          "esperado": "06/02/2026",
+          "resultado": "ERROR"
+        }
+      },
+      "texto_ocr_primeras_200": "mpre CORPORACION IMPRESIONA EIRL R.U.C.20614797402 RUC20614797402 FACTURA ELECTRONICA siona AV.AVIACION NRO.2336 RES.LAS TORRES DE SAN BORA LIMA-LIMA-SANBORJA,SANBORJA,LIMA-LIMA Email:cx.impresiona@gm"
+    },
+    {
+      "gasto": 2,
+      "pagina": 12,
+      "motor": "paddleocr",
+      "confianza": 0.965,
+      "chars": 1475,
+      "campos": {
+        "ruc": {
+          "extraido": "20613530577",
+          "esperado": "20610827171",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": "E001-530",
+          "esperado": "E001-530",
+          "resultado": "MATCH"
+        },
+        "total": {
+          "extraido": 424.8,
+          "esperado": 424.8,
+          "resultado": "MATCH"
+        },
+        "igv": {
+          "extraido": 64.8,
+          "esperado": 64.8,
+          "resultado": "MATCH"
+        },
+        "fecha": {
+          "extraido": "30/01/2026",
+          "esperado": "03/02/2026",
+          "resultado": "ERROR"
+        }
+      },
+      "texto_ocr_primeras_200": "ASERVINT FACTURA ELECTRONICA ASERVINT PERU S.A.C. RUC:20613530577 E001-530 KM.14 SAN JUAN DE LURIGANCHO - LIMA - LIMA Forma de pago: Contado Fecha de Emisión ：30/01/2026 Senor(es) :MINISTERIO DE EDUCA"
+    },
+    {
+      "gasto": 3,
+      "pagina": 15,
+      "motor": "paddleocr",
+      "confianza": 0.972,
+      "chars": 558,
+      "campos": {
+        "ruc": {
+          "extraido": null,
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "serie_numero": {
+          "extraido": null,
+          "esperado": "0015171",
+          "resultado": "NO_EXTRAIDO"
+        },
+        "total": {
+          "extraido": null,
+          "esperado": 50.7,
+          "resultado": "NO_EXTRAIDO"
+        },
+        "igv": {
+          "extraido": null,
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "fecha": {
+          "extraido": null,
+          "esperado": "05/02/2026",
+          "resultado": "NO_EXTRAIDO"
+        }
+      },
+      "texto_ocr_primeras_200": "https://outlook.office.com/mail/0/inbox/id/AAQ Estimada Jefa, Buenas dias. Por encargo de la Responsable de la Unidad Formuladora de la OGA, agradeceremos disponer para mi persona de una movilidad par"
+    },
+    {
+      "gasto": 4,
+      "pagina": 23,
+      "motor": "paddleocr",
+      "confianza": 0.943,
+      "chars": 1691,
+      "campos": {
+        "ruc": {
+          "extraido": null,
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "serie_numero": {
+          "extraido": null,
+          "esperado": "0000-002",
+          "resultado": "NO_EXTRAIDO"
+        },
+        "total": {
+          "extraido": 45.8,
+          "esperado": 42.9,
+          "resultado": "ERROR"
+        },
+        "igv": {
+          "extraido": null,
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "fecha": {
+          "extraido": "27/01/2026",
+          "esperado": "27/01/2026",
+          "resultado": "MATCH"
+        }
+      },
+      "texto_ocr_primeras_200": "Sistema Integrado de Gestion Administrativa Modulo de Tesoreria Pagina: 1de1 Version 23.02.01.U2.MCMN PLANILLA DE MOVILIDAD NOO2 UNIDAD EJECUTORA :024 MINISTERIO DE EDUCACION-SEDE CENTRAL-O24 NRO.IDEN"
+    },
+    {
+      "gasto": 5,
+      "pagina": 31,
+      "motor": "paddleocr",
+      "confianza": 0.941,
+      "chars": 1213,
+      "campos": {
+        "ruc": {
+          "extraido": "20602200761",
+          "esperado": "20604955498",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": "F002-00008351",
+          "esperado": "F002-00008351",
+          "resultado": "MATCH"
+        },
+        "total": {
+          "extraido": 70.0,
+          "esperado": 70.0,
+          "resultado": "MATCH"
+        },
+        "igv": {
+          "extraido": 10.68,
+          "esperado": 10.68,
+          "resultado": "MATCH"
+        },
+        "fecha": {
+          "extraido": "06/02/2026",
+          "esperado": "30/01/2026",
+          "resultado": "ERROR"
+        }
+      },
+      "texto_ocr_primeras_200": "FACTURA ELECTRONICA METALINOX E.I.R.L. RUC 20602200761 F002-00008351 FABRICACION DE ESTRUCTURAS METALICAS ENINOX.Y VENTA DEACCESORIOS PARA VIDRIO TEMPLADO SERVICIO DE TORNOY SOLDADURA ENGENERAL Sede P"
+    },
+    {
+      "gasto": 6,
+      "pagina": 35,
+      "motor": "paddleocr",
+      "confianza": 0.855,
+      "chars": 2326,
+      "campos": {
+        "ruc": {
+          "extraido": "20609988364",
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "serie_numero": {
+          "extraido": "F001-00007369",
+          "esperado": "F001-7369",
+          "resultado": "MATCH"
+        },
+        "total": {
+          "extraido": 95.0,
+          "esperado": 95.0,
+          "resultado": "MATCH"
+        },
+        "igv": {
+          "extraido": 14.49,
+          "esperado": 14.49,
+          "resultado": "MATCH"
+        },
+        "fecha": {
+          "extraido": "06/02/2020",
+          "esperado": "07/02/2026",
+          "resultado": "ERROR"
+        }
+      },
+      "texto_ocr_primeras_200": "6/2/26,11:57a.m. SPRYSALES 6/2/26,11:57a.m. SPRYSALES 8 COMERCIAL VICKIH&EE.I.R.L. Av.Guilieroo Dansey N478 Psje.10Tda.AF11C.C. Nicolini-Lima R.U.C20609988364 COMERCIAL VICKIH&E E.I.R.L. AV.AV LLSOL S"
+    },
+    {
+      "gasto": 7,
+      "pagina": 38,
+      "motor": "paddleocr",
+      "confianza": 0.934,
+      "chars": 1217,
+      "campos": {
+        "ruc": {
+          "extraido": "20613032101",
+          "esperado": "20609780451",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": "E001-1094",
+          "esperado": "E001-1094",
+          "resultado": "MATCH"
+        },
+        "total": {
+          "extraido": 29.66,
+          "esperado": 35.0,
+          "resultado": "ERROR"
+        },
+        "igv": {
+          "extraido": 5.34,
+          "esperado": 5.34,
+          "resultado": "MATCH"
+        },
+        "fecha": {
+          "extraido": "06/02/2026",
+          "esperado": "07/02/2026",
+          "resultado": "ERROR"
+        }
+      },
+      "texto_ocr_primeras_200": "6/2/26, 12:23 ∴Factura Electronica -Impresion : RAYPEC S.A.C. FACTURAELECTRONICA AV.PJ.PASAJE1O PUESTOAD2478Z.I.AV.GUILLERMO DANSEY INT. RUC:20613032101 AD2 GALERIA NICOLLINI PASAJE1O PUESTOAD2 E001-1"
+    },
+    {
+      "gasto": 8,
+      "pagina": 42,
+      "motor": "paddleocr",
+      "confianza": 0.947,
+      "chars": 1392,
+      "campos": {
+        "ruc": {
+          "extraido": "20563313952",
+          "esperado": "20606697091",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": "F001-2152",
+          "esperado": "F001-2192",
+          "resultado": "ERROR"
+        },
+        "total": {
+          "extraido": 252.0,
+          "esperado": 252.0,
+          "resultado": "MATCH"
+        },
+        "igv": {
+          "extraido": null,
+          "esperado": 38.44,
+          "resultado": "NO_EXTRAIDO"
+        },
+        "fecha": {
+          "extraido": null,
+          "esperado": "08/02/2026",
+          "resultado": "NO_EXTRAIDO"
+        }
+      },
+      "texto_ocr_primeras_200": "ED D&DSOLUCIONES ELECTRICAS E.R.L. RUC:20563313952 VENTADEARTiCULOSELÉCTRICOS,CABLES EN TODAS LAS MARCAS:INDECO,CEPER, FACTURA CELSA,INMERSUR,BRANDE,INTERRUPTORES,TOMACORRIENTES,BTICINO, ELECTRONICA F"
+    },
+    {
+      "gasto": 9,
+      "pagina": 51,
+      "motor": "paddleocr",
+      "confianza": 0.958,
+      "chars": 1255,
+      "campos": {
+        "ruc": {
+          "extraido": "10707855466",
+          "esperado": "10701855406",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": "E001-2892",
+          "esperado": "E001-2892",
+          "resultado": "MATCH"
+        },
+        "total": {
+          "extraido": 36.0,
+          "esperado": 36.0,
+          "resultado": "MATCH"
+        },
+        "igv": {
+          "extraido": 5.49,
+          "esperado": 5.49,
+          "resultado": "MATCH"
+        },
+        "fecha": {
+          "extraido": "06/02/2026",
+          "esperado": "06/02/2026",
+          "resultado": "MATCH"
+        }
+      },
+      "texto_ocr_primeras_200": "GSO DIGITAL SALAZAR ORE GLEM ANDERSON FACTURAELECTRONICA AV.AVIACION2420URB.SANBORJAINT.39 SANBORJA - LIMA - LIMA RUC:10707855466 E001-2892 Fecha de Emision Señor(es) 06/02/2026 Forma de pago: Contado"
+    },
+    {
+      "gasto": 10,
+      "pagina": 58,
+      "motor": "paddleocr",
+      "confianza": 0.948,
+      "chars": 1349,
+      "campos": {
+        "ruc": {
+          "extraido": "20132272418",
+          "esperado": "20440493781",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": "FQ01-000569",
+          "esperado": "FQ01-00569",
+          "resultado": "MATCH"
+        },
+        "total": {
+          "extraido": null,
+          "esperado": 55.0,
+          "resultado": "NO_EXTRAIDO"
+        },
+        "igv": {
+          "extraido": 8.39,
+          "esperado": 8.39,
+          "resultado": "MATCH"
+        },
+        "fecha": {
+          "extraido": "06/02/2026",
+          "esperado": "07/02/2026",
+          "resultado": "ERROR"
+        }
+      },
+      "texto_ocr_primeras_200": "ITTSA RUC.20132272418 INTERNACIONAL DE TRANSPORTE TURISTICOY SERVICIOS SRL AV.TUPAC AMARU NRO.1I9B URB.SANTALEONORIA UBERTAD-TRUJILLO-TRUJLLO '> FACTURA DE VENTA ELECTRONICA Nro:FQ01-000569 GUIA REMIS"
+    },
+    {
+      "gasto": 11,
+      "pagina": 63,
+      "motor": "paddleocr",
+      "confianza": 0.958,
+      "chars": 1041,
+      "campos": {
+        "ruc": {
+          "extraido": "20566545421",
+          "esperado": "20664646143",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": "F001-00032196",
+          "esperado": "F001-00032196",
+          "resultado": "MATCH"
+        },
+        "total": {
+          "extraido": null,
+          "esperado": 171.5,
+          "resultado": "NO_EXTRAIDO"
+        },
+        "igv": {
+          "extraido": 15.59,
+          "esperado": 26.16,
+          "resultado": "ERROR"
+        },
+        "fecha": {
+          "extraido": "05/02/2026",
+          "esperado": "05/02/2026",
+          "resultado": "MATCH"
+        }
+      },
+      "texto_ocr_primeras_200": "DIA05DEFEBRERO2026 CHIFAWANGXIANGYUAN HAO YUN LAI LAI S.A.C 20566545421 AV.AVIACION NRO.3219 URB.LAS MAGNOLIAS-LIMA LIMA SAN BOOA FACTURAELECTRONICA F001-00032196 05-02-202618:35:08 CLIENTE: MINISTERI"
+    },
+    {
+      "gasto": 12,
+      "pagina": 65,
+      "motor": "paddleocr",
+      "confianza": 0.933,
+      "chars": 876,
+      "campos": {
+        "ruc": {
+          "extraido": "20515696441",
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "serie_numero": {
+          "extraido": null,
+          "esperado": "FD1-00021821",
+          "resultado": "NO_EXTRAIDO"
+        },
+        "total": {
+          "extraido": null,
+          "esperado": 188.5,
+          "resultado": "NO_EXTRAIDO"
+        },
+        "igv": {
+          "extraido": null,
+          "esperado": 28.75,
+          "resultado": "NO_EXTRAIDO"
+        },
+        "fecha": {
+          "extraido": null,
+          "esperado": "05/02/2026",
+          "resultado": "NO_EXTRAIDO"
+        }
+      },
+      "texto_ocr_primeras_200": "DiA06 DE FEBRERO 2026 MM Norky's 2301232 SOLDATIS.A.C. RUC:20515696441 AV.AVIACION NRO.2454 LIMA-LiMA-SAN BORJA AV.AVIACION NRO.2454 LIMA  LIMA·SAN BORJA Central Delivery: 644-9100 FACTURAELECTRONICA "
+    },
+    {
+      "gasto": 13,
+      "pagina": 70,
+      "motor": "paddleocr",
+      "confianza": 0.948,
+      "chars": 1155,
+      "campos": {
+        "ruc": {
+          "extraido": "20100030595",
+          "esperado": "20131370998",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": null,
+          "esperado": "260001715589",
+          "resultado": "NO_EXTRAIDO"
+        },
+        "total": {
+          "extraido": null,
+          "esperado": 1028.7,
+          "resultado": "NO_EXTRAIDO"
+        },
+        "igv": {
+          "extraido": null,
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "fecha": {
+          "extraido": "09/02/2026",
+          "esperado": "09/02/2026",
+          "resultado": "MATCH"
+        }
+      },
+      "texto_ocr_primeras_200": "3 Banco pagalo.pe de la Nación el banco de todos www.pagalo.pe RUC:20100030595 CONSTANCIADEPAGODE TASAS NRO.TICKET: 260001715589 Datos de la operacion: FECHADEOPERACION: 09/02/202615:35:44 ENTIDAD: RE"
+    },
+    {
+      "gasto": 14,
+      "pagina": 83,
+      "motor": "paddleocr",
+      "confianza": 0.944,
+      "chars": 1683,
+      "campos": {
+        "ruc": {
+          "extraido": "20131370998",
+          "esperado": "20508565934",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": "FD15-00502949",
+          "esperado": "FD15-00502949",
+          "resultado": "MATCH"
+        },
+        "total": {
+          "extraido": 158.9,
+          "esperado": 158.9,
+          "resultado": "MATCH"
+        },
+        "igv": {
+          "extraido": null,
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "fecha": {
+          "extraido": "09/02/2026",
+          "esperado": "09/02/2026",
+          "resultado": "MATCH"
+        }
+      },
+      "texto_ocr_primeras_200": "COMPANIA HARD DISCOUNT S.A.C. RUC20608280333 CAL.CESAR MORELLI 139P-3 SAN BORJA,LIMA FACTURA ELECTRONICA FD15-00502949 SENOR :MINISTERIO DE EDUCACIO DOC.IDENTIDAD:RUC20131370998 7622201714819FIELDS0D6"
+    },
+    {
+      "gasto": 15,
+      "pagina": 88,
+      "motor": "paddleocr",
+      "confianza": 0.954,
+      "chars": 1457,
+      "campos": {
+        "ruc": {
+          "extraido": "20613530577",
+          "esperado": "20610827171",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": "E001-499",
+          "esperado": "E001-499",
+          "resultado": "MATCH"
+        },
+        "total": {
+          "extraido": 424.8,
+          "esperado": 424.8,
+          "resultado": "MATCH"
+        },
+        "igv": {
+          "extraido": 64.8,
+          "esperado": 64.8,
+          "resultado": "MATCH"
+        },
+        "fecha": {
+          "extraido": "13/01/2026",
+          "esperado": "03/02/2026",
+          "resultado": "ERROR"
+        }
+      },
+      "texto_ocr_primeras_200": "ASERVINT ASERVINTPERU S.A.C. FACTURAELECTRONICA AV.CANTOGRANDEA.H.PROYECTOSESPECIALESMZA.BLOTE.04 RUC:20613530577 KM.14 E001-499 SANJUANDELURIGANCHO- LIMA- LIMA Fechade Emisin ：13/01/2026 Forma de pag"
+    },
+    {
+      "gasto": 16,
+      "pagina": 90,
+      "motor": "paddleocr",
+      "confianza": 0.958,
+      "chars": 2044,
+      "campos": {
+        "ruc": {
+          "extraido": "20131370998",
+          "esperado": "10073775006",
+          "resultado": "ERROR"
+        },
+        "serie_numero": {
+          "extraido": "EB01-6",
+          "esperado": "EB01-6",
+          "resultado": "MATCH"
+        },
+        "total": {
+          "extraido": null,
+          "esperado": 38.0,
+          "resultado": "NO_EXTRAIDO"
+        },
+        "igv": {
+          "extraido": null,
+          "esperado": null,
+          "resultado": "SKIP_GT_NULL"
+        },
+        "fecha": {
+          "extraido": "04/02/2026",
+          "esperado": "10/02/2026",
+          "resultado": "ERROR"
+        }
+      },
+      "texto_ocr_primeras_200": "Direccion General de Direccion de PERU Despacho Ministerio Viceministerial de Gestion Fortalecimiento de de Educacion Gestion Institucional Descentralizada Capacidades responsables del evento a fin de"
+    }
+  ],
+  "criterio_exito": {
+    "meta_texto_embebido": ">=95% (no aplica, todo es escaneado)",
+    "meta_escaneado": ">=85%",
+    "resultado": "FAIL"
+  }
+}

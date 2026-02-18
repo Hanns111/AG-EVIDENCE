@@ -14,6 +14,7 @@
 - **Tag:** v2.2.0 (publicado en GitHub)
 - **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
 - **OCR Engine:** PaddleOCR 3.4.0 PP-OCRv5 server GPU (ADR-008) + Tesseract fallback
+- **VLM Engine:** Ollama 0.16.2 + Qwen2.5-VL-7B (Q4_K_M, 6GB) — ADR-009
 - **DuckDB:** 1.4.4 instalado (base analitica)
 
 ---
@@ -75,20 +76,39 @@ Prueba empirica con Caja Chica N.3 (112 paginas, 16 comprobantes):
 **RTX 5090 GPU:** Operativo con PaddlePaddle 3.3.0 cu129 (CUDA 12.9, sm_120).
 Requiere `export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH` en WSL2.
 
-## Qwen-VL Evaluacion (2026-02-17)
+## Qwen2.5-VL Operativo (2026-02-18)
 
-- **Disponible en Ollama:** qwen3-vl:32b (20GB) + qwen3-vl:8b (6.1GB)
-- **VRAM RTX 5090:** 24.5 GB total, ~22.8 GB libre
-- **Recomendacion:** Activar qwen3-vl:8b como segundo motor de extraccion
-  para paginas con confianza PaddleOCR < 0.6 (Confidence Router, Tarea #18)
-- **Caso de uso principal:** Campos que OCR falla consistentemente (RUC, tablas complejas)
-- **Activacion:** Fase 3 (Tareas #22-26), requiere Contrato JSON tipado (Fase 2)
+- **Motor:** Ollama 0.16.2 + qwen2.5vl:7b (Q4_K_M, 6.0 GB) — ADR-009
+- **Instalacion:** Sin sudo en ~/ollama/ (WSL2 user-space)
+- **GPU:** RTX 5090 Laptop 24GB, CUDA 12.0, 29/29 layers offloaded
+- **VRAM:** ~14.3 GB total (5.3 weights + 8.3 compute + 0.4 KV cache)
+- **Nombre correcto del modelo:** `qwen2.5vl:7b` (SIN guion entre qwen2.5 y vl)
+
+### Fase A Completada — Resultados 3 facturas de referencia
+
+| Factura | Tiempo | Tokens | Confianza | Grupo J |
+|---------|--------|--------|-----------|---------|
+| El Chalan F011-8846 (imagen) | 46.1s | 891 | alta | 1 OK, 2 ERR |
+| Win & Win F700-141 (texto) | 14.2s | 947 | alta | 3 OK, 1 ERR |
+| Virgen del Carmen E001-1771 (texto) | 13.4s | 871 | baja | 2 OK, 1 ERR |
+
+- **Estrategia aprobada:** Mixta PyMuPDF + Qwen-VL (ADR-009)
+  - 12 comprobantes con texto digital → parseo PyMuPDF (regex Python)
+  - 3 paginas imagen → Qwen-VL via Ollama
+  - Validacion aritmetica Grupo J siempre con Python
+
+### Arranque Ollama (patron confiable)
+```bash
+wsl bash -c 'export LD_LIBRARY_PATH=/home/hans/ollama/lib/ollama:/usr/lib/wsl/lib:$LD_LIBRARY_PATH && export OLLAMA_MODELS=/home/hans/.ollama/models && /home/hans/ollama/bin/ollama serve & sleep 3 && /home/hans/ollama/bin/ollama list'
+```
+IMPORTANTE: serve + comandos en el MISMO bash -c, porque el server muere cuando el proceso padre termina.
 
 ## Siguiente Sesión — Pendientes
 
-1. **Tarea #16** — Re-generar Excel + validacion visual humana
-2. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
-3. **Fase 2** — Contrato + Router + Agentes v2.0
+1. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
+2. **Tarea #16** — Re-generar Excel con pipeline formal
+3. Reprocesar Caja Chica N.3 con pipeline formal
+4. **Fase 2** — Contrato + Router + Agentes v2.0
 
 ### Investigacion Pendiente — TensorRT (pedido por Hans 2026-02-17)
 
@@ -234,13 +254,30 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 
 ---
 
+## Permisos de Proyecto
+
+Claude Code tiene **permisos completos** sobre todo el directorio del proyecto AG-EVIDENCE y sus subcarpetas, incluyendo:
+- `data/` (expedientes, directivas, normativa, evaluacion)
+- `docs/` (gobernanza, ADRs, specs)
+- `src/` (codigo fuente)
+- `tests/` (tests)
+- `output/` (resultados generados)
+- `scripts/` (scripts de procesamiento)
+- `config/` (configuracion)
+
+**No preguntar permisos** para leer, escribir o ejecutar dentro del proyecto. Solo los archivos listados en "Archivos protegidos" requieren aprobacion de Hans para modificar.
+
+---
+
 ## Reglas de Proyecto
 
 - **Anti-alucinación:** toda observación CRÍTICA/MAYOR requiere archivo + página + snippet
 - **Abstención:** prefiere vacío honesto a dato inventado
 - **Local-first:** ningún dato sale a cloud (GDPR ready)
 - **Commits:** Conventional Commits obligatorio
-- **Hardware:** RTX 5090 32GB VRAM, WSL2 Ubuntu 22.04, Ollama qwen3:32b
+- **Hardware:** RTX 5090 24GB VRAM (Laptop), WSL2 Ubuntu 22.04
+- **LLM texto:** Ollama + qwen3:32b
+- **VLM vision:** Ollama + qwen2.5vl:7b (extraccion de comprobantes)
 - **Session Protocol:** Ver governance/SESSION_PROTOCOL.md (commit incremental obligatorio)
 - **OCR/Pipeline SIEMPRE en WSL2:** PaddleOCR, Tesseract, ocrmypdf, pdftotext, y todo el pipeline de extraccion OCR se ejecuta EXCLUSIVAMENTE desde WSL2. Nunca desde Windows nativo (los motores no están instalados ahí). La GPU (RTX 5090) solo es accesible desde WSL2. Para ejecutar scripts Python que usen OCR: `wsl bash -c "cd /mnt/c/Users/Hans/Proyectos/AG-EVIDENCE && python script.py"`
 
@@ -322,8 +359,13 @@ src/
     __init__.py, ocr_preprocessor.py
 scripts/
   backup_local.py           ← backup ZIP del proyecto completo
+  extraer_con_qwen_vl.py    ← Fase A: extraccion con Qwen2.5-VL via Ollama
+  explorar_expediente.py    ← PyMuPDF + PaddleOCR para explorar PDFs
+  extraer_expediente_diri.py ← Extraccion texto completa del expediente
   generar_excel_expediente.py
+  generar_excel_DIRI2026.py ← Excel con datos hardcoded (referencia)
   generar_excel_OTIC2026.py
+  setup_ollama.sh           ← Setup Ollama server en WSL2
 tests/
   conftest.py,
   test_abstencion.py, test_custody_chain.py,
@@ -338,4 +380,4 @@ data/
 
 ---
 
-*Actualizado: 2026-02-13 por Claude Code*
+*Actualizado: 2026-02-18 por Claude Code*

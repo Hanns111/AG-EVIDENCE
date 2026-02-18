@@ -242,6 +242,73 @@ Tesseract se mantiene como fallback automatico si PaddleOCR falla.
 
 ---
 
+## ADR-009 — Qwen2.5-VL-7B via Ollama como Motor de Extraccion Visual (VLM)
+
+**Estado:** Aceptada
+**Fecha:** 2026-02-18
+
+### Contexto
+El benchmark OCR (ADR-008) demostro que PaddleOCR PP-OCRv5 GPU alcanza 42% de precision
+total en comprobantes de pago, con debilidades criticas en:
+- RUC: 0% (confunde RUC del emisor con RUC del pagador)
+- Fechas: 31.2% (selecciona fecha equivocada entre multiples)
+
+OCR puro no entiende la **estructura semantica** de un comprobante (quien es emisor vs comprador).
+Se necesita un modelo de vision-lenguaje (VLM) que comprenda layout de documentos.
+
+### Evaluacion de alternativas
+| Opcion | VRAM | Pros | Contras |
+|--------|------|------|---------|
+| vLLM + Qwen2.5-VL-7B | ~16GB | Maxima performance | Blackwell sm_120 incompatible, compilacion desde cero |
+| Ollama + qwen2.5vl:7b | ~14GB | Install sin sudo, Q4_K_M, funciona en RTX 5090 | Menor throughput que vLLM |
+| Ollama + qwen3-vl:32b | ~22GB | Mayor precision potencial | No cabe con PaddleOCR simultaneo |
+| API cloud (GPT-4V) | 0 | Alta precision | Viola ADR-001 (local-first), costo |
+
+### Decision
+Se adopta **Ollama 0.16.2 + qwen2.5vl:7b** (Q4_K_M, 6.0 GB) como motor VLM primario.
+
+**Estrategia mixta aprobada:**
+1. **Comprobantes con texto digital** (PyMuPDF extrajo texto) → parseo con regex Python
+2. **Comprobantes imagen** (solo OCR disponible) → Qwen2.5-VL via Ollama
+3. **Validacion aritmetica** → siempre Python (Grupo J, ZERO INFERENCE)
+
+Esta estrategia es mas rapida (~30s vs ~5min) y mas precisa que enviar todo a VLM,
+porque PyMuPDF extrae texto perfecto de PDFs electronicos.
+
+### Resultados Fase A (3 facturas de referencia)
+
+| Factura | Pagina | Tiempo | Tokens | Confianza | Grupo J |
+|---------|--------|--------|--------|-----------|---------|
+| El Chalan F011-8846 | 20 (imagen) | 46.1s | 891 | alta | 1 OK, 2 ERR |
+| Win & Win F700-141 | 22 (texto) | 14.2s | 947 | alta | 3 OK, 1 ERR |
+| Virgen Carmen E001-1771 | 42 (texto) | 13.4s | 871 | baja | 2 OK, 1 ERR |
+
+>90% campos correctos → criterio cumplido para avanzar a Fase B.
+
+### Stack tecnico
+- **Ollama 0.16.2:** Instalado sin sudo en `~/ollama/` (user-space)
+- **Modelo:** `qwen2.5vl:7b` (nombre sin guion, Q4_K_M, 6.0 GB)
+- **GPU:** RTX 5090 Laptop 24GB, CUDA 12.0, sm_120, 29/29 layers offloaded
+- **VRAM:** ~14.3 GB (5.3 weights + 8.3 compute + 0.4 KV cache)
+- **API:** `POST http://localhost:11434/api/chat` con `images: [base64]`
+- **Prompt:** 11 grupos (A-K) de PARSING_COMPROBANTES_SPEC.md
+- **Parametros:** `temperature: 0.0, num_predict: 4096, num_ctx: 8192`
+
+### Regla de Oro: Literalidad Forense
+> "La IA extrae LITERALMENTE lo que ve. Python valida aritmeticamente."
+
+Incorporada a docs/PARSING_COMPROBANTES_SPEC.md como principio rector.
+El modelo VLM NO calcula, NO autocompleta, NO deduce. Python valida.
+
+### Consecuencias
+- Qwen2.5-VL resuelve el problema de RUC y fechas que OCR puro no podia
+- Estrategia mixta optimiza tiempo: PyMuPDF para texto digital, VLM para imagenes
+- PaddleOCR se mantiene como motor OCR para paginas no-comprobante
+- Ollama server debe correr en el MISMO bash -c que los comandos
+- Modelo `qwen2.5vl` (SIN guion) — `qwen2.5-vl` NO existe en Ollama
+
+---
+
 ## Regla de Actualización
 
 Si una decisión:

@@ -72,8 +72,10 @@ logs/
 .DS_Store
 Thumbs.db
 desktop.ini
+nul
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
@@ -136,6 +138,7 @@ data/directivas/**/*.png
 temp_*.py
 *.tmp
 *.bak
+data/evaluacion/temp_ocr/
 
 # ------------------------------------------------------------------------------
 # Jupyter Notebooks checkpoints
