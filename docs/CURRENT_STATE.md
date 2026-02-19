@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO — AG-EVIDENCE
 
 ## Fecha de Corte
-2026-02-17
+2026-02-18
 
 ---
 
@@ -15,6 +15,8 @@ Se implemento el patron de 3 capas (Extraccion/Validacion/Analisis) como diseno
 estructural transversal.
 
 **OCR Engine:** PaddleOCR 3.4.0 PP-OCRv5 server (GPU RTX 5090 via CUDA 12.9)
+**VLM Engine:** Ollama 0.16.2 + qwen2.5vl:7b (Q4_K_M, 6GB) — ADR-009
+**Expedientes procesados:** ODI2026-INT-0139051, DEBEDSAR2026-INT-0146130 (2 completados)
 
 ---
 
@@ -38,6 +40,8 @@ estructural transversal.
 | `docs/GOBERNANZA_TECNICA_TRANSVERSAL.md` | Nuevo | 8 reglas estructurales transversales |
 | `governance/SESSION_PROTOCOL.md` | Vigente | Protocolo apertura/cierre sesion |
 | `scripts/backup_local.py` | Vigente | Backup ZIP completo del proyecto |
+| `scripts/generar_excel_DEBEDSAR2026.py` | Operativo | Excel rendicion DEBEDSAR2026 (estrategia mixta PyMuPDF+VLM 500 DPI) |
+| `scripts/extraer_con_qwen_vl.py` | Operativo | Extraccion VLM Qwen2.5-VL via Ollama (11 grupos A-K) |
 
 ---
 
@@ -88,17 +92,16 @@ estructural transversal.
 
 ## 7. Decisiones Recientes
 
+- **ADR-009:** Qwen2.5-VL-7B via Ollama como motor VLM (estrategia mixta PyMuPDF + Qwen-VL)
 - **ADR-008:** PaddleOCR PP-OCRv5 GPU restaurado (RTX 5090 via CUDA 12.9 cu129)
 - **Benchmark OCR:** PP-OCRv5 GPU 42.0% vs PaddleOCR 2.9.1 CPU 36.2% vs Tesseract 20.3%
+- **Expediente DEBEDSAR2026 procesado:** 17 comprobantes, 500 DPI, estrategia mixta
+- **Regla de Literalidad Forense:** IA extrae literalmente, Python valida aritmeticamente
+- **NULL vs Blank:** NULL = motor no leyo campo existente; Blank = campo no aplicable
 - **DuckDB 1.4.4** instalado como base analitica (padron RUC futuro)
-- **Qwen3-VL** disponible en Ollama (32b@20GB + 8b@6.1GB) — pendiente activacion Fase 3
 - Patron de 3 capas formalizado (Regla 8 en Gobernanza Transversal)
-- LOCAL_ANALYST_ENABLED=False por defecto (Capa C no conectada a motor)
-- Bloqueo de campos probatorios en salida de IA: NO_AUTORIZADO
 - PDFs de directivas removidos del tracking git (~35 MB liberados)
-- Inventario de directivas en data/directivas/INVENTARIO_DIRECTIVAS.md
 - Commit incremental obligatorio (ver governance/SESSION_PROTOCOL.md)
-- Backup local via scripts/backup_local.py
 
 ---
 
@@ -109,6 +112,7 @@ estructural transversal.
 | `scripts/generar_excel_caja_chica_003.py` | 16 gastos hardcodeados (~28 valores) |
 | `scripts/generar_excel_OTIC2026.py` | Comprobantes hardcodeados (~50 valores) |
 | `scripts/generar_excel_expediente.py` | Comprobantes hardcodeados (~22 valores) |
+| `scripts/generar_excel_DEBEDSAR2026.py` | Comprobantes hardcodeados (~120 valores) — validado por Hans |
 | `scripts/generar_excel_otic0072834.py` | Comprobantes hardcodeados (~50 valores) |
 
 **Pendiente:** Refactorizar para consumir JSON del pipeline (post-Regla 4).
@@ -123,8 +127,8 @@ estructural transversal.
 | PaddlePaddle | 3.3.0 GPU cu129 | Operativo | Backend PaddleOCR (CUDA 12.9, sm_120) |
 | Tesseract | 5.x | Operativo | Motor OCR fallback |
 | DuckDB | 1.4.4 | Instalado | Base analitica (padron RUC) |
-| Qwen3-VL | 32b + 8b | Disponible (Ollama) | Vision Fase 3 |
-| PyMuPDF | 1.x | Operativo | Renderizado PDF |
+| Qwen2.5-VL-7B | Q4_K_M, 6GB | Operativo (Ollama 0.16.2) | Motor VLM primario (ADR-009) |
+| PyMuPDF | 1.x | Operativo | Renderizado PDF + extraccion texto digital |
 
 **RTX 5090 GPU:** Operativo con PaddlePaddle cu129. Requiere
 `export LD_LIBRARY_PATH=/usr/lib/wsl/lib:$LD_LIBRARY_PATH` en WSL2.
@@ -133,10 +137,11 @@ estructural transversal.
 
 ## 10. Proximos Pasos
 
-1. Tarea #16: Cerrar validacion visual de expedientes
-2. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
-3. Fase 2: Contrato JSON tipado + Router + Agentes v2.0
+1. Investigar herramienta de lectura fina para errores VLM (crop+zoom, modelo mayor, PaddleOCR second pass)
+2. Agregar columna de datos de referencia (correo, web, tel) — NO para rendiciones actuales
+3. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
+4. Fase 2: Contrato JSON tipado + Router + Agentes v2.0
 
 ---
 
-**Ultima actualizacion:** 2026-02-17 por Claude Code
+**Ultima actualizacion:** 2026-02-18 por Claude Code

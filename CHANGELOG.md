@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [3.3.0] - 2026-02-18
+
+### Added
+- **Expediente DEBEDSAR2026-INT-0146130 procesado completo** (`scripts/generar_excel_DEBEDSAR2026.py`): Script de generacion Excel con estrategia mixta PyMuPDF + Qwen2.5-VL a 500 DPI. 17 comprobantes, 7 gastos DJ movilidad, 4 boletos terrestres. 4 hojas Excel (Anexo 3, Comprobantes Fuente, DJ Movilidad, Boletos Terrestres).
+- **Regla NULL vs Blank**: NULL (celda roja) = motor no pudo leer campo existente. Blank = campo no aplicable al tipo de documento.
+- **Regla de Boleta de Venta**: RUC comprador debe ser institucional (20xxx), no DNI personal. Inscripcion personal no permitida.
+
+### Changed
+- CLAUDE.md actualizado con expediente DEBEDSAR2026, errores VLM documentados, reglas de negocio aprendidas.
+- Qwen2.5-VL renderizado a 500 DPI (antes 200 DPI) elimina casi todos los NULL de extraccion.
+
+### Known Issues
+- VLM confunde caracteres similares: 0/9 (F205-00012200 vs 12299), ll/lli (Calli vs gallina), ñ/n (Canaa vs Canga).
+- Pendiente herramienta de lectura fina (crop+zoom o modelo mayor).
+
+---
+
 ## [3.2.0] - 2026-02-18
 
 ### Added

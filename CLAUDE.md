@@ -103,12 +103,57 @@ wsl bash -c 'export LD_LIBRARY_PATH=/home/hans/ollama/lib/ollama:/usr/lib/wsl/li
 ```
 IMPORTANTE: serve + comandos en el MISMO bash -c, porque el server muere cuando el proceso padre termina.
 
+## Expediente DEBEDSAR2026-INT-0146130 Completado (2026-02-18)
+
+- **Comisionado:** MARTIARENA CARHUARUPAY, Víctor (DNI 25185850)
+- **Destino:** Lima → Tarapoto → Chachapoyas → Tarapoto → Lima (07-10/Feb/2026)
+- **Excel generado:** `output/RENDICION_DEBEDSAR2026-INT-0146130_v2.xlsx` (4 hojas, 18 columnas)
+- **Script:** `scripts/generar_excel_DEBEDSAR2026.py`
+- **Estrategia:** PyMuPDF (6 comprobantes texto digital) + Qwen2.5-VL-7B 500 DPI (11 comprobantes imagen)
+- **Resultado:** 0 NULL en datos principales. 500 DPI eliminó casi todos los vacíos vs 200 DPI.
+
+### Reglas de Extracción Validadas por Hans
+
+1. **SIN inferencia** — si el texto dice "NUEVA", se pone "NUEVA", NO se completa a "NUEVA CAJAMARCA"
+2. **SIN cruce** — NO comparar Anexo 3 con documento fuente en observaciones
+3. **SIN corrección manual** — si VLM lee algo mal, se reporta tal cual
+4. **NULL** = el campo EXISTE en el comprobante pero el motor no lo leyó
+5. **Blanco (vacío)** = el campo NO APLICA para ese tipo de comprobante
+6. **Observaciones** = solo texto relevante del propio comprobante (pie de página), nunca comparativas
+
+### Errores de Lectura VLM Detectados (Qwen2.5-VL-7B 500 DPI)
+
+| Comprobante | VLM leyó | Real (humano) | Tipo error |
+|-------------|----------|---------------|------------|
+| F205-00012200 (p41) | F205-00012200 | F205-00012299 | Confusión 0/9 en serie |
+| F205 (p41) | SANGUICHE BUTITARRA | SANGUCHE BUTIFARRA | Lectura imprecisa texto |
+| Boleta 001-005367 (p56) | Caldo Calli 25.00 | Caldo de gallina | Error lectura nombre plato |
+| F002-12174 (p63) | Jr. Pedro Canaa 398 | Jr. Pedro Canga 398 | Error lectura apellido |
+| F001-00000664 (p20) | PROGRAMA EDUCACION BASICA PAR. TODOS | PARA TODOS | Truncamiento |
+| FP01-233 (p60) | PAIACONES RELLENOS | PATACONES RELLENOS | Confusión I/T |
+
+**Conclusión Hans:** Estos errores de "lectura fina" requieren herramienta con mejor resolución
+o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente para mejora.
+
+### Reglas de Negocio Aprendidas (feedback de Hans)
+
+1. **IGV en servicios de taxi:** Correcto que sea 0, pero si hay IGV igual se acepta
+   siempre que el comprobante sea válido (RUC con actividad económica correcta)
+2. **Boleta de Venta (persona natural):** El RUC comprador debe ser el de la institución
+   (ej: 20380795907 PROGRAMA EDUCACION BASICA PARA TODOS), NO el DNI del comisionado.
+   Si la boleta pone DNI del comisionado como comprador → NO es válido (inscripción a
+   título personal no permitida). Si pone el nombre/RUC de la institución → OK.
+3. **Hotel con múltiples noches en 1 factura:** Es válido. No es duplicado.
+4. **Columna pendiente para futuro:** Datos de referencia (correo, web, teléfono) del emisor.
+   NO implementar en esta rendición, guardar para futuras fases.
+
 ## Siguiente Sesión — Pendientes
 
 1. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
 2. **Tarea #16** — Re-generar Excel con pipeline formal
 3. Reprocesar Caja Chica N.3 con pipeline formal
 4. **Fase 2** — Contrato + Router + Agentes v2.0
+5. **Investigar herramienta de lectura fina** — Qwen2.5-VL-7B confunde caracteres similares (0/9, I/T, ll/lli). Evaluar: crop+zoom de zona específica, modelo VLM más grande, o segundo pase con PaddleOCR PP-OCRv5 como validación cruzada
 
 ### Investigacion Pendiente — TensorRT (pedido por Hans 2026-02-17)
 
