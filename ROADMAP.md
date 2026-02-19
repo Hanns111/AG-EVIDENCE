@@ -3,8 +3,8 @@
 > Fuente unica de verdad del panorama completo del proyecto.
 > Sincronizado con el tablero Notion (DB: 6003e907-28f5-4757-ba93-88aa3efe03e1).
 
-**Ultima actualizacion:** 2026-02-11
-**Progreso global:** 14/40 completadas (35%), 0 en progreso
+**Ultima actualizacion:** 2026-02-19
+**Progreso global:** 15/40 completadas (37.5%), 0 en progreso
 
 ---
 
@@ -38,11 +38,11 @@
 
 ---
 
-## Fase 2: Contrato + Router — PENDIENTE (0/5)
+## Fase 2: Contrato + Router — EN PROGRESO (1/5)
 
 | # | Tarea | Estado | Modulo |
 |---|-------|--------|--------|
-| 17 | Contrato de datos: CampoExtraido + ExpedienteJSON | ⬜ | src/extraction/expediente_contract.py |
+| 17 | Contrato de datos: CampoExtraido + ExpedienteJSON | ✅ | src/extraction/expediente_contract.py |
 | 18 | Confidence Router + Integrity Checkpoint (nodo LangGraph) | ⬜ | src/extraction/confidence_router.py |
 | 19 | Calibrar umbrales con distribucion real | ⬜ | Calibracion |
 | 20 | Hoja DIAGNOSTICO en Excel | ⬜ | src/extraction/excel_writer.py |
@@ -112,6 +112,7 @@
 | Extractor PDF | src/ingestion/pdf_text_extractor.py | ~365 | 10 |
 | Config gating | src/ingestion/config.py | ~38 | — |
 | Abstencion | src/extraction/abstencion.py | ~550 | 66 |
+| Contrato de datos | src/extraction/expediente_contract.py | ~1161 | 84 |
 | OCR Core (PaddleOCR PP-OCRv5 + Tesseract fallback) | src/ocr/core.py | ~880 | 75 |
 | OCR Preprocessor | src/tools/ocr_preprocessor.py | ~301 | 6 |
 | Detraccion SPOT | src/rules/detraccion_spot.py | — | 25 |
@@ -119,7 +120,7 @@
 | Integrador SPOT+TDR | src/rules/integrador.py | — | — |
 | Config global | config/settings.py | ~360 | — |
 
-**Total tests:** 274 passed, 18 skipped (16: PIL/Windows, 2: PyMuPDF/Windows)
+**Total tests:** 550 passed, 8 skipped
 
 ---
 
@@ -128,7 +129,7 @@
 ```
 Fase 0: Setup          [██████████] 9/9  — COMPLETADA
 Fase 1: Trazabilidad   [██████████] 5/7  — EN PROGRESO (#15-16 pendientes)
-Fase 2: Contrato       [░░░░░░░░░░] 0/5  — PENDIENTE (Integrity Checkpoint en #18)
+Fase 2: Contrato       [██░░░░░░░░] 1/5  — EN PROGRESO (#17 ✅, #18-21 pendientes)
 Fase 3: Qwen           [░░░░░░░░░░] 0/5  — PENDIENTE
 Fase 4: Validaciones   [░░░░░░░░░░] 0/3  — PENDIENTE
 Fase 5: Evaluacion     [░░░░░░░░░░] 0/5  — PENDIENTE

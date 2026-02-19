@@ -7,7 +7,7 @@ Subsistema de extraccion estructurada de datos de documentos.
 Componentes:
   - abstencion: Politica formal de abstencion operativa (Tarea #12)
   - local_analyst: Interfaz para IA local como analista (Capa C)
-  - [Futuros]: ocr_extractor, campos, regex_engine
+  - expediente_contract: Contrato de datos tipado (Tarea #17)
 """
 
 from .abstencion import (
@@ -27,7 +27,39 @@ from .local_analyst import (
     CAMPOS_PROBATORIOS,
 )
 
+from .expediente_contract import (
+    VERSION_CONTRATO,
+    TipoComprobante,
+    CategoriaGasto,
+    MetodoExtraccionContrato,
+    TipoBoleto,
+    ConfianzaGlobal,
+    IntegridadStatus,
+    DatosEmisor,
+    DatosComprobante,
+    DatosAdquirente,
+    CondicionesComerciales,
+    ItemDetalle,
+    TotalesTributos,
+    ClasificacionGasto,
+    DatosHospedaje,
+    DatosMovilidad,
+    ValidacionesAritmeticas,
+    MetadatosExtraccion,
+    ComprobanteExtraido,
+    GastoDeclaracionJurada,
+    BoletoTransporte,
+    ItemAnexo3,
+    DatosAnexo3,
+    DocumentosConvenio,
+    ArchivoFuente,
+    ResumenExtraccion,
+    IntegridadExpediente,
+    ExpedienteJSON,
+)
+
 __all__ = [
+    # abstencion.py (Tarea #12)
     "CampoExtraido",
     "EvidenceStatus",
     "UmbralesAbstencion",
@@ -36,7 +68,37 @@ __all__ = [
     "AbstencionPolicy",
     "FUENTE_ABSTENCION",
     "FRASE_ABSTENCION_ESTANDAR",
+    # local_analyst.py (Capa C)
     "AnalysisNotes",
     "analyze_evidence",
     "CAMPOS_PROBATORIOS",
+    # expediente_contract.py (Tarea #17)
+    "VERSION_CONTRATO",
+    "TipoComprobante",
+    "CategoriaGasto",
+    "MetodoExtraccionContrato",
+    "TipoBoleto",
+    "ConfianzaGlobal",
+    "IntegridadStatus",
+    "DatosEmisor",
+    "DatosComprobante",
+    "DatosAdquirente",
+    "CondicionesComerciales",
+    "ItemDetalle",
+    "TotalesTributos",
+    "ClasificacionGasto",
+    "DatosHospedaje",
+    "DatosMovilidad",
+    "ValidacionesAritmeticas",
+    "MetadatosExtraccion",
+    "ComprobanteExtraido",
+    "GastoDeclaracionJurada",
+    "BoletoTransporte",
+    "ItemAnexo3",
+    "DatosAnexo3",
+    "DocumentosConvenio",
+    "ArchivoFuente",
+    "ResumenExtraccion",
+    "IntegridadExpediente",
+    "ExpedienteJSON",
 ]

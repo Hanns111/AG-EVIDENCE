@@ -21,16 +21,21 @@
 
 ## Última Tarea Completada
 
-- **Tarea #14** — Extender ResultadoPagina con bbox + confianza por linea (+ TraceLogger)
-- LineaOCR dataclass: bbox (Optional), confianza (Optional), motor
-- PaddleOCR: extrae dt_polys → _polygon_to_bbox()
-- Tesseract: agrupa palabras por (block_num, line_num) → lineas con bbox
-- TraceLogger integrado en ejecutar_ocr() via duck typing
-- +815 lineas, 44 tests nuevos (274 totales, 0 failures), commit e6a3229
-- Version: 3.0.0 → 3.1.0
+- **Tarea #17** — Contrato de datos tipado: ExpedienteJSON (Fase 2)
+- src/extraction/expediente_contract.py: 1161 líneas, 7 enums, 18+ dataclasses
+- Implementa Regla 4 de Gobernanza Técnica (contrato único JSON intermedio)
+- 11 Grupos (A-K) de PARSING_COMPROBANTES_SPEC.md como dataclasses
+- DocumentosConvenio (Pautas 5.1.11) para expedientes Estado-Estado
+- to_dict/from_dict roundtrip, to_json/from_json, generar_hash SHA-256
+- validar_completitud, verificar_unicidad_comprobantes, generar_resumen
+- CONVENIO_INTERINSTITUCIONAL agregado a NaturalezaExpediente
+- Tests: 84 tests nuevos (550 totales, 0 failures)
 
 ## Tareas Anteriores Relevantes
 
+- **Tarea #14** — Extender ResultadoPagina con bbox + confianza por linea (+ TraceLogger)
+- LineaOCR dataclass: bbox (Optional), confianza (Optional), motor
+- +815 lineas, 44 tests nuevos, commit e6a3229
 - **Tarea #13** — Rewrite OCR Engine (Tesseract → PaddleOCR PP-OCRv5)
 - src/ocr/core.py reescrito de 383 a 733 lineas, 47 tests, commit 8b5efe6
 - **Tarea #12** — Política formal de abstención operativa (src/extraction/abstencion.py)
@@ -147,13 +152,28 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 4. **Columna pendiente para futuro:** Datos de referencia (correo, web, teléfono) del emisor.
    NO implementar en esta rendición, guardar para futuras fases.
 
+## Convenios Interinstitucionales (Pautas 5.1.11) — Documentado 2026-02-19
+
+- **Documento:** `docs/CONVENIOS_INTERINSTITUCIONALES.md`
+- **Identificador:** GOV_RULE_CONVENIOS_INTERINSTITUCIONALES_v1
+- **Categoría:** OTROS_EXPEDIENTES → CONVENIO_INTERINSTITUCIONAL
+- **Naturaleza:** Relación Estado-Estado, NO aplica Ley de Contrataciones
+- **Documentos mínimos:** Convenio + Cobranza + Detalle + Informe Técnico + CCP + SINAD
+- **Conformidad funcional:** Informe técnico + memo = OK (no requiere doc separado)
+- **Validación obligatoria:** Coherencia económica (montos y periodos)
+- **No requiere:** Factura SUNAT, SEACE, Orden Servicio SIGA, proveído Logística
+- **Impacto en Tarea #17:** `ExpedienteJSON.documentos_convenio` (Optional[DocumentosConvenio])
+- **Impacto en settings.py:** Agregar CONVENIO_INTERINSTITUCIONAL a NaturalezaExpediente
+- **Ejemplo práctico:** Expedientes con RENIEC u otra entidad pública
+
 ## Siguiente Sesión — Pendientes
 
-1. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
-2. **Tarea #16** — Re-generar Excel con pipeline formal
-3. Reprocesar Caja Chica N.3 con pipeline formal
-4. **Fase 2** — Contrato + Router + Agentes v2.0
-5. **Investigar herramienta de lectura fina** — Qwen2.5-VL-7B confunde caracteres similares (0/9, I/T, ll/lli). Evaluar: crop+zoom de zona específica, modelo VLM más grande, o segundo pase con PaddleOCR PP-OCRv5 como validación cruzada
+1. **Seguridad AG-EVIDENCE** — Framework UE+US 2026 (NIS2, GDPR Art.32, NIST CSF 2.0). Fase 1 por implementar
+2. **Tarea #18** — Confidence Router + Integrity Checkpoint (nodo LangGraph)
+3. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
+4. **Tarea #16** — Re-generar Excel con pipeline formal
+5. Reprocesar Caja Chica N.3 con pipeline formal
+6. **Investigar herramienta de lectura fina** — Qwen2.5-VL-7B confunde caracteres similares
 
 ### Investigacion Pendiente — TensorRT (pedido por Hans 2026-02-17)
 
@@ -392,7 +412,7 @@ src/
   __init__.py
   agents/.gitkeep           ← placeholder Fase 2
   extraction/
-    __init__.py, abstencion.py
+    __init__.py, abstencion.py, expediente_contract.py, local_analyst.py
   ingestion/
     __init__.py, config.py, custody_chain.py,
     pdf_text_extractor.py, trace_logger.py
