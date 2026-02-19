@@ -309,6 +309,34 @@ El modelo VLM NO calcula, NO autocompleta, NO deduce. Python valida.
 
 ---
 
+## ADR-010 — Evidence Reuse Layer (ERL): Cache de Validaciones Idempotente
+
+**Estado:** Propuesto (Pendiente Fase 2)
+**Fecha:** 2026-02-19
+
+### Contexto
+El pipeline reprocesa expedientes completos desde cero en cada ejecucion,
+incluso cuando documento, regla y motor no cambiaron. OCR/VLM es la operacion
+mas costosa (~90% del tiempo) y es completamente idempotente si los inputs
+no cambian.
+
+### Decision
+Implementar un cache de resultados de validacion (ERL) en Capa 3 (Herramientas)
+con DuckDB local. Cache key compuesto: sha256_documento + tipo_validacion +
+version_regla + version_pipeline. Reutilizar solo hits con evidencia completa
+y estado success. Invalidar al cambiar regla o motor.
+
+### Consecuencias
+- Reduccion estimada >70% en tiempo de reproceso
+- Nuevo modulo `src/tools/erl_cache.py`
+- Todo evento cache registrado en TraceLogger
+- No modifica flujo AG01→AG09 ni logica de dominio
+- Requiere pipeline end-to-end operativo antes de implementar
+
+**Documento completo:** [ADR-010-ERL-evidence-reuse-layer.md](ADR-010-ERL-evidence-reuse-layer.md)
+
+---
+
 ## Regla de Actualización
 
 Si una decisión:
