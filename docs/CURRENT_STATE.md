@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO — AG-EVIDENCE
 
 ## Fecha de Corte
-2026-02-19
+2026-02-20
 
 ---
 
@@ -68,7 +68,9 @@ estructural transversal.
 | Reprocesar Caja Chica N.3 con pipeline formal | Pre-Fase 2 | Pendiente (proxima sesion) |
 | Contrato de expediente (JSON tipado) | Fase 2 (#17) | ✅ Completado (1161 líneas, 84 tests) |
 | Router multi-agente + Integrity Checkpoint | Fase 2 (#18) | ✅ Completado (1424 líneas, 86 tests) |
-| Agentes v2.0 | Fase 2 (#19-21) | Pendiente |
+| Calibrar umbrales con distribucion real | Fase 2 (#19) | ✅ Completado (500 lineas, 84 tests, 3 perfiles) |
+| Hoja DIAGNOSTICO en Excel | Fase 2 (#20) | ⬜ Pendiente — **SIGUIENTE** |
+| Integrar router en escribano_fiel.py | Fase 2 (#21) | ⬜ Pendiente |
 | Qwen fallback LLM (motor para Capa C) | Fase 3 (#22-26) | Pendiente |
 | Validaciones cruzadas | Fase 4 (#27-29) | Pendiente |
 | Motor legal | Fase 6 (#35-40) | Pendiente |
@@ -77,10 +79,11 @@ estructural transversal.
 
 ## 5. Tests
 
-- **Total:** 693 passed, 7 skipped, 0 failures (2026-02-19)
-- 11 test suites cubriendo todos los modulos activos
+- **Total:** 783 passed, 1 skipped, 0 failures (2026-02-20)
+- 12 test suites cubriendo todos los modulos activos
 - Tests de seguridad: bloqueo de campos probatorios en Capa C
 - Tests de backward compatibility: CampoExtraido sin nuevos campos
+- Tests de calibracion: 84 tests (3 perfiles, benchmark cc003)
 
 ---
 
@@ -139,11 +142,12 @@ estructural transversal.
 
 ## 10. Proximos Pasos
 
-1. Investigar herramienta de lectura fina para errores VLM (crop+zoom, modelo mayor, PaddleOCR second pass)
-2. Agregar columna de datos de referencia (correo, web, tel) — NO para rendiciones actuales
-3. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
-4. Fase 2: Contrato JSON tipado + Router + Agentes v2.0
+1. **Tarea #20** — Hoja DIAGNOSTICO en Excel (`src/extraction/excel_writer.py`, consume `DiagnosticoExpediente.to_rows()`)
+2. **Tarea #21** — Integrar router en `src/extraction/escribano_fiel.py` (pipeline formal completo)
+3. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes, solo tras #20+#21)
+4. Investigar herramienta de lectura fina para errores VLM (crop+zoom, modelo mayor)
+5. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
 
 ---
 
-**Ultima actualizacion:** 2026-02-18 por Claude Code
+**Ultima actualizacion:** 2026-02-20 por Claude Code

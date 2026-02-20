@@ -352,6 +352,8 @@ Claude Code tiene **permisos completos** sobre todo el directorio del proyecto A
 
 - **Anti-alucinación:** toda observación CRÍTICA/MAYOR requiere archivo + página + snippet
 - **Abstención:** prefiere vacío honesto a dato inventado
+- **Completitud:** Completado = módulo en src/ + tests + integración pipeline. Scripts exploratorios NO cuentan.
+- **Gate de arranque:** Ver governance/SESSION_PROTOCOL.md — verificar 5 fuentes antes de declarar "listo"
 - **Local-first:** ningún dato sale a cloud (GDPR ready)
 - **Commits:** Conventional Commits obligatorio
 - **Hardware:** RTX 5090 24GB VRAM (Laptop), WSL2 Ubuntu 22.04

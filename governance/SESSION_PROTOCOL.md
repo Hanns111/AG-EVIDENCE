@@ -33,6 +33,53 @@ Claude Code ejecuta pasos 1-7 de todas formas y pregunta:
 
 ---
 
+## GATE DE ARRANQUE — Pre-Tarea (OBLIGATORIO)
+
+> **Adoptado:** 2026-02-20 por instruccion directa de Hans.
+> **Origen:** Auditoria cruzada con 4 IAs externas detecto desalineaciones que
+> Claude Code debio detectar por cuenta propia. Este gate previene recurrencia.
+> **Regla:** No se declara "listo para empezar" sin completar TODOS los checks.
+
+### Antes de declarar "listo para empezar" cualquier tarea, verificar:
+
+1. **ROADMAP.md** — estado de la tarea, dependencias, modulo destino
+2. **CLAUDE.md** — contexto, decisiones previas, trabajo exploratorio relacionado
+3. **docs/CURRENT_STATE.md** — coherencia con progreso real (tests, fases, fechas)
+4. **Archivos destino** — verificar si existen o se crean desde cero (`test -f ruta`)
+5. **Evidencia en src/** — codigo real que sustenta dependencias declaradas
+
+### Reglas del Gate:
+
+- Si hay **desalineacion documental** → sincronizar ANTES de codificar.
+- Si hay **trabajo exploratorio en scripts/** → reportarlo como "avance no formal".
+- Si falta **1 verificacion** → respuesta obligatoria:
+  "Estado INCIERTO hasta completar verificacion de fuentes."
+- Toda recomendacion de orden de tareas debe incluir el **por que tecnico**
+  (no solo "es la siguiente", sino por que arquitectonicamente es necesaria antes).
+
+### Regla de completitud:
+
+**Completado = modulo en src/ + tests + integracion pipeline.**
+
+- Scripts exploratorios en `scripts/` NO cuentan como completitud de tarea formal.
+- Feature flags en OFF (ej: `LOCAL_ANALYST_CONFIG["enabled"] = False`) NO cuentan.
+- Prototipos exitosos se reportan como "avance exploratorio" sin inflar progreso.
+
+### Matriz de coherencia minima (verificar por sesion):
+
+| Fuente | Verificar |
+|--------|-----------|
+| ROADMAP.md | Progreso fase, estado tarea, conteo tests |
+| CLAUDE.md | Ultima tarea completada, decisiones recientes |
+| CURRENT_STATE.md | Fecha corte, tests totales, proximos pasos |
+| Codigo real | Existencia de archivos, clases, metodos referenciados |
+| Notion Tablero | Estado consistente con las 4 fuentes anteriores |
+
+Si hay conflicto entre fuentes → listar conflicto + accion de sincronizacion
+antes de escribir cualquier linea de codigo.
+
+---
+
 ## CIERRE DE SESION
 
 ### Prompt recomendado de Hans:
@@ -223,5 +270,6 @@ Si hay discrepancia, el codigo en main siempre tiene razon.
 ---
 
 *Creado: 2026-02-13 por Claude Code*
-*Protocolo por hito agregado: 2026-02-19 por instrucción de Hans*
+*Protocolo por hito agregado: 2026-02-19 por instruccion de Hans*
+*Gate de arranque agregado: 2026-02-20 por instruccion de Hans (auditoria cruzada 4 IAs)*
 *Archivo protegido: requiere aprobacion de Hans para modificar*
