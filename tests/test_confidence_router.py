@@ -4,7 +4,7 @@ Tests para Confidence Router + Integrity Checkpoint (Tarea #18)
 ================================================================
 
 Hito 1: Estructuras de datos + EvidenceEnforcer + ConfidenceRouter skeleton.
-Hito 2: Lógica completa de evaluación + integración.
+Hito 2: IntegrityCheckpoint + DiagnosticoExpediente + ReporteEnforcement.
 Hito 3: TraceLogger + edge cases.
 
 Incluye test de regresión para _recolectar_todos_campos() (método privado).
@@ -48,6 +48,12 @@ from src.extraction.confidence_router import (
     AGENTE_ID_DEFAULT,
     UmbralesRouter,
     EvidenceEnforcer,
+    DetalleEnforcement,
+    ReporteEnforcement,
+    SeccionDiagnostico,
+    DiagnosticoExpediente,
+    IntegrityCheckpoint,
+    DecisionCheckpoint,
     ResultadoRouter,
     ConfidenceRouter,
 )
@@ -667,3 +673,511 @@ class TestRouterConLogger:
         exp = _crear_expediente_completo(1)
         resultado = router.evaluar_expediente(exp)
         assert resultado.status == IntegridadStatus.OK
+
+
+# ==============================================================================
+# HITO 2: TESTS DE DetalleEnforcement Y ReporteEnforcement
+# ==============================================================================
+
+class TestDetalleEnforcement:
+    """Tests para DetalleEnforcement dataclass."""
+
+    def test_defaults(self):
+        d = DetalleEnforcement()
+        assert d.agente == ""
+        assert d.fue_degradada is False
+        assert d.campos_faltantes == []
+        assert d.requiere_revision_humana is False
+
+    def test_to_dict(self):
+        d = DetalleEnforcement(
+            agente="AG04",
+            nivel_original="CRÍTICA",
+            nivel_post="INCIERTO",
+            fue_degradada=True,
+            descripcion="Monto no coincide",
+            campos_faltantes=["snippet", "regla_aplicada"],
+            requiere_revision_humana=True,
+        )
+        result = d.to_dict()
+        assert result["agente"] == "AG04"
+        assert result["fue_degradada"] is True
+        assert "snippet" in result["campos_faltantes"]
+
+    def test_degradada_con_campos_faltantes(self):
+        d = DetalleEnforcement(
+            fue_degradada=True,
+            campos_faltantes=["archivo", "pagina", "snippet"],
+        )
+        assert len(d.campos_faltantes) == 3
+
+
+class TestReporteEnforcement:
+    """Tests para ReporteEnforcement dataclass."""
+
+    def test_defaults(self):
+        r = ReporteEnforcement()
+        assert r.total_procesadas == 0
+        assert r.total_validas == 0
+        assert r.total_degradadas == 0
+        assert r.tasa_degradacion == 0.0
+        assert r.detalles == []
+
+    def test_to_dict(self):
+        r = ReporteEnforcement(
+            total_procesadas=5,
+            total_validas=3,
+            total_degradadas=2,
+            tasa_degradacion=0.4,
+        )
+        result = r.to_dict()
+        assert result["total_procesadas"] == 5
+        assert result["tasa_degradacion"] == 0.4
+
+    def test_resumen_texto_con_degradadas(self):
+        d = DetalleEnforcement(
+            agente="AG06",
+            nivel_original="CRITICA",
+            nivel_post="INCIERTO",
+            fue_degradada=True,
+            descripcion="Documento faltante en expediente",
+            campos_faltantes=["archivo", "snippet"],
+        )
+        r = ReporteEnforcement(
+            detalles=[d],
+            total_procesadas=1,
+            total_degradadas=1,
+            tasa_degradacion=1.0,
+        )
+        texto = r.resumen_texto()
+        assert "AG06" in texto
+        assert "archivo" in texto
+
+    def test_resumen_texto_sin_degradadas(self):
+        r = ReporteEnforcement(
+            total_procesadas=3,
+            total_validas=3,
+            total_degradadas=0,
+            tasa_degradacion=0.0,
+        )
+        texto = r.resumen_texto()
+        assert "0 degradadas" in texto
+
+
+# ==============================================================================
+# HITO 2: TESTS DE SeccionDiagnostico Y DiagnosticoExpediente
+# ==============================================================================
+
+class TestSeccionDiagnostico:
+    """Tests para SeccionDiagnostico dataclass."""
+
+    def test_defaults(self):
+        s = SeccionDiagnostico()
+        assert s.nombre == ""
+        assert s.status == "OK"
+        assert s.detalles == []
+
+    def test_to_dict(self):
+        s = SeccionDiagnostico(
+            nombre="evaluacion_campos",
+            status="WARNING",
+            mensaje="3 campos abstenidos",
+            detalles=["campo_a", "campo_b"],
+        )
+        result = s.to_dict()
+        assert result["nombre"] == "evaluacion_campos"
+        assert result["status"] == "WARNING"
+        assert len(result["detalles"]) == 2
+
+
+class TestDiagnosticoExpediente:
+    """Tests para DiagnosticoExpediente."""
+
+    def test_defaults(self):
+        d = DiagnosticoExpediente()
+        assert d.sinad == ""
+        assert d.secciones == []
+        assert d.version_router == VERSION_ROUTER
+
+    def test_to_dict(self):
+        d = DiagnosticoExpediente(
+            sinad="TEST-001",
+            secciones=[
+                SeccionDiagnostico(nombre="campos", status="OK", mensaje="todo bien"),
+            ],
+        )
+        result = d.to_dict()
+        assert result["sinad"] == "TEST-001"
+        assert len(result["secciones"]) == 1
+
+    def test_to_rows_con_detalles(self):
+        d = DiagnosticoExpediente(
+            sinad="TEST-002",
+            secciones=[
+                SeccionDiagnostico(
+                    nombre="completitud",
+                    status="WARNING",
+                    mensaje="2 problemas",
+                    detalles=["falta SINAD", "falta naturaleza"],
+                ),
+            ],
+        )
+        rows = d.to_rows()
+        assert len(rows) == 2
+        assert rows[0]["seccion"] == "completitud"
+        assert rows[0]["detalle"] == "falta SINAD"
+        assert rows[1]["detalle"] == "falta naturaleza"
+
+    def test_to_rows_sin_detalles(self):
+        d = DiagnosticoExpediente(
+            secciones=[
+                SeccionDiagnostico(nombre="unicidad", status="OK", mensaje="ok"),
+            ],
+        )
+        rows = d.to_rows()
+        assert len(rows) == 1
+        assert rows[0]["detalle"] == ""
+
+    def test_resumen_texto(self):
+        d = DiagnosticoExpediente(
+            sinad="TEST-003",
+            secciones=[
+                SeccionDiagnostico(nombre="campos", status="OK", mensaje="12/12 legibles"),
+                SeccionDiagnostico(nombre="aritmetica", status="WARNING", mensaje="2 errores"),
+            ],
+        )
+        texto = d.resumen_texto()
+        assert "TEST-003" in texto
+        assert "campos" in texto
+        assert "OK" in texto
+        assert "WARNING" in texto
+
+
+# ==============================================================================
+# HITO 2: TESTS DE IntegrityCheckpoint
+# ==============================================================================
+
+class TestIntegrityCheckpointInit:
+    """Tests de inicialización del IntegrityCheckpoint."""
+
+    def test_init_default(self):
+        cp = IntegrityCheckpoint()
+        assert isinstance(cp.router, ConfidenceRouter)
+        assert cp.logger is None
+        assert cp.agente_id == "INTEGRITY_CHECKPOINT"
+
+    def test_init_custom_umbrales(self):
+        umbrales = UmbralesRouter(max_campos_abstencion_warning_pct=0.15)
+        cp = IntegrityCheckpoint(umbrales=umbrales)
+        assert cp.router.umbrales.max_campos_abstencion_warning_pct == 0.15
+
+    def test_acciones_definidas(self):
+        assert IntegrityCheckpoint.ACCION_CONTINUAR == "CONTINUAR"
+        assert IntegrityCheckpoint.ACCION_CONTINUAR_CON_ALERTAS == "CONTINUAR_CON_ALERTAS"
+        assert IntegrityCheckpoint.ACCION_DETENER == "DETENER"
+
+
+class TestIntegrityCheckpointEvaluar:
+    """Tests del método evaluar() del IntegrityCheckpoint."""
+
+    def test_expediente_limpio_continuar(self):
+        """Expediente con 3 comprobantes bien extraídos → CONTINUAR."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(3)
+        decision = cp.evaluar(exp)
+
+        assert isinstance(decision, DecisionCheckpoint)
+        assert decision.accion == "CONTINUAR"
+        assert decision.resultado is not None
+        assert decision.resultado.status == IntegridadStatus.OK
+        assert decision.timestamp != ""
+
+    def test_expediente_limpio_diagnostico_6_secciones(self):
+        """El diagnóstico siempre tiene 6 secciones estándar."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(2)
+        decision = cp.evaluar(exp)
+
+        assert decision.diagnostico is not None
+        assert len(decision.diagnostico.secciones) == 6
+        nombres = [s.nombre for s in decision.diagnostico.secciones]
+        assert "evaluacion_campos" in nombres
+        assert "enforcement" in nombres
+        assert "completitud" in nombres
+        assert "unicidad" in nombres
+        assert "aritmetica" in nombres
+        assert "decision" in nombres
+
+    def test_expediente_alta_abstencion_detener_o_alertas(self):
+        """Expediente con ~50% abstención → DETENER o CONTINUAR_CON_ALERTAS."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_50pct_abstencion()
+        decision = cp.evaluar(exp)
+
+        assert decision.accion in ["DETENER", "CONTINUAR_CON_ALERTAS"]
+        assert decision.resultado is not None
+        assert decision.resultado.tasa_abstencion >= 0.30
+
+    def test_expediente_critical_detener(self):
+        """Expediente CRITICAL con umbrales estrictos → DETENER."""
+        cp = IntegrityCheckpoint(
+            umbrales=UmbralesRouter(
+                max_campos_abstencion_critical_pct=0.20,
+            )
+        )
+        exp = _crear_expediente_50pct_abstencion()
+        decision = cp.evaluar(exp)
+
+        if decision.resultado.status == IntegridadStatus.CRITICAL:
+            assert decision.accion == "DETENER"
+            assert decision.resultado.debe_detener is True
+
+    def test_observaciones_degradadas_en_reporte(self):
+        """Observaciones sin evidencia aparecen como degradadas en reporte."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(1)
+        obs = [
+            _crear_observacion_critica_sin_evidencia(),
+            _crear_observacion_mayor_sin_evidencia(),
+        ]
+        decision = cp.evaluar(exp, obs)
+
+        assert decision.reporte_enforcement is not None
+        assert decision.reporte_enforcement.total_degradadas == 2
+        # Los detalles incluyen campos faltantes
+        degradadas = [
+            d for d in decision.reporte_enforcement.detalles
+            if d.fue_degradada
+        ]
+        assert len(degradadas) == 2
+        for d in degradadas:
+            assert len(d.campos_faltantes) > 0
+
+    def test_observacion_valida_en_reporte(self):
+        """Observación con evidencia completa no se degrada."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(1)
+        obs = [_crear_observacion_critica_con_evidencia()]
+        decision = cp.evaluar(exp, obs)
+
+        assert decision.reporte_enforcement.total_validas == 1
+        assert decision.reporte_enforcement.total_degradadas == 0
+
+    def test_sin_observaciones_reporte_vacio(self):
+        """Sin observaciones → reporte con 0 procesadas."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(1)
+        decision = cp.evaluar(exp)
+
+        assert decision.reporte_enforcement is not None
+        assert decision.reporte_enforcement.total_procesadas == 0
+
+    def test_diagnostico_to_rows(self):
+        """El diagnóstico puede convertirse a filas de Excel."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(2)
+        decision = cp.evaluar(exp)
+
+        rows = decision.diagnostico.to_rows()
+        assert len(rows) >= 6  # Al menos 1 fila por sección
+        assert all("seccion" in r and "status" in r for r in rows)
+
+    def test_decision_to_dict_serializable(self):
+        """DecisionCheckpoint.to_dict() produce un dict serializable."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(1)
+        decision = cp.evaluar(exp)
+
+        d = decision.to_dict()
+        assert isinstance(d, dict)
+        assert d["accion"] == "CONTINUAR"
+        assert d["resultado"] is not None
+        assert d["diagnostico"] is not None
+        # Verificar que es JSON-serializable
+        import json
+        json_str = json.dumps(d, ensure_ascii=False)
+        assert len(json_str) > 100
+
+    def test_resumen_texto(self):
+        """DecisionCheckpoint.resumen_texto() genera texto legible."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(1)
+        decision = cp.evaluar(exp)
+
+        texto = decision.resumen_texto()
+        assert "IntegrityCheckpoint" in texto
+        assert "CONTINUAR" in texto
+
+
+class TestDetectarCamposFaltantes:
+    """Tests para IntegrityCheckpoint._detectar_campos_faltantes."""
+
+    def test_sin_evidencias(self):
+        """Observación sin evidencias → faltante 'evidencias (ninguna)'."""
+        obs = _crear_observacion_critica_sin_evidencia()
+        faltantes = IntegrityCheckpoint._detectar_campos_faltantes(obs)
+        assert "evidencias (ninguna)" in faltantes
+
+    def test_evidencia_completa(self):
+        """Observación con evidencia completa → sin faltantes."""
+        obs = _crear_observacion_critica_con_evidencia()
+        faltantes = IntegrityCheckpoint._detectar_campos_faltantes(obs)
+        assert len(faltantes) == 0
+
+    def test_evidencia_parcial(self):
+        """Evidencia con campos vacíos → faltantes específicos."""
+        obs = Observacion(
+            nivel=NivelObservacion.CRITICA,
+            agente="AG04",
+            descripcion="test",
+            accion_requerida="test",
+        )
+        obs.agregar_evidencia(EvidenciaProbatoria(
+            archivo="test.pdf",
+            pagina=3,
+            valor_detectado="100.00",
+            # snippet vacío, regla_aplicada vacía
+        ))
+        faltantes = IntegrityCheckpoint._detectar_campos_faltantes(obs)
+        assert "snippet" in faltantes
+        assert "regla_aplicada" in faltantes
+        assert "archivo" not in faltantes  # archivo sí existe
+
+    def test_evidencia_pagina_cero(self):
+        """Pagina=0 → faltante 'pagina'."""
+        obs = Observacion(
+            nivel=NivelObservacion.MAYOR,
+            agente="AG03",
+            descripcion="test",
+            accion_requerida="test",
+        )
+        obs.agregar_evidencia(EvidenciaProbatoria(
+            archivo="test.pdf",
+            pagina=0,
+            valor_detectado="valor",
+            snippet="texto",
+            regla_aplicada="RULE_001",
+        ))
+        faltantes = IntegrityCheckpoint._detectar_campos_faltantes(obs)
+        assert "pagina" in faltantes
+
+
+class TestIntegrityCheckpointConLogger:
+    """Tests del IntegrityCheckpoint con TraceLogger."""
+
+    def test_evaluar_con_logger_no_falla(self, temp_log_dir):
+        logger = TraceLogger(log_dir=temp_log_dir)
+        logger.start_trace(sinad="TEST-CP-001", source="test")
+        cp = IntegrityCheckpoint(trace_logger=logger)
+
+        exp = _crear_expediente_completo(1)
+        decision = cp.evaluar(exp)
+        assert decision.accion == "CONTINUAR"
+
+        if logger.has_active_trace:
+            logger.end_trace()
+
+    def test_evaluar_critical_con_logger(self, temp_log_dir):
+        logger = TraceLogger(log_dir=temp_log_dir)
+        logger.start_trace(sinad="TEST-CP-002", source="test")
+        cp = IntegrityCheckpoint(
+            trace_logger=logger,
+            umbrales=UmbralesRouter(
+                max_campos_abstencion_critical_pct=0.20,
+            ),
+        )
+
+        exp = _crear_expediente_50pct_abstencion()
+        decision = cp.evaluar(exp)
+
+        # Debería ser DETENER o CONTINUAR_CON_ALERTAS
+        assert decision.accion in ["DETENER", "CONTINUAR_CON_ALERTAS"]
+
+        if logger.has_active_trace:
+            logger.end_trace()
+
+
+# ==============================================================================
+# HITO 2: TESTS DE DecisionCheckpoint
+# ==============================================================================
+
+class TestDecisionCheckpoint:
+    """Tests para DecisionCheckpoint dataclass."""
+
+    def test_defaults(self):
+        d = DecisionCheckpoint()
+        assert d.accion == "CONTINUAR"
+        assert d.resultado is None
+        assert d.reporte_enforcement is None
+        assert d.diagnostico is None
+
+    def test_to_dict_vacio(self):
+        d = DecisionCheckpoint()
+        result = d.to_dict()
+        assert result["accion"] == "CONTINUAR"
+        assert result["resultado"] is None
+
+    def test_resumen_texto_default(self):
+        d = DecisionCheckpoint()
+        texto = d.resumen_texto()
+        assert "IntegrityCheckpoint" in texto
+        assert "CONTINUAR" in texto
+
+
+# ==============================================================================
+# HITO 2: TESTS DE EDGE CASES
+# ==============================================================================
+
+class TestEdgeCases:
+    """Tests de edge cases para Hito 2."""
+
+    def test_expediente_vacio_no_crash(self):
+        """IntegrityCheckpoint con expediente vacío no crashea."""
+        cp = IntegrityCheckpoint()
+        exp = ExpedienteJSON(sinad="VACIO")
+        decision = cp.evaluar(exp)
+        assert isinstance(decision, DecisionCheckpoint)
+        assert decision.diagnostico is not None
+
+    def test_muchas_observaciones_degradadas(self):
+        """Muchas observaciones degradadas → se reflejan en reporte."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(1)
+        obs = [_crear_observacion_critica_sin_evidencia() for _ in range(10)]
+        decision = cp.evaluar(exp, obs)
+
+        assert decision.reporte_enforcement.total_degradadas == 10
+
+    def test_observaciones_mixtas(self):
+        """Mix de observaciones válidas, degradadas y menores."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(2)
+        obs = [
+            _crear_observacion_critica_con_evidencia(),
+            _crear_observacion_critica_sin_evidencia(),
+            _crear_observacion_mayor_sin_evidencia(),
+            _crear_observacion_menor(),
+        ]
+        decision = cp.evaluar(exp, obs)
+
+        reporte = decision.reporte_enforcement
+        assert reporte.total_procesadas == 4
+        assert reporte.total_validas == 2   # CRITICA con evidencia + MENOR
+        assert reporte.total_degradadas == 2  # CRITICA sin + MAYOR sin
+
+    def test_diagnostico_sinad_propagado(self):
+        """El SINAD del expediente se propaga al diagnóstico."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(1)
+        exp.sinad = "ODI2026-INT-0139051"
+        decision = cp.evaluar(exp)
+
+        assert decision.diagnostico.sinad == "ODI2026-INT-0139051"
+
+    def test_version_router_en_diagnostico(self):
+        """La versión del router se incluye en el diagnóstico."""
+        cp = IntegrityCheckpoint()
+        exp = _crear_expediente_completo(1)
+        decision = cp.evaluar(exp)
+
+        assert decision.diagnostico.version_router == VERSION_ROUTER

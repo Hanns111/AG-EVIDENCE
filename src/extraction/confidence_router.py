@@ -75,8 +75,8 @@ from src.extraction.expediente_contract import (
 # CONSTANTES
 # ==============================================================================
 
-VERSION_ROUTER = "1.0.0"
-"""Versión del módulo confidence_router."""
+VERSION_ROUTER = "2.0.0"
+"""Versión del módulo confidence_router. Hito 2: IntegrityCheckpoint + Diagnóstico."""
 
 AGENTE_ID_DEFAULT = "ROUTER"
 """ID de agente por defecto para logging."""
@@ -226,6 +226,618 @@ class EvidenceEnforcer:
 
 
 # ==============================================================================
+# REPORTE DE ENFORCEMENT DETALLADO (Hito 2)
+# ==============================================================================
+
+@dataclass
+class DetalleEnforcement:
+    """
+    Detalle de enforcement para UNA observación individual.
+
+    Registra exactamente qué le faltó a una observación para cumplir
+    el estándar probatorio (Art. 4-5 Gobernanza), permitiendo al
+    usuario saber qué completar.
+    """
+    agente: str = ""
+    nivel_original: str = ""
+    nivel_post: str = ""
+    fue_degradada: bool = False
+    descripcion: str = ""
+    campos_faltantes: List[str] = field(default_factory=list)
+    """Lista de campos que faltan: 'archivo', 'pagina', 'snippet', etc."""
+    requiere_revision_humana: bool = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializa a diccionario."""
+        return {
+            "agente": self.agente,
+            "nivel_original": self.nivel_original,
+            "nivel_post": self.nivel_post,
+            "fue_degradada": self.fue_degradada,
+            "descripcion": self.descripcion,
+            "campos_faltantes": self.campos_faltantes,
+            "requiere_revision_humana": self.requiere_revision_humana,
+        }
+
+
+@dataclass
+class ReporteEnforcement:
+    """
+    Reporte completo del enforcement probatorio (Hito 2).
+
+    Agrega DetalleEnforcement por cada observación procesada,
+    más estadísticas globales. Diseñado para alimentar la hoja
+    DIAGNOSTICO del Excel (Tarea #20).
+    """
+    detalles: List[DetalleEnforcement] = field(default_factory=list)
+    total_procesadas: int = 0
+    total_validas: int = 0
+    total_degradadas: int = 0
+    tasa_degradacion: float = 0.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializa a diccionario."""
+        return {
+            "total_procesadas": self.total_procesadas,
+            "total_validas": self.total_validas,
+            "total_degradadas": self.total_degradadas,
+            "tasa_degradacion": round(self.tasa_degradacion, 4),
+            "detalles": [d.to_dict() for d in self.detalles],
+        }
+
+    def resumen_texto(self) -> str:
+        """Resumen legible para logging."""
+        lineas = [
+            f"Enforcement: {self.total_procesadas} procesadas, "
+            f"{self.total_validas} válidas, "
+            f"{self.total_degradadas} degradadas "
+            f"({self.tasa_degradacion:.0%})",
+        ]
+        for d in self.detalles:
+            if d.fue_degradada:
+                lineas.append(
+                    f"  ⚠ [{d.agente}] {d.nivel_original}→{d.nivel_post}: "
+                    f"{d.descripcion[:60]}... "
+                    f"Falta: {', '.join(d.campos_faltantes)}"
+                )
+        return "\n".join(lineas)
+
+
+# ==============================================================================
+# DIAGNOSTICO DEL EXPEDIENTE (Hito 2)
+# ==============================================================================
+
+@dataclass
+class SeccionDiagnostico:
+    """
+    Una sección del diagnóstico con nombre, status y detalle.
+
+    Cada sección corresponde a un paso del pipeline de evaluación
+    (campos, enforcement, completitud, unicidad, aritmética).
+    """
+    nombre: str = ""
+    status: str = "OK"  # OK, WARNING, CRITICAL, SKIP
+    mensaje: str = ""
+    detalles: List[str] = field(default_factory=list)
+    metricas: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializa a diccionario."""
+        return {
+            "nombre": self.nombre,
+            "status": self.status,
+            "mensaje": self.mensaje,
+            "detalles": self.detalles,
+            "metricas": self.metricas,
+        }
+
+
+@dataclass
+class DiagnosticoExpediente:
+    """
+    Diagnóstico completo del expediente para la hoja DIAGNOSTICO del Excel.
+
+    Diseñado para Tarea #20. Cada sección corresponde a un paso
+    del ConfidenceRouter. Serializable a JSON y a filas de Excel.
+
+    Secciones estándar:
+      1. evaluacion_campos — Resultado de AbstencionPolicy
+      2. enforcement — Resultado del estándar probatorio
+      3. completitud — Campos obligatorios faltantes
+      4. unicidad — Comprobantes duplicados
+      5. aritmetica — Errores de validación aritmética (Grupo J)
+      6. decision — Status final y confianza global
+    """
+    sinad: str = ""
+    timestamp: str = ""
+    version_router: str = VERSION_ROUTER
+    secciones: List[SeccionDiagnostico] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializa a diccionario."""
+        return {
+            "sinad": self.sinad,
+            "timestamp": self.timestamp,
+            "version_router": self.version_router,
+            "secciones": [s.to_dict() for s in self.secciones],
+        }
+
+    def to_rows(self) -> List[Dict[str, str]]:
+        """
+        Convierte a filas planas para hoja Excel DIAGNOSTICO.
+
+        Cada fila tiene: seccion, status, mensaje, detalle.
+        Útil para openpyxl o pandas.
+        """
+        rows: List[Dict[str, str]] = []
+        for s in self.secciones:
+            if s.detalles:
+                for detalle in s.detalles:
+                    rows.append({
+                        "seccion": s.nombre,
+                        "status": s.status,
+                        "mensaje": s.mensaje,
+                        "detalle": detalle,
+                    })
+            else:
+                rows.append({
+                    "seccion": s.nombre,
+                    "status": s.status,
+                    "mensaje": s.mensaje,
+                    "detalle": "",
+                })
+        return rows
+
+    def resumen_texto(self) -> str:
+        """Resumen legible para logging y consola."""
+        lineas = [
+            f"=== Diagnóstico {self.sinad} (v{self.version_router}) ===",
+        ]
+        for s in self.secciones:
+            icon = {"OK": "✅", "WARNING": "⚠️", "CRITICAL": "🔴", "SKIP": "⏭️"}.get(
+                s.status, "❓"
+            )
+            lineas.append(f"  {icon} {s.nombre}: {s.status} — {s.mensaje}")
+            for d in s.detalles[:3]:
+                lineas.append(f"      • {d}")
+            if len(s.detalles) > 3:
+                lineas.append(f"      ... +{len(s.detalles) - 3} más")
+        return "\n".join(lineas)
+
+
+# ==============================================================================
+# INTEGRITY CHECKPOINT (Hito 2)
+# ==============================================================================
+
+class IntegrityCheckpoint:
+    """
+    Punto de control de integridad para el pipeline de extracción.
+
+    Wrapper decisor sobre ConfidenceRouter que proporciona una interfaz
+    limpia para el orquestador LangGraph (preparado para Tarea #21).
+
+    Responsabilidades:
+      - Ejecutar evaluación completa vía ConfidenceRouter
+      - Generar ReporteEnforcement detallado
+      - Generar DiagnosticoExpediente para Excel
+      - Decidir acción: CONTINUAR, CONTINUAR_CON_ALERTAS, DETENER
+      - NO ejecuta la detención (Art. 2.2) — solo emite señal
+
+    Interfaz del orquestador:
+        checkpoint = IntegrityCheckpoint()
+        decision = checkpoint.evaluar(expediente, observaciones)
+
+        if decision.accion == "DETENER":
+            # Orquestador implementa la detención
+            ...
+        elif decision.accion == "CONTINUAR_CON_ALERTAS":
+            # Orquestador registra alertas y continúa
+            ...
+
+    Gobernanza:
+      - Art. 2: No modifica flujo AG01→AG09
+      - Art. 2.2/2.3: DETENER es señal, no acción directa
+      - Art. 4-5: EvidenceEnforcer integrado
+      - ADR-005: Nodo preparado para LangGraph, no monolito
+    """
+
+    # Acciones posibles del checkpoint
+    ACCION_CONTINUAR = "CONTINUAR"
+    ACCION_CONTINUAR_CON_ALERTAS = "CONTINUAR_CON_ALERTAS"
+    ACCION_DETENER = "DETENER"
+
+    def __init__(
+        self,
+        umbrales: Optional[UmbralesRouter] = None,
+        umbrales_abstencion: Optional[UmbralesAbstencion] = None,
+        trace_logger: Optional[Any] = None,
+        agente_id: str = "INTEGRITY_CHECKPOINT",
+    ):
+        """
+        Inicializa el IntegrityCheckpoint.
+
+        Args:
+            umbrales: Umbrales del router para escalación.
+            umbrales_abstencion: Umbrales de abstención por tipo de campo.
+            trace_logger: Instancia de TraceLogger (opcional).
+            agente_id: ID de agente para logging.
+        """
+        self.router = ConfidenceRouter(
+            umbrales=umbrales,
+            umbrales_abstencion=umbrales_abstencion,
+            trace_logger=trace_logger,
+            agente_id=agente_id,
+        )
+        self.logger = trace_logger
+        self.agente_id = agente_id
+
+    def evaluar(
+        self,
+        expediente: ExpedienteJSON,
+        observaciones: Optional[List[Observacion]] = None,
+    ) -> "DecisionCheckpoint":
+        """
+        Evalúa un expediente y emite decisión para el orquestador.
+
+        Este es el método principal. Ejecuta:
+          1. ConfidenceRouter.evaluar_expediente()
+          2. Genera ReporteEnforcement detallado
+          3. Genera DiagnosticoExpediente completo
+          4. Determina acción (CONTINUAR / ALERTAS / DETENER)
+
+        Args:
+            expediente: ExpedienteJSON ya poblado.
+            observaciones: Lista de observaciones previas (opcional).
+
+        Returns:
+            DecisionCheckpoint con todo el contexto decisorio.
+        """
+        obs = observaciones or []
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+        # --- Paso 1: Evaluación completa ---
+        resultado = self.router.evaluar_expediente(expediente, obs)
+
+        # --- Paso 2: Reporte de enforcement detallado ---
+        reporte = self._generar_reporte_enforcement(obs, resultado)
+
+        # --- Paso 3: Diagnóstico para Excel ---
+        diagnostico = self._generar_diagnostico(expediente, resultado, reporte)
+
+        # --- Paso 4: Determinar acción ---
+        accion = self._determinar_accion(resultado)
+
+        # --- Paso 5: Log decisión ---
+        self._log_decision(accion, resultado)
+
+        return DecisionCheckpoint(
+            accion=accion,
+            resultado=resultado,
+            reporte_enforcement=reporte,
+            diagnostico=diagnostico,
+            timestamp=timestamp,
+        )
+
+    def _generar_reporte_enforcement(
+        self,
+        observaciones_originales: List[Observacion],
+        resultado: "ResultadoRouter",
+    ) -> ReporteEnforcement:
+        """
+        Genera ReporteEnforcement con detalle por observación.
+
+        Analiza cada observación original para determinar exactamente
+        qué le faltó para cumplir el estándar probatorio.
+        """
+        detalles: List[DetalleEnforcement] = []
+
+        # Procesar degradadas (las que fallaron enforcement)
+        for obs in resultado.observaciones_degradadas:
+            campos_faltantes = self._detectar_campos_faltantes(obs)
+            detalles.append(DetalleEnforcement(
+                agente=obs.agente,
+                nivel_original="CRITICA/MAYOR",  # Fue degradada desde ahí
+                nivel_post=obs.nivel.value,
+                fue_degradada=True,
+                descripcion=obs.descripcion,
+                campos_faltantes=campos_faltantes,
+                requiere_revision_humana=obs.requiere_revision_humana,
+            ))
+
+        # Procesar válidas (las que pasaron enforcement)
+        for obs in resultado.observaciones_validas:
+            detalles.append(DetalleEnforcement(
+                agente=obs.agente,
+                nivel_original=obs.nivel.value,
+                nivel_post=obs.nivel.value,
+                fue_degradada=False,
+                descripcion=obs.descripcion,
+                campos_faltantes=[],
+                requiere_revision_humana=obs.requiere_revision_humana,
+            ))
+
+        total = len(detalles)
+        n_degradadas = sum(1 for d in detalles if d.fue_degradada)
+
+        return ReporteEnforcement(
+            detalles=detalles,
+            total_procesadas=total,
+            total_validas=total - n_degradadas,
+            total_degradadas=n_degradadas,
+            tasa_degradacion=n_degradadas / total if total > 0 else 0.0,
+        )
+
+    @staticmethod
+    def _detectar_campos_faltantes(obs: Observacion) -> List[str]:
+        """
+        Detecta qué campos probatorios le faltan a una observación.
+
+        Según Art. 4, una observación CRITICA/MAYOR requiere:
+          - archivo: Nombre del archivo fuente
+          - pagina: Número de página (>0)
+          - valor_detectado: Valor encontrado
+          - snippet: Texto exacto extraído
+          - regla_aplicada: ID de la regla
+
+        Returns:
+            Lista de nombres de campos faltantes.
+        """
+        faltantes: List[str] = []
+
+        if not obs.evidencias:
+            faltantes.append("evidencias (ninguna)")
+            return faltantes
+
+        # Verificar cada evidencia
+        for i, ev in enumerate(obs.evidencias):
+            prefix = f"evidencia[{i}]." if len(obs.evidencias) > 1 else ""
+            if not ev.archivo:
+                faltantes.append(f"{prefix}archivo")
+            if ev.pagina <= 0:
+                faltantes.append(f"{prefix}pagina")
+            if not ev.valor_detectado:
+                faltantes.append(f"{prefix}valor_detectado")
+            if not ev.snippet:
+                faltantes.append(f"{prefix}snippet")
+            if not ev.regla_aplicada:
+                faltantes.append(f"{prefix}regla_aplicada")
+
+        return faltantes
+
+    def _generar_diagnostico(
+        self,
+        expediente: ExpedienteJSON,
+        resultado: "ResultadoRouter",
+        reporte: ReporteEnforcement,
+    ) -> DiagnosticoExpediente:
+        """
+        Genera DiagnosticoExpediente completo para hoja Excel.
+
+        Crea una sección por cada paso de evaluación del router.
+        """
+        secciones: List[SeccionDiagnostico] = []
+
+        # Sección 1: Evaluación de campos
+        secciones.append(self._seccion_campos(resultado))
+
+        # Sección 2: Enforcement probatorio
+        secciones.append(self._seccion_enforcement(resultado, reporte))
+
+        # Sección 3: Completitud
+        secciones.append(self._seccion_completitud(resultado))
+
+        # Sección 4: Unicidad
+        secciones.append(self._seccion_unicidad(resultado))
+
+        # Sección 5: Aritmética
+        secciones.append(self._seccion_aritmetica(resultado))
+
+        # Sección 6: Decisión final
+        secciones.append(self._seccion_decision(resultado))
+
+        return DiagnosticoExpediente(
+            sinad=expediente.sinad,
+            timestamp=resultado.timestamp,
+            version_router=resultado.version_router,
+            secciones=secciones,
+        )
+
+    @staticmethod
+    def _seccion_campos(resultado: "ResultadoRouter") -> SeccionDiagnostico:
+        """Sección 1: Evaluación de campos extraídos."""
+        if resultado.campos_evaluados == 0:
+            return SeccionDiagnostico(
+                nombre="evaluacion_campos",
+                status="SKIP",
+                mensaje="Sin campos para evaluar",
+                metricas={"total": 0},
+            )
+
+        status = "OK"
+        if resultado.tasa_abstencion >= 0.50:
+            status = "CRITICAL"
+        elif resultado.tasa_abstencion >= 0.30:
+            status = "WARNING"
+
+        return SeccionDiagnostico(
+            nombre="evaluacion_campos",
+            status=status,
+            mensaje=(
+                f"{resultado.campos_legibles}/{resultado.campos_evaluados} "
+                f"campos legibles ({1 - resultado.tasa_abstencion:.0%})"
+            ),
+            detalles=[
+                f"Legibles: {resultado.campos_legibles}",
+                f"Incompletos: {resultado.campos_incompletos}",
+                f"Abstenidos: {resultado.campos_abstenidos}",
+                f"Tasa abstención: {resultado.tasa_abstencion:.1%}",
+            ],
+            metricas={
+                "total": resultado.campos_evaluados,
+                "legibles": resultado.campos_legibles,
+                "incompletos": resultado.campos_incompletos,
+                "abstenidos": resultado.campos_abstenidos,
+                "tasa_abstencion": round(resultado.tasa_abstencion, 4),
+            },
+        )
+
+    @staticmethod
+    def _seccion_enforcement(
+        resultado: "ResultadoRouter",
+        reporte: ReporteEnforcement,
+    ) -> SeccionDiagnostico:
+        """Sección 2: Enforcement del estándar probatorio."""
+        if reporte.total_procesadas == 0:
+            return SeccionDiagnostico(
+                nombre="enforcement",
+                status="SKIP",
+                mensaje="Sin observaciones para evaluar",
+                metricas={"total": 0},
+            )
+
+        status = "OK"
+        if reporte.total_degradadas > 5:
+            status = "CRITICAL"
+        elif reporte.total_degradadas > 2:
+            status = "WARNING"
+
+        detalles: List[str] = []
+        for d in reporte.detalles:
+            if d.fue_degradada:
+                detalles.append(
+                    f"[{d.agente}] {d.descripcion[:80]} → "
+                    f"Falta: {', '.join(d.campos_faltantes)}"
+                )
+
+        return SeccionDiagnostico(
+            nombre="enforcement",
+            status=status,
+            mensaje=(
+                f"{reporte.total_degradadas}/{reporte.total_procesadas} "
+                f"observaciones degradadas"
+            ),
+            detalles=detalles,
+            metricas=reporte.to_dict(),
+        )
+
+    @staticmethod
+    def _seccion_completitud(resultado: "ResultadoRouter") -> SeccionDiagnostico:
+        """Sección 3: Completitud estructural."""
+        n = len(resultado.problemas_completitud)
+        if n == 0:
+            return SeccionDiagnostico(
+                nombre="completitud",
+                status="OK",
+                mensaje="Estructura completa",
+            )
+
+        status = "CRITICAL" if n >= 3 else "WARNING"
+        return SeccionDiagnostico(
+            nombre="completitud",
+            status=status,
+            mensaje=f"{n} problemas de completitud",
+            detalles=resultado.problemas_completitud,
+        )
+
+    @staticmethod
+    def _seccion_unicidad(resultado: "ResultadoRouter") -> SeccionDiagnostico:
+        """Sección 4: Unicidad de comprobantes."""
+        n = len(resultado.comprobantes_duplicados)
+        if n == 0:
+            return SeccionDiagnostico(
+                nombre="unicidad",
+                status="OK",
+                mensaje="Sin comprobantes duplicados",
+            )
+
+        return SeccionDiagnostico(
+            nombre="unicidad",
+            status="WARNING",  # Duplicados → WARNING (nunca CRITICAL)
+            mensaje=f"{n} posibles duplicados (revisión humana)",
+            detalles=resultado.comprobantes_duplicados,
+        )
+
+    @staticmethod
+    def _seccion_aritmetica(resultado: "ResultadoRouter") -> SeccionDiagnostico:
+        """Sección 5: Validaciones aritméticas (Grupo J)."""
+        n = len(resultado.errores_aritmeticos)
+        if n == 0:
+            return SeccionDiagnostico(
+                nombre="aritmetica",
+                status="OK",
+                mensaje="Validaciones aritméticas correctas",
+            )
+
+        status = "CRITICAL" if n > 5 else "WARNING" if n > 2 else "OK"
+        return SeccionDiagnostico(
+            nombre="aritmetica",
+            status=status,
+            mensaje=f"{n} errores aritméticos",
+            detalles=resultado.errores_aritmeticos,
+        )
+
+    @staticmethod
+    def _seccion_decision(resultado: "ResultadoRouter") -> SeccionDiagnostico:
+        """Sección 6: Decisión final del checkpoint."""
+        return SeccionDiagnostico(
+            nombre="decision",
+            status=resultado.status.value,
+            mensaje=(
+                f"Confianza: {resultado.confianza_global.value} | "
+                f"Debe detener: {'SÍ' if resultado.debe_detener else 'NO'}"
+            ),
+            detalles=resultado.alertas,
+            metricas={
+                "status": resultado.status.value,
+                "confianza_global": resultado.confianza_global.value,
+                "debe_detener": resultado.debe_detener,
+                "razon_detencion": resultado.razon_detencion,
+            },
+        )
+
+    def _determinar_accion(self, resultado: "ResultadoRouter") -> str:
+        """
+        Determina la acción a tomar basada en el resultado.
+
+        - DETENER: status CRITICAL (señal al orquestador, Art. 2.2)
+        - CONTINUAR_CON_ALERTAS: status WARNING (pipeline continúa)
+        - CONTINUAR: status OK (sin problemas)
+        """
+        if resultado.debe_detener:
+            return self.ACCION_DETENER
+        if resultado.status == IntegridadStatus.WARNING:
+            return self.ACCION_CONTINUAR_CON_ALERTAS
+        return self.ACCION_CONTINUAR
+
+    def _log_decision(self, accion: str, resultado: "ResultadoRouter") -> None:
+        """Registra la decisión del checkpoint en TraceLogger."""
+        if not self.logger:
+            return
+
+        level = "info"
+        if accion == self.ACCION_DETENER:
+            level = "error"
+        elif accion == self.ACCION_CONTINUAR_CON_ALERTAS:
+            level = "warning"
+
+        context = {
+            "accion": accion,
+            "status": resultado.status.value,
+            "confianza_global": resultado.confianza_global.value,
+            "debe_detener": resultado.debe_detener,
+            "alertas": len(resultado.alertas),
+        }
+
+        log_method = getattr(self.logger, level, self.logger.info)
+        log_method(
+            f"IntegrityCheckpoint: {accion}",
+            agent_id=self.agente_id,
+            operation="evaluar",
+            context=context,
+        )
+
+
+# ==============================================================================
 # RESULTADO DEL ROUTER
 # ==============================================================================
 
@@ -333,6 +945,54 @@ class ResultadoRouter:
         if self.alertas:
             lineas.append(f"Alertas: {len(self.alertas)}")
 
+        return "\n".join(lineas)
+
+
+# ==============================================================================
+# DECISIÓN DEL CHECKPOINT (Hito 2)
+# ==============================================================================
+
+@dataclass
+class DecisionCheckpoint:
+    """
+    Resultado completo del IntegrityCheckpoint.
+
+    Contiene la decisión (acción), el resultado del router,
+    el reporte de enforcement detallado y el diagnóstico
+    para la hoja Excel.
+
+    El orquestador LangGraph consume esta clase para decidir
+    si continuar o detener el pipeline.
+    """
+    accion: str = "CONTINUAR"
+    resultado: Optional[ResultadoRouter] = None
+    reporte_enforcement: Optional[ReporteEnforcement] = None
+    diagnostico: Optional[DiagnosticoExpediente] = None
+    timestamp: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serializa completo a diccionario."""
+        return {
+            "accion": self.accion,
+            "resultado": self.resultado.to_dict() if self.resultado else None,
+            "reporte_enforcement": (
+                self.reporte_enforcement.to_dict()
+                if self.reporte_enforcement else None
+            ),
+            "diagnostico": (
+                self.diagnostico.to_dict()
+                if self.diagnostico else None
+            ),
+            "timestamp": self.timestamp,
+        }
+
+    def resumen_texto(self) -> str:
+        """Resumen legible para logging y consola."""
+        lineas = [f"=== IntegrityCheckpoint: {self.accion} ==="]
+        if self.resultado:
+            lineas.append(self.resultado.resumen_texto())
+        if self.diagnostico:
+            lineas.append(self.diagnostico.resumen_texto())
         return "\n".join(lineas)
 
 
