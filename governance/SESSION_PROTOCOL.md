@@ -126,6 +126,89 @@ SIGUIENTE TAREA
 
 ---
 
+## PROTOCOLO OPERATIVO POR HITO (OBLIGATORIO)
+
+> **Adoptado:** 2026-02-19 por instrucción directa de Hans.
+> **Regla:** Este protocolo se ejecuta SIN que Hans lo recuerde.
+> Sin bloque de evidencia completo, NO se autoriza PR/push ni avance al siguiente hito.
+
+### 1. Pre-check al iniciar hito
+
+Claude Code ejecuta ANTES de escribir cualquier línea de código:
+
+```bash
+git status --short --branch
+git rev-parse --short HEAD
+```
+
+- Confirmar rama objetivo (main u otra)
+- Confirmar sincronización con origin/main
+- Reportar resultado a Hans
+
+### 2. Cierre de hito con bloque de evidencia completo
+
+Al terminar CADA hito, Claude Code genera este bloque COMPLETO:
+
+```
+=== EVIDENCIA DE CIERRE — [Tarea #XX Hito Y] ===
+
+1. Estado git:
+   $ git status --short --branch
+   [salida real]
+
+2. Commit:
+   $ git rev-parse --short HEAD
+   [hash]
+   $ git show --stat --name-only [hash]
+   [salida real]
+
+3. Tests:
+   $ pytest [ruta] -v
+   [salida real con números exactos: passed, skipped, failed]
+
+4. Archivos tocados (ruta exacta):
+   - src/...
+   - tests/...
+
+5. Riesgos abiertos:
+   - [lista o "Ninguno"]
+
+6. Decisión: GO / NO-GO
+   [justificación]
+
+=== FIN EVIDENCIA ===
+```
+
+### 3. Regla de control
+
+- **Sin bloque de evidencia completo → NO se autoriza push ni avance.**
+- Si un hito falla tests o tiene riesgos CRITICAL → NO-GO obligatorio.
+- Hans puede overridear un NO-GO con instrucción explícita.
+
+### 4. Documentación obligatoria por hito
+
+Después de cada hito completado, actualizar:
+
+| Documento | Siempre | Condicional |
+|-----------|---------|-------------|
+| ROADMAP.md | ✅ | — |
+| CLAUDE.md | ✅ | — |
+| docs/CURRENT_STATE.md | — | Si cambia flujo, módulo nuevo, o cambio de fase |
+| Notion Tarea (tablero) | ✅ | — |
+| Notion Bitácora | ✅ | — |
+| Notion Dashboard | — | Si cambia progreso de fase |
+
+### 5. Reconciliación semanal
+
+Una vez por semana (o al inicio de sesión si pasó >3 días):
+
+- Listar ramas/worktrees activas: `git worktree list`
+- Reportar divergencias entre main y origin/main
+- Verificar que Notion refleja estado real del tablero
+- Reportar anomalías a Hans
+
+---
+
 ## FUENTES DE VERDAD
 
 | Fuente | Contenido | Prioridad |
@@ -140,4 +223,5 @@ Si hay discrepancia, el codigo en main siempre tiene razon.
 ---
 
 *Creado: 2026-02-13 por Claude Code*
+*Protocolo por hito agregado: 2026-02-19 por instrucción de Hans*
 *Archivo protegido: requiere aprobacion de Hans para modificar*
