@@ -4,7 +4,7 @@
 > Sincronizado con el tablero Notion (DB: 6003e907-28f5-4757-ba93-88aa3efe03e1).
 
 **Ultima actualizacion:** 2026-02-19
-**Progreso global:** 15/40 completadas (37.5%), 0 en progreso
+**Progreso global:** 16/40 completadas (40%), 1 en progreso (#16)
 
 ---
 
@@ -24,7 +24,7 @@
 
 ---
 
-## Fase 1: Trazabilidad + OCR — EN PROGRESO (5/7)
+## Fase 1: Trazabilidad + OCR — EN PROGRESO (6/7)
 
 | # | Tarea | Estado | Modulo |
 |---|-------|--------|--------|
@@ -33,17 +33,17 @@
 | 12 | Politica formal de abstencion operativa | ✅ | src/extraction/abstencion.py |
 | 13 | Rewrite OCR: Tesseract → PaddleOCR PP-OCRv5 | ✅ | src/ocr/core.py |
 | 14 | Extender ResultadoPagina con bbox + confianza por linea | ✅ | src/ocr/core.py |
-| 15 | Benchmark A/B: Tesseract vs PaddleOCR | ⬜ | scripts/benchmark_ocr.py |
-| 16 | Re-generar Excel + validacion visual humana | ⬜ | Validacion manual |
+| 15 | Benchmark A/B: Tesseract vs PaddleOCR | ✅ | scripts/benchmark_ocr.py |
+| 16 | Re-generar Excel + validacion visual humana | 🔵 | Validacion manual (4 expedientes) |
 
 ---
 
-## Fase 2: Contrato + Router — EN PROGRESO (1/5)
+## Fase 2: Contrato + Router — EN PROGRESO (2/5)
 
 | # | Tarea | Estado | Modulo |
 |---|-------|--------|--------|
 | 17 | Contrato de datos: CampoExtraido + ExpedienteJSON | ✅ | src/extraction/expediente_contract.py |
-| 18 | Confidence Router + Integrity Checkpoint (nodo LangGraph) | ⬜ | src/extraction/confidence_router.py |
+| 18 | Confidence Router + Integrity Checkpoint (nodo LangGraph) | ✅ | src/extraction/confidence_router.py |
 | 19 | Calibrar umbrales con distribucion real | ⬜ | Calibracion |
 | 20 | Hoja DIAGNOSTICO en Excel | ⬜ | src/extraction/excel_writer.py |
 | 21 | Integrar router en escribano_fiel.py | ⬜ | src/extraction/escribano_fiel.py |
@@ -113,6 +113,7 @@
 | Config gating | src/ingestion/config.py | ~38 | — |
 | Abstencion | src/extraction/abstencion.py | ~550 | 66 |
 | Contrato de datos | src/extraction/expediente_contract.py | ~1161 | 84 |
+| Confidence Router | src/extraction/confidence_router.py | ~1424 | 86 |
 | OCR Core (PaddleOCR PP-OCRv5 + Tesseract fallback) | src/ocr/core.py | ~880 | 75 |
 | OCR Preprocessor | src/tools/ocr_preprocessor.py | ~301 | 6 |
 | Detraccion SPOT | src/rules/detraccion_spot.py | — | 25 |
@@ -120,7 +121,7 @@
 | Integrador SPOT+TDR | src/rules/integrador.py | — | — |
 | Config global | config/settings.py | ~360 | — |
 
-**Total tests:** 550 passed, 8 skipped
+**Total tests:** 693 passed, 7 skipped
 
 ---
 
@@ -128,8 +129,8 @@
 
 ```
 Fase 0: Setup          [██████████] 9/9  — COMPLETADA
-Fase 1: Trazabilidad   [██████████] 5/7  — EN PROGRESO (#15-16 pendientes)
-Fase 2: Contrato       [██░░░░░░░░] 1/5  — EN PROGRESO (#17 ✅, #18-21 pendientes)
+Fase 1: Trazabilidad   [████████░░] 6/7  — EN PROGRESO (#16 en progreso)
+Fase 2: Contrato       [████░░░░░░] 2/5  — EN PROGRESO (#17 ✅, #18 ✅, #19-21 pendientes)
 Fase 3: Qwen           [░░░░░░░░░░] 0/5  — PENDIENTE
 Fase 4: Validaciones   [░░░░░░░░░░] 0/3  — PENDIENTE
 Fase 5: Evaluacion     [░░░░░░░░░░] 0/5  — PENDIENTE

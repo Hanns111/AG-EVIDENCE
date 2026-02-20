@@ -21,18 +21,21 @@
 
 ## Última Tarea Completada
 
-- **Tarea #17** — Contrato de datos tipado: ExpedienteJSON (Fase 2)
-- src/extraction/expediente_contract.py: 1161 líneas, 7 enums, 18+ dataclasses
-- Implementa Regla 4 de Gobernanza Técnica (contrato único JSON intermedio)
-- 11 Grupos (A-K) de PARSING_COMPROBANTES_SPEC.md como dataclasses
-- DocumentosConvenio (Pautas 5.1.11) para expedientes Estado-Estado
-- to_dict/from_dict roundtrip, to_json/from_json, generar_hash SHA-256
-- validar_completitud, verificar_unicidad_comprobantes, generar_resumen
-- CONVENIO_INTERINSTITUCIONAL agregado a NaturalezaExpediente
-- Tests: 84 tests nuevos (550 totales, 0 failures)
+- **Tarea #18** — Confidence Router + Integrity Checkpoint (Fase 2)
+- src/extraction/confidence_router.py: 1424 líneas, VERSION_ROUTER = "2.0.0"
+- Hito 1 (e34e196): UmbralesRouter, EvidenceEnforcer, ResultadoRouter, ConfidenceRouter (pipeline 7 pasos)
+- Hito 2 (33d5466): IntegrityCheckpoint, DiagnosticoExpediente (6 secciones), ReporteEnforcement, DecisionCheckpoint
+- IntegrityCheckpoint evalúa integrity_status → acción: CONTINUAR / CONTINUAR_CON_ALERTAS / DETENER
+- DiagnosticoExpediente con to_rows() para hoja Excel DIAGNOSTICO
+- DecisionCheckpoint.to_dict() 100% serializable a JSON
+- Tests: 86 tests (45 Hito 1 + 41 Hito 2), 693 totales, 0 failures
 
 ## Tareas Anteriores Relevantes
 
+- **Tarea #17** — Contrato de datos tipado: ExpedienteJSON (Fase 2)
+- src/extraction/expediente_contract.py: 1161 líneas, 7 enums, 18+ dataclasses
+- 11 Grupos (A-K) de PARSING_COMPROBANTES_SPEC.md, DocumentosConvenio (Pautas 5.1.11)
+- Tests: 84 tests nuevos, commit a276ec4
 - **Tarea #14** — Extender ResultadoPagina con bbox + confianza por linea (+ TraceLogger)
 - LineaOCR dataclass: bbox (Optional), confianza (Optional), motor
 - +815 lineas, 44 tests nuevos, commit e6a3229
@@ -168,12 +171,13 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 
 ## Siguiente Sesión — Pendientes
 
-1. **Seguridad AG-EVIDENCE** — Framework UE+US 2026 (NIS2, GDPR Art.32, NIST CSF 2.0). Fase 1 por implementar
-2. **Tarea #18** — Confidence Router + Integrity Checkpoint (nodo LangGraph)
-3. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
-4. **Tarea #16** — Re-generar Excel con pipeline formal
+1. **Tarea #19** — Calibrar umbrales con distribución real (siguiente en Fase 2)
+2. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes procesados, en progreso)
+3. **Tarea #20** — Hoja DIAGNOSTICO en Excel (consume DiagnosticoExpediente.to_rows())
+4. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
 5. Reprocesar Caja Chica N.3 con pipeline formal
-6. **Investigar herramienta de lectura fina** — Qwen2.5-VL-7B confunde caracteres similares
+6. **Seguridad AG-EVIDENCE** — Framework UE+US 2026 (NIS2, GDPR Art.32, NIST CSF 2.0)
+7. **Investigar herramienta de lectura fina** — Qwen2.5-VL-7B confunde caracteres similares
 
 ### Investigacion Pendiente — TensorRT (pedido por Hans 2026-02-17)
 
@@ -248,13 +252,14 @@ recepcion, impresion) y `buscar_fecha()` toma la primera que encuentra.
 2. **Filtro por rango temporal:** descartar fechas fuera del rango del expediente
    (ej: 2020 en un expediente 2026 = error evidente).
 
-### Decisión Arquitectónica Pendiente de Implementación
+### Decisión Arquitectónica Implementada — Integrity Checkpoint (Tarea #18 ✅)
 
-**Integrity Checkpoint** (se implementa en Tarea #18):
-- Nodo formal en el Router LangGraph, NO módulo monolítico separado (ADR-005)
-- Evalúa `integrity_status = OK | WARNING | CRITICAL`. Si CRITICAL → pipeline se detiene
-- Incluye EvidenceEnforcer (snippet + página + regla) post-contrato tipado
-- Decisión consensuada en sesión multi-IA (2026-02-11)
+- Nodo formal IntegrityCheckpoint en confidence_router.py (NO módulo monolítico, ADR-005)
+- Evalúa `integrity_status = OK | WARNING | CRITICAL` → acción CONTINUAR/ALERTAS/DETENER
+- EvidenceEnforcer valida snippet + página + regla en cada observación CRITICA/MAYOR
+- DiagnosticoExpediente genera 6 secciones para hoja Excel DIAGNOSTICO
+- DecisionCheckpoint.to_dict() serializable a JSON para trazabilidad
+- Commits: e34e196 (Hito 1), 33d5466 (Hito 2)
 
 ---
 
@@ -392,8 +397,8 @@ pdftotext "archivo_ocr.pdf" "archivo.txt"
 | Fase | Estado | Tareas |
 |------|--------|--------|
 | 0: Setup | ✅ Completada | #1-9 |
-| 1: Trazabilidad + OCR | 🔵 En progreso | #10 ✅, #11 ✅, #12 ✅, #13 ✅, #14 ✅, #15-16 pendientes |
-| 2: Contrato + Router | ⬜ Pendiente | #17-21 |
+| 1: Trazabilidad + OCR | 🔵 En progreso | #10-15 ✅, #16 🔵 en progreso |
+| 2: Contrato + Router | 🔵 En progreso | #17 ✅, #18 ✅, #19-21 pendientes |
 | 3: Qwen Fallback | ⬜ Pendiente | #22-26 |
 | 4: Validaciones | ⬜ Pendiente | #27-29 |
 | 5: Evaluación + Legal prep | ⬜ Pendiente | #30-34 |
@@ -412,7 +417,7 @@ src/
   __init__.py
   agents/.gitkeep           ← placeholder Fase 2
   extraction/
-    __init__.py, abstencion.py, expediente_contract.py, local_analyst.py
+    __init__.py, abstencion.py, confidence_router.py, expediente_contract.py, local_analyst.py
   ingestion/
     __init__.py, config.py, custody_chain.py,
     pdf_text_extractor.py, trace_logger.py
@@ -433,8 +438,8 @@ scripts/
   setup_ollama.sh           ← Setup Ollama server en WSL2
 tests/
   conftest.py,
-  test_abstencion.py, test_custody_chain.py,
-  test_detraccion_spot.py, test_ocr_core.py,
+  test_abstencion.py, test_confidence_router.py, test_custody_chain.py,
+  test_detraccion_spot.py, test_expediente_contract.py, test_ocr_core.py,
   test_ocr_preprocessor.py, test_pdf_text_extractor.py,
   test_tdr_requirements.py, test_trace_logger.py
 data/
@@ -445,4 +450,4 @@ data/
 
 ---
 
-*Actualizado: 2026-02-18 por Claude Code*
+*Actualizado: 2026-02-19 por Claude Code*

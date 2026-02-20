@@ -1,13 +1,13 @@
 # ESTADO ACTUAL DEL PROYECTO — AG-EVIDENCE
 
 ## Fecha de Corte
-2026-02-18
+2026-02-19
 
 ---
 
 ## 1. Estado General
 
-**v2.0 — Fase 1 en progreso (Trazabilidad + OCR) + Gobernanza Transversal**
+**v2.0 — Fase 2 en progreso (Contrato + Router) + Gobernanza Transversal**
 
 El proyecto completo su reestructuracion de v1.0 (prototipo con 9 agentes monoliticos)
 a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
@@ -28,6 +28,8 @@ estructural transversal.
 | `src/ingestion/trace_logger.py` | Operativo | Logger JSONL con trace_id |
 | `src/ingestion/pdf_text_extractor.py` | Operativo | Extraccion texto PDF con gating + validacion post-rotacion (Regla 2) |
 | `src/extraction/abstencion.py` | Operativo | Politica formal de abstencion + EvidenceStatus + clasificar_status() |
+| `src/extraction/confidence_router.py` | Operativo | Router de confianza + IntegrityCheckpoint + DiagnosticoExpediente (v2.0.0) |
+| `src/extraction/expediente_contract.py` | Operativo | Contrato tipado ExpedienteJSON (11 Grupos A-K, 18+ dataclasses) |
 | `src/extraction/local_analyst.py` | Nuevo | Capa C: IA local confinada con bloqueo de campos probatorios |
 | `src/ocr/core.py` | Operativo | Motor OCR PP-OCRv5 server GPU + Tesseract fallback + bbox/confianza + Regla 2 (v4.0.0) |
 | `src/tools/vision.py` | Nuevo | Preprocesamiento de imagen (337 lineas) |
@@ -62,10 +64,10 @@ estructural transversal.
 | Componente | Fase | Estado |
 |------------|------|--------|
 | Benchmark A/B Tesseract vs PaddleOCR | Fase 1 (#15) | Completado (ADR-008) |
-| Re-generar Excel + validacion visual | Fase 1 (#16) | En progreso (3 expedientes procesados) |
+| Re-generar Excel + validacion visual | Fase 1 (#16) | En progreso (4 expedientes procesados) |
 | Reprocesar Caja Chica N.3 con pipeline formal | Pre-Fase 2 | Pendiente (proxima sesion) |
-| Contrato de expediente (JSON tipado) | Fase 2 (#17) | Pendiente |
-| Router multi-agente + Integrity Checkpoint | Fase 2 (#18) | Pendiente |
+| Contrato de expediente (JSON tipado) | Fase 2 (#17) | ✅ Completado (1161 líneas, 84 tests) |
+| Router multi-agente + Integrity Checkpoint | Fase 2 (#18) | ✅ Completado (1424 líneas, 86 tests) |
 | Agentes v2.0 | Fase 2 (#19-21) | Pendiente |
 | Qwen fallback LLM (motor para Capa C) | Fase 3 (#22-26) | Pendiente |
 | Validaciones cruzadas | Fase 4 (#27-29) | Pendiente |
@@ -75,7 +77,7 @@ estructural transversal.
 
 ## 5. Tests
 
-- **Total:** 473 passed, 0 failures (2026-02-17)
+- **Total:** 693 passed, 7 skipped, 0 failures (2026-02-19)
 - 11 test suites cubriendo todos los modulos activos
 - Tests de seguridad: bloqueo de campos probatorios en Capa C
 - Tests de backward compatibility: CampoExtraido sin nuevos campos
