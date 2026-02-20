@@ -21,17 +21,26 @@
 
 ## Última Tarea Completada
 
-- **Tarea #18** — Confidence Router + Integrity Checkpoint (Fase 2)
-- src/extraction/confidence_router.py: 1424 líneas, VERSION_ROUTER = "2.0.0"
-- Hito 1 (e34e196): UmbralesRouter, EvidenceEnforcer, ResultadoRouter, ConfidenceRouter (pipeline 7 pasos)
-- Hito 2 (33d5466): IntegrityCheckpoint, DiagnosticoExpediente (6 secciones), ReporteEnforcement, DecisionCheckpoint
-- IntegrityCheckpoint evalúa integrity_status → acción: CONTINUAR / CONTINUAR_CON_ALERTAS / DETENER
-- DiagnosticoExpediente con to_rows() para hoja Excel DIAGNOSTICO
-- DecisionCheckpoint.to_dict() 100% serializable a JSON
-- Tests: 86 tests (45 Hito 1 + 41 Hito 2), 693 totales, 0 failures
+- **Tarea #19** — Calibrar umbrales con distribución real (Fase 2)
+- src/extraction/calibracion.py: ~500 líneas, VERSION_CALIBRACION = "1.0.0"
+- Commit d52f75b: CalibradorUmbrales + 3 perfiles + JSON export
+- 3 perfiles: CONSERVADOR / BALANCEADO / PERMISIVO (basados en cc003)
+- Benchmark cc003: 16 comprobantes, 42% precisión, 58% fallo
+- CONSERVADOR: 20%/40% warning/critical → cc003=CRITICAL ✅
+- BALANCEADO: 35%/55% warning/critical → cc003=CRITICAL ✅
+- PERMISIVO: 50%/70% warning/critical → cc003=WARNING ✅
+- UmbralesAbstencion per-campo: SIN cambios (problema de selección, no OCR)
+- Tests: 84 tests propios, 783 totales, 0 failures
+- Script CLI: scripts/calibrar_umbrales.py
+- JSON generado: data/normativa/umbrales_calibrados.json
 
 ## Tareas Anteriores Relevantes
 
+- **Tarea #18** — Confidence Router + Integrity Checkpoint (Fase 2)
+- src/extraction/confidence_router.py: 1424 líneas, 86 tests
+- IntegrityCheckpoint evalúa integrity_status → CONTINUAR/ALERTAS/DETENER
+- DiagnosticoExpediente + DecisionCheckpoint serializables
+- Commits: e34e196 (Hito 1), 33d5466 (Hito 2)
 - **Tarea #17** — Contrato de datos tipado: ExpedienteJSON (Fase 2)
 - src/extraction/expediente_contract.py: 1161 líneas, 7 enums, 18+ dataclasses
 - 11 Grupos (A-K) de PARSING_COMPROBANTES_SPEC.md, DocumentosConvenio (Pautas 5.1.11)
@@ -171,9 +180,9 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 
 ## Siguiente Sesión — Pendientes
 
-1. **Tarea #19** — Calibrar umbrales con distribución real (siguiente en Fase 2)
-2. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes procesados, en progreso)
-3. **Tarea #20** — Hoja DIAGNOSTICO en Excel (consume DiagnosticoExpediente.to_rows())
+1. **Tarea #20** — Hoja DIAGNOSTICO en Excel (consume DiagnosticoExpediente.to_rows())
+2. **Tarea #21** — Integrar router en escribano_fiel.py
+3. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes procesados, en progreso)
 4. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
 5. Reprocesar Caja Chica N.3 con pipeline formal
 6. **Seguridad AG-EVIDENCE** — Framework UE+US 2026 (NIS2, GDPR Art.32, NIST CSF 2.0)
@@ -398,7 +407,7 @@ pdftotext "archivo_ocr.pdf" "archivo.txt"
 |------|--------|--------|
 | 0: Setup | ✅ Completada | #1-9 |
 | 1: Trazabilidad + OCR | 🔵 En progreso | #10-15 ✅, #16 🔵 en progreso |
-| 2: Contrato + Router | 🔵 En progreso | #17 ✅, #18 ✅, #19-21 pendientes |
+| 2: Contrato + Router | 🔵 En progreso | #17 ✅, #18 ✅, #19 ✅, #20-21 pendientes |
 | 3: Qwen Fallback | ⬜ Pendiente | #22-26 |
 | 4: Validaciones | ⬜ Pendiente | #27-29 |
 | 5: Evaluación + Legal prep | ⬜ Pendiente | #30-34 |
@@ -417,7 +426,7 @@ src/
   __init__.py
   agents/.gitkeep           ← placeholder Fase 2
   extraction/
-    __init__.py, abstencion.py, confidence_router.py, expediente_contract.py, local_analyst.py
+    __init__.py, abstencion.py, calibracion.py, confidence_router.py, expediente_contract.py, local_analyst.py
   ingestion/
     __init__.py, config.py, custody_chain.py,
     pdf_text_extractor.py, trace_logger.py
@@ -435,10 +444,11 @@ scripts/
   generar_excel_expediente.py
   generar_excel_DIRI2026.py ← Excel con datos hardcoded (referencia)
   generar_excel_OTIC2026.py
+  calibrar_umbrales.py      ← Calibración de umbrales (Tarea #19)
   setup_ollama.sh           ← Setup Ollama server en WSL2
 tests/
   conftest.py,
-  test_abstencion.py, test_confidence_router.py, test_custody_chain.py,
+  test_abstencion.py, test_calibracion.py, test_confidence_router.py, test_custody_chain.py,
   test_detraccion_spot.py, test_expediente_contract.py, test_ocr_core.py,
   test_ocr_preprocessor.py, test_pdf_text_extractor.py,
   test_tdr_requirements.py, test_trace_logger.py
@@ -450,4 +460,4 @@ data/
 
 ---
 
-*Actualizado: 2026-02-19 por Claude Code*
+*Actualizado: 2026-02-20 por Claude Code*
