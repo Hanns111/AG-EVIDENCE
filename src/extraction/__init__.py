@@ -8,6 +8,7 @@ Componentes:
   - abstencion: Politica formal de abstencion operativa (Tarea #12)
   - local_analyst: Interfaz para IA local como analista (Capa C)
   - expediente_contract: Contrato de datos tipado (Tarea #17)
+  - confidence_router: Router de confianza + Integrity Checkpoint (Tarea #18)
 """
 
 from .abstencion import (
@@ -25,6 +26,14 @@ from .local_analyst import (
     AnalysisNotes,
     analyze_evidence,
     CAMPOS_PROBATORIOS,
+)
+
+from .confidence_router import (
+    VERSION_ROUTER,
+    UmbralesRouter,
+    EvidenceEnforcer,
+    ResultadoRouter,
+    ConfidenceRouter,
 )
 
 from .expediente_contract import (
@@ -72,6 +81,12 @@ __all__ = [
     "AnalysisNotes",
     "analyze_evidence",
     "CAMPOS_PROBATORIOS",
+    # confidence_router.py (Tarea #18)
+    "VERSION_ROUTER",
+    "UmbralesRouter",
+    "EvidenceEnforcer",
+    "ResultadoRouter",
+    "ConfidenceRouter",
     # expediente_contract.py (Tarea #17)
     "VERSION_CONTRATO",
     "TipoComprobante",
