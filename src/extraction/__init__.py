@@ -9,6 +9,7 @@ Componentes:
   - local_analyst: Interfaz para IA local como analista (Capa C)
   - expediente_contract: Contrato de datos tipado (Tarea #17)
   - confidence_router: Router de confianza + Integrity Checkpoint (Tarea #18)
+  - calibracion: Calibración de umbrales con distribución real (Tarea #19)
 """
 
 from .abstencion import (
@@ -40,6 +41,15 @@ from .confidence_router import (
     DecisionCheckpoint,
     ResultadoRouter,
     ConfidenceRouter,
+)
+
+from .calibracion import (
+    VERSION_CALIBRACION,
+    PerfilCalibracion,
+    EstadisticaCampo,
+    AnalisisBenchmark,
+    ResultadoCalibracion,
+    CalibradorUmbrales,
 )
 
 from .expediente_contract import (
@@ -99,6 +109,13 @@ __all__ = [
     "DecisionCheckpoint",
     "ResultadoRouter",
     "ConfidenceRouter",
+    # calibracion.py (Tarea #19)
+    "VERSION_CALIBRACION",
+    "PerfilCalibracion",
+    "EstadisticaCampo",
+    "AnalisisBenchmark",
+    "ResultadoCalibracion",
+    "CalibradorUmbrales",
     # expediente_contract.py (Tarea #17)
     "VERSION_CONTRATO",
     "TipoComprobante",

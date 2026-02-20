@@ -1,0 +1,198 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-02-20T05:03:12.455597+00:00",
+  "analisis_benchmark": {
+    "prueba_id": "empirica_cc003",
+    "expediente": "OT2026-INT-0179550",
+    "pipeline_version": "OCR core v3.1.0",
+    "timestamp_analisis": "2026-02-20T05:03:12.455503+00:00",
+    "total_comprobantes": 16,
+    "total_campos_evaluados": 69,
+    "total_skip": 11,
+    "total_match": 29,
+    "total_error": 25,
+    "total_no_extraido": 15,
+    "precision_pct": 42.03,
+    "tasa_fallo_global": 0.5797,
+    "confianza_ocr_min": 0.855,
+    "confianza_ocr_max": 0.972,
+    "confianza_ocr_media": 0.9434,
+    "stats_por_campo": {
+      "ruc": {
+        "campo": "ruc",
+        "evaluados": 11,
+        "match": 0,
+        "error": 11,
+        "no_extraido": 0,
+        "skip": 5,
+        "tasa_acierto": 0.0,
+        "tasa_error": 1.0,
+        "tasa_no_extraido": 0.0,
+        "tasa_fallo": 1.0
+      },
+      "serie_numero": {
+        "campo": "serie_numero",
+        "evaluados": 16,
+        "match": 10,
+        "error": 2,
+        "no_extraido": 4,
+        "skip": 0,
+        "tasa_acierto": 0.625,
+        "tasa_error": 0.125,
+        "tasa_no_extraido": 0.25,
+        "tasa_fallo": 0.375
+      },
+      "total": {
+        "campo": "total",
+        "evaluados": 16,
+        "match": 7,
+        "error": 3,
+        "no_extraido": 6,
+        "skip": 0,
+        "tasa_acierto": 0.4375,
+        "tasa_error": 0.1875,
+        "tasa_no_extraido": 0.375,
+        "tasa_fallo": 0.5625
+      },
+      "igv": {
+        "campo": "igv",
+        "evaluados": 10,
+        "match": 7,
+        "error": 1,
+        "no_extraido": 2,
+        "skip": 6,
+        "tasa_acierto": 0.7,
+        "tasa_error": 0.1,
+        "tasa_no_extraido": 0.2,
+        "tasa_fallo": 0.3
+      },
+      "fecha": {
+        "campo": "fecha",
+        "evaluados": 16,
+        "match": 5,
+        "error": 8,
+        "no_extraido": 3,
+        "skip": 0,
+        "tasa_acierto": 0.3125,
+        "tasa_error": 0.5,
+        "tasa_no_extraido": 0.1875,
+        "tasa_fallo": 0.6875
+      }
+    }
+  },
+  "perfiles": {
+    "conservador": {
+      "perfil": "conservador",
+      "umbrales_router": {
+        "max_campos_abstencion_warning_pct": 0.2,
+        "max_campos_abstencion_critical_pct": 0.4,
+        "max_observaciones_degradadas_warning": 1,
+        "max_observaciones_degradadas_critical": 3,
+        "min_comprobantes_con_datos": 2,
+        "min_campos_por_comprobante": 4,
+        "max_errores_aritmeticos_warning": 1,
+        "max_errores_aritmeticos_critical": 3,
+        "completitud_problemas_critical": 2
+      },
+      "umbrales_abstencion": {
+        "ruc": 0.9,
+        "monto": 0.9,
+        "fecha": 0.85,
+        "numero_documento": 0.85,
+        "nombre_persona": 0.8,
+        "nombre_entidad": 0.8,
+        "texto_general": 0.7,
+        "descripcion": 0.7,
+        "default": 0.75
+      },
+      "justificaciones": {
+        "max_campos_abstencion_warning_pct": "20% warning: Benchmark empirica_cc003: 16 comprobantes, precisión 42.03%, tasa fallo 58.0%. Confianza OCR 0.855-0.972 (media 0.943). cc003 tiene 58.0% fallo → CRITICAL. CONSERVADOR escala warning con solo 20% de campos abstenidos.",
+        "max_campos_abstencion_critical_pct": "40% critical: Benchmark empirica_cc003: 16 comprobantes, precisión 42.03%, tasa fallo 58.0%. Confianza OCR 0.855-0.972 (media 0.943). cc003 tiene 58.0% fallo > 40% → CRITICAL obligatorio.",
+        "max_observaciones_degradadas_warning": "1 obs degradada → warning: perfil estricto, cualquier evidencia débil escala.",
+        "max_observaciones_degradadas_critical": "3 obs degradadas → critical: máxima intolerancia a evidencia degradada.",
+        "min_comprobantes_con_datos": "Mínimo 2 comprobantes con datos: exige evidencia de múltiples fuentes.",
+        "min_campos_por_comprobante": "Mínimo 4 campos por comprobante: exige 4 de 5 campos benchmark.",
+        "max_errores_aritmeticos_warning": "1 error aritmético → warning: intolerancia máxima a errores de cálculo.",
+        "max_errores_aritmeticos_critical": "3 errores aritméticos → critical: intolerancia máxima.",
+        "completitud_problemas_critical": "2 problemas de completitud → critical: exigencia alta.",
+        "umbrales_abstencion": "Per-campo sin cambios: ruc=0.90, monto=0.90, fecha=0.85, etc. El problema real de cc003 (selección de campo equivocado) es ortogonal a los umbrales de confianza OCR por carácter."
+      }
+    },
+    "balanceado": {
+      "perfil": "balanceado",
+      "umbrales_router": {
+        "max_campos_abstencion_warning_pct": 0.35,
+        "max_campos_abstencion_critical_pct": 0.55,
+        "max_observaciones_degradadas_warning": 3,
+        "max_observaciones_degradadas_critical": 6,
+        "min_comprobantes_con_datos": 1,
+        "min_campos_por_comprobante": 3,
+        "max_errores_aritmeticos_warning": 2,
+        "max_errores_aritmeticos_critical": 5,
+        "completitud_problemas_critical": 3
+      },
+      "umbrales_abstencion": {
+        "ruc": 0.9,
+        "monto": 0.9,
+        "fecha": 0.85,
+        "numero_documento": 0.85,
+        "nombre_persona": 0.8,
+        "nombre_entidad": 0.8,
+        "texto_general": 0.7,
+        "descripcion": 0.7,
+        "default": 0.75
+      },
+      "justificaciones": {
+        "max_campos_abstencion_warning_pct": "35% warning: Benchmark empirica_cc003: 16 comprobantes, precisión 42.03%, tasa fallo 58.0%. Confianza OCR 0.855-0.972 (media 0.943). Punto medio entre conservador (20%) y permisivo (50%). cc003 (58.0% fallo) → escala warning.",
+        "max_campos_abstencion_critical_pct": "55% critical: Benchmark empirica_cc003: 16 comprobantes, precisión 42.03%, tasa fallo 58.0%. Confianza OCR 0.855-0.972 (media 0.943). cc003 (58.0% fallo) → bordeline CRITICAL.",
+        "max_observaciones_degradadas_warning": "3 obs degradadas → warning: tolerancia moderada.",
+        "max_observaciones_degradadas_critical": "6 obs degradadas → critical: permite más evidencia débil antes de escalar.",
+        "min_comprobantes_con_datos": "Mínimo 1 comprobante: permite operar con datos parciales.",
+        "min_campos_por_comprobante": "Mínimo 3 campos: exige 3 de 5 campos benchmark (ej: serie+total+igv).",
+        "max_errores_aritmeticos_warning": "2 errores aritméticos → warning: coincide con default original del router.",
+        "max_errores_aritmeticos_critical": "5 errores aritméticos → critical: coincide con default original.",
+        "completitud_problemas_critical": "3 problemas de completitud → critical: coincide con default original.",
+        "umbrales_abstencion": "Per-campo sin cambios. Problema de selección de campo es ortogonal."
+      }
+    },
+    "permisivo": {
+      "perfil": "permisivo",
+      "umbrales_router": {
+        "max_campos_abstencion_warning_pct": 0.5,
+        "max_campos_abstencion_critical_pct": 0.7,
+        "max_observaciones_degradadas_warning": 5,
+        "max_observaciones_degradadas_critical": 10,
+        "min_comprobantes_con_datos": 1,
+        "min_campos_por_comprobante": 2,
+        "max_errores_aritmeticos_warning": 4,
+        "max_errores_aritmeticos_critical": 8,
+        "completitud_problemas_critical": 5
+      },
+      "umbrales_abstencion": {
+        "ruc": 0.9,
+        "monto": 0.9,
+        "fecha": 0.85,
+        "numero_documento": 0.85,
+        "nombre_persona": 0.8,
+        "nombre_entidad": 0.8,
+        "texto_general": 0.7,
+        "descripcion": 0.7,
+        "default": 0.75
+      },
+      "justificaciones": {
+        "max_campos_abstencion_warning_pct": "50% warning: Benchmark empirica_cc003: 16 comprobantes, precisión 42.03%, tasa fallo 58.0%. Confianza OCR 0.855-0.972 (media 0.943). cc003 (58.0% fallo) → escala warning.",
+        "max_campos_abstencion_critical_pct": "70% critical: Benchmark empirica_cc003: 16 comprobantes, precisión 42.03%, tasa fallo 58.0%. Confianza OCR 0.855-0.972 (media 0.943). cc003 (58.0% fallo) → solo WARNING, no CRITICAL. Permite operar con documentos escaneados de baja calidad.",
+        "max_observaciones_degradadas_warning": "5 obs degradadas → warning: alta tolerancia a evidencia débil.",
+        "max_observaciones_degradadas_critical": "10 obs degradadas → critical: máxima tolerancia.",
+        "min_comprobantes_con_datos": "Mínimo 1 comprobante: acepta datos parciales.",
+        "min_campos_por_comprobante": "Mínimo 2 campos: acepta comprobantes con serie+total solamente.",
+        "max_errores_aritmeticos_warning": "4 errores aritméticos → warning: tolerante a errores de cálculo.",
+        "max_errores_aritmeticos_critical": "8 errores aritméticos → critical: muy tolerante.",
+        "completitud_problemas_critical": "5 problemas de completitud → critical: máxima tolerancia.",
+        "umbrales_abstencion": "Per-campo sin cambios. Problema de selección de campo es ortogonal."
+      }
+    }
+  },
+  "perfil_recomendado": "balanceado",
+  "nota": "Generado por CalibradorUmbrales v1.0.0. Los umbrales_abstencion per-campo NO se modifican porque el problema de precisión de cc003 (42%) es de selección de campo equivocado, no de confianza OCR por carácter (0.855-0.972)."
+}
