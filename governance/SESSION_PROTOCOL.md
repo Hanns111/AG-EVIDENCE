@@ -150,6 +150,45 @@ ANTES de empezar la siguiente tarea.
 
 ---
 
+## DEFINITION OF DONE DE SESION (OBLIGATORIO)
+
+> **Adoptado:** 2026-02-20 por instruccion directa de Hans.
+> **Regla:** Se ejecuta por defecto al cierre. NO requiere que Hans lo pida.
+> Si falta cualquiera de los 5 puntos, la sesion queda ABIERTA y NO se inicia
+> la siguiente tarea.
+
+### Los 5 puntos obligatorios antes de cerrar sesion:
+
+1. **Codigo/Docs commiteados** — git add + commit + push a origin/main
+2. **ROADMAP / CLAUDE.md / CURRENT_STATE.md sincronizados** — coherencia total
+3. **Notion Tarea + Notion Bitacora actualizados** — Estado, Fecha Real,
+   Ejecutado Por, Bitacora con commit + metricas. Todas las paginas creadas
+   por Claude Code en Notion deben estar al dia.
+4. **Notion Dashboard actualizado** — si cambio progreso de fase (nueva tarea
+   completada, nueva fase iniciada), actualizar barra de progreso o contadores
+5. **Reporte de reconciliacion entregado** a Hans — tabla resumen con:
+
+```
+=== RECONCILIACION DE CIERRE ===
+| Fuente            | Estado      | Accion         |
+|-------------------|-------------|----------------|
+| git (commit+push) | OK / FALTA  | [detalle]      |
+| ROADMAP.md        | OK / FALTA  | [detalle]      |
+| CLAUDE.md         | OK / FALTA  | [detalle]      |
+| CURRENT_STATE.md  | OK / FALTA  | [detalle]      |
+| Notion Tarea      | OK / FALTA  | [detalle]      |
+| Notion Bitacora   | OK / FALTA  | [detalle]      |
+| Notion Dashboard  | OK / N/A    | [detalle]      |
+=== FIN RECONCILIACION ===
+```
+
+### Regla de ejecucion automatica:
+- Claude Code ejecuta este checklist SIN que Hans lo solicite.
+- NO se pide permiso: se ejecuta por defecto.
+- Si un punto falla, se reporta y se corrige antes de declarar cierre.
+
+---
+
 ## PROTOCOLO DE COMMIT INCREMENTAL
 
 Para evitar perdida de trabajo, Claude Code sigue este flujo:
@@ -272,4 +311,5 @@ Si hay discrepancia, el codigo en main siempre tiene razon.
 *Creado: 2026-02-13 por Claude Code*
 *Protocolo por hito agregado: 2026-02-19 por instruccion de Hans*
 *Gate de arranque agregado: 2026-02-20 por instruccion de Hans (auditoria cruzada 4 IAs)*
+*Definition of Done de sesion agregado: 2026-02-20 por instruccion de Hans (reconciliacion total obligatoria)*
 *Archivo protegido: requiere aprobacion de Hans para modificar*
