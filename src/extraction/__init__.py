@@ -10,6 +10,7 @@ Componentes:
   - expediente_contract: Contrato de datos tipado (Tarea #17)
   - confidence_router: Router de confianza + Integrity Checkpoint (Tarea #18)
   - calibracion: Calibración de umbrales con distribución real (Tarea #19)
+  - excel_writer: Hoja DIAGNOSTICO en Excel (Tarea #20)
 """
 
 from .abstencion import (
@@ -50,6 +51,13 @@ from .calibracion import (
     AnalisisBenchmark,
     ResultadoCalibracion,
     CalibradorUmbrales,
+)
+
+from .excel_writer import (
+    VERSION_EXCEL_WRITER,
+    NOMBRE_HOJA,
+    EscritorDiagnostico,
+    escribir_diagnostico,
 )
 
 from .expediente_contract import (
@@ -116,6 +124,11 @@ __all__ = [
     "AnalisisBenchmark",
     "ResultadoCalibracion",
     "CalibradorUmbrales",
+    # excel_writer.py (Tarea #20)
+    "VERSION_EXCEL_WRITER",
+    "NOMBRE_HOJA",
+    "EscritorDiagnostico",
+    "escribir_diagnostico",
     # expediente_contract.py (Tarea #17)
     "VERSION_CONTRATO",
     "TipoComprobante",
