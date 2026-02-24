@@ -92,15 +92,21 @@ def _run_git(args, cwd=None):
 
 
 def _sha256_file(filepath):
-    """Calcula SHA-256 de un archivo. Retorna None si no existe."""
+    """Calcula SHA-256 de un archivo con normalizacion LF.
+
+    Normaliza CRLF -> LF para archivos de texto antes de hashear,
+    garantizando hashes consistentes entre Windows (CRLF) y Unix (LF).
+    Retorna None si no existe.
+    """
     full_path = PROJECT_ROOT / filepath
     if not full_path.exists():
         return None
-    h = hashlib.sha256()
     with open(full_path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
+        data = f.read()
+    # Normalizar line endings a LF para hash consistente cross-platform
+    if filepath.endswith((".md", ".yml", ".yaml", ".json", ".py", ".toml")):
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 def _load_manifest():
