@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO — AG-EVIDENCE
 
 ## Fecha de Corte
-2026-02-20
+2026-02-23
 
 ---
 
@@ -29,6 +29,7 @@ estructural transversal.
 | `src/ingestion/pdf_text_extractor.py` | Operativo | Extraccion texto PDF con gating + validacion post-rotacion (Regla 2) |
 | `src/extraction/abstencion.py` | Operativo | Politica formal de abstencion + EvidenceStatus + clasificar_status() |
 | `src/extraction/confidence_router.py` | Operativo | Router de confianza + IntegrityCheckpoint + DiagnosticoExpediente (v2.0.0) |
+| `src/extraction/excel_writer.py` | Operativo | Hoja DIAGNOSTICO en Excel (semaforo, 6 secciones, detalle campos) |
 | `src/extraction/expediente_contract.py` | Operativo | Contrato tipado ExpedienteJSON (11 Grupos A-K, 18+ dataclasses) |
 | `src/extraction/local_analyst.py` | Nuevo | Capa C: IA local confinada con bloqueo de campos probatorios |
 | `src/ocr/core.py` | Operativo | Motor OCR PP-OCRv5 server GPU + Tesseract fallback + bbox/confianza + Regla 2 (v4.0.0) |
@@ -69,8 +70,8 @@ estructural transversal.
 | Contrato de expediente (JSON tipado) | Fase 2 (#17) | ✅ Completado (1161 líneas, 84 tests) |
 | Router multi-agente + Integrity Checkpoint | Fase 2 (#18) | ✅ Completado (1424 líneas, 86 tests) |
 | Calibrar umbrales con distribucion real | Fase 2 (#19) | ✅ Completado (500 lineas, 84 tests, 3 perfiles) |
-| Hoja DIAGNOSTICO en Excel | Fase 2 (#20) | ⬜ Pendiente — **SIGUIENTE** |
-| Integrar router en escribano_fiel.py | Fase 2 (#21) | ⬜ Pendiente |
+| Hoja DIAGNOSTICO en Excel | Fase 2 (#20) | ✅ Completado (850 lineas, 59 tests) |
+| Integrar router en escribano_fiel.py | Fase 2 (#21) | ⬜ Pendiente — **SIGUIENTE** |
 | Qwen fallback LLM (motor para Capa C) | Fase 3 (#22-26) | Pendiente |
 | Validaciones cruzadas | Fase 4 (#27-29) | Pendiente |
 | Motor legal | Fase 6 (#35-40) | Pendiente |
@@ -79,11 +80,12 @@ estructural transversal.
 
 ## 5. Tests
 
-- **Total:** 783 passed, 1 skipped, 0 failures (2026-02-20)
-- 12 test suites cubriendo todos los modulos activos
+- **Total:** 835 passed, 8 skipped, 0 failures (2026-02-23)
+- 13 test suites cubriendo todos los modulos activos
 - Tests de seguridad: bloqueo de campos probatorios en Capa C
 - Tests de backward compatibility: CampoExtraido sin nuevos campos
 - Tests de calibracion: 84 tests (3 perfiles, benchmark cc003)
+- Tests de excel_writer: 59 tests (colores, secciones, detalle campos, edge cases)
 
 ---
 
@@ -142,12 +144,11 @@ estructural transversal.
 
 ## 10. Proximos Pasos
 
-1. **Tarea #20** — Hoja DIAGNOSTICO en Excel (`src/extraction/excel_writer.py`, consume `DiagnosticoExpediente.to_rows()`)
-2. **Tarea #21** — Integrar router en `src/extraction/escribano_fiel.py` (pipeline formal completo)
-3. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes, solo tras #20+#21)
+1. **Tarea #21** — Integrar router en `src/extraction/escribano_fiel.py` (pipeline formal completo, ultima de Fase 2)
+2. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes, solo tras #21)
 4. Investigar herramienta de lectura fina para errores VLM (crop+zoom, modelo mayor)
 5. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
 
 ---
 
-**Ultima actualizacion:** 2026-02-20 por Claude Code
+**Ultima actualizacion:** 2026-02-23 por Claude Code

@@ -21,21 +21,23 @@
 
 ## Última Tarea Completada
 
-- **Tarea #19** — Calibrar umbrales con distribución real (Fase 2)
-- src/extraction/calibracion.py: ~500 líneas, VERSION_CALIBRACION = "1.0.0"
-- Commit d52f75b: CalibradorUmbrales + 3 perfiles + JSON export
-- 3 perfiles: CONSERVADOR / BALANCEADO / PERMISIVO (basados en cc003)
-- Benchmark cc003: 16 comprobantes, 42% precisión, 58% fallo
-- CONSERVADOR: 20%/40% warning/critical → cc003=CRITICAL ✅
-- BALANCEADO: 35%/55% warning/critical → cc003=CRITICAL ✅
-- PERMISIVO: 50%/70% warning/critical → cc003=WARNING ✅
-- UmbralesAbstencion per-campo: SIN cambios (problema de selección, no OCR)
-- Tests: 84 tests propios, 783 totales, 0 failures
-- Script CLI: scripts/calibrar_umbrales.py
-- JSON generado: data/normativa/umbrales_calibrados.json
+- **Tarea #20** — Hoja DIAGNOSTICO en Excel (Fase 2)
+- src/extraction/excel_writer.py: ~850 líneas, VERSION_EXCEL_WRITER = "1.0.0"
+- Commit 81a3cb8: EscritorDiagnostico + escribir_diagnostico() convenience
+- Consume DecisionCheckpoint → genera hoja DIAGNOSTICO en workbook openpyxl
+- Banner: SINAD, status semáforo, confianza global, acción recomendada
+- 6 secciones diagnósticas con colores semáforo (verde/amarillo/rojo)
+- Detalle por campo: nombre, valor, confianza%, status, motor, archivo:página
+- Pie: alertas + métricas globales (total campos, % extracción, confianza promedio)
+- Colores: Verde (#C6EFCE), Amarillo (#FFEB9C), Rojo (#FFC7CE)
+- Tests: 59 tests propios, 835 totales, 0 failures
 
 ## Tareas Anteriores Relevantes
 
+- **Tarea #19** — Calibrar umbrales con distribución real (Fase 2)
+- src/extraction/calibracion.py: ~500 líneas, VERSION_CALIBRACION = "1.0.0"
+- Commit d52f75b: CalibradorUmbrales + 3 perfiles + JSON export
+- Tests: 84 tests propios
 - **Tarea #18** — Confidence Router + Integrity Checkpoint (Fase 2)
 - src/extraction/confidence_router.py: 1424 líneas, 86 tests
 - IntegrityCheckpoint evalúa integrity_status → CONTINUAR/ALERTAS/DETENER
@@ -180,8 +182,8 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 
 ## Siguiente Sesión — Pendientes
 
-1. **Tarea #20** — Hoja DIAGNOSTICO en Excel (consume DiagnosticoExpediente.to_rows())
-2. **Tarea #21** — Integrar router en escribano_fiel.py
+1. **Tarea #21** — Integrar router en escribano_fiel.py (última de Fase 2)
+2. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes, solo tras #21)
 3. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes procesados, en progreso)
 4. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
 5. Reprocesar Caja Chica N.3 con pipeline formal
@@ -409,7 +411,7 @@ pdftotext "archivo_ocr.pdf" "archivo.txt"
 |------|--------|--------|
 | 0: Setup | ✅ Completada | #1-9 |
 | 1: Trazabilidad + OCR | 🔵 En progreso | #10-15 ✅, #16 🔵 en progreso |
-| 2: Contrato + Router | 🔵 En progreso | #17 ✅, #18 ✅, #19 ✅, #20-21 pendientes |
+| 2: Contrato + Router | 🔵 En progreso | #17 ✅, #18 ✅, #19 ✅, #20 ✅, #21 pendiente |
 | 3: Qwen Fallback | ⬜ Pendiente | #22-26 |
 | 4: Validaciones | ⬜ Pendiente | #27-29 |
 | 5: Evaluación + Legal prep | ⬜ Pendiente | #30-34 |
@@ -428,7 +430,7 @@ src/
   __init__.py
   agents/.gitkeep           ← placeholder Fase 2
   extraction/
-    __init__.py, abstencion.py, calibracion.py, confidence_router.py, expediente_contract.py, local_analyst.py
+    __init__.py, abstencion.py, calibracion.py, confidence_router.py, excel_writer.py, expediente_contract.py, local_analyst.py
   ingestion/
     __init__.py, config.py, custody_chain.py,
     pdf_text_extractor.py, trace_logger.py
@@ -450,7 +452,7 @@ scripts/
   setup_ollama.sh           ← Setup Ollama server en WSL2
 tests/
   conftest.py,
-  test_abstencion.py, test_calibracion.py, test_confidence_router.py, test_custody_chain.py,
+  test_abstencion.py, test_calibracion.py, test_confidence_router.py, test_custody_chain.py, test_excel_writer.py,
   test_detraccion_spot.py, test_expediente_contract.py, test_ocr_core.py,
   test_ocr_preprocessor.py, test_pdf_text_extractor.py,
   test_tdr_requirements.py, test_trace_logger.py
@@ -462,4 +464,4 @@ data/
 
 ---
 
-*Actualizado: 2026-02-20 por Claude Code*
+*Actualizado: 2026-02-23 por Claude Code*
