@@ -1,0 +1,34 @@
+# .gitattributes — AG-EVIDENCE Merge Protection + Line Endings
+#
+# merge=ours: en conflicto de merge, la version de main (target) gana.
+# Previene que una rama de agente AI sobreescriba gobernanza silenciosamente.
+
+# ── Gobernanza: merge=ours (main siempre gana en conflicto) ────
+docs/AGENT_GOVERNANCE_RULES.md  merge=ours
+docs/GOVERNANCE_RULES.md        merge=ours
+docs/PROJECT_SPEC.md            merge=ours
+AGENTS.md                       merge=ours
+CLAUDE.md                       merge=ours
+.cursorrules                    merge=ours
+.cursor/mcp.json                merge=ours
+governance/SESSION_PROTOCOL.md  merge=ours
+
+# ── Seguridad: misma proteccion ────────────────────────────────
+docs/security/*.md              merge=ours
+
+# ── Line endings (LF consistente, WSL2 + Windows) ─────────────
+*.py            text eol=lf
+*.md            text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.json          text eol=lf
+*.sh            text eol=lf
+*.toml          text eol=lf
+
+# ── Binarios (no diff) ────────────────────────────────────────
+*.pdf           binary
+*.xlsx          binary
+*.docx          binary
+*.png           binary
+*.jpg           binary
+*.jpeg          binary

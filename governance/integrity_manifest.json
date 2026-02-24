@@ -1,0 +1,31 @@
+{
+  "version": "1.0.0",
+  "generated_by": "audit_repo_integrity.py --update-manifest",
+  "generated_at": "2026-02-24T21:50:25.272983+00:00",
+  "hash_algorithm": "sha256",
+  "files": {
+    "docs/AGENT_GOVERNANCE_RULES.md": "127faace9fcdce95f413a5e1552eea72c66f1474574732f170057b5c38723a69",
+    "docs/GOVERNANCE_RULES.md": "c4f907d0b97f30e5f03bbf6d72e6970faabd83108337064c8ee77491fdf08f52",
+    "docs/PROJECT_SPEC.md": "256e301b410bb41d12d7d6b4c0ecd2e90373ec07e2da70648a40454f8c5fdfbe",
+    "AGENTS.md": "cf0513cf5a09aecb0715720d6f36bceb4ccb9c3a48c823be4b982ac52bc551ad",
+    "CLAUDE.md": "0454cfe5ce33e2a1441ac04a142f7501fc9ef104a82fbcff135a4003e4be10fa",
+    ".cursorrules": "a6ec7f6d99844192a2ac1309634f6006ad808cf2d8fc52971383808e1b8db0a2",
+    ".cursor/mcp.json": "21124080a079c2faf3d6db370a2b1c07862aa4536b0811860fd13a1a4d065b18",
+    "governance/SESSION_PROTOCOL.md": "369fc31be4b3cbea94cb0acba30216cb01fc41902f211a8f84d4261dc510ea79",
+    "docs/security/SECURITY_GOVERNANCE_POLICY.md": "e411aaf18526a97338f86ebfc996d1304dabe0a2dc7bbcfbc23a5d706baee106",
+    ".github/workflows/ci-lint.yml": "6f75f59264335a5ffe300e5a4563d7990f90ee2b6a79e701788a2457b334e9c0",
+    ".github/CODEOWNERS": "61943f9c6314e22b56f04b4c3c202a96430d631ee808ace7bd6b7e8a0fdfae8a",
+    ".gitattributes": "f0498b1a9811fefc8c5731a4c0a4ddbf0726c79d2c39eb97f56651067b5e8de8",
+    ".pre-commit-config.yaml": "5d1ebe754d9bcd7b4d025fcb65f76bce3a20cbac49dc05c31ad9df473c1df801"
+  },
+  "authorized_authors": [
+    "Hanns111",
+    "Hans",
+    "Claude Code",
+    "github-actions[bot]"
+  ],
+  "expected_remote_branches": [
+    "origin/main",
+    "origin/HEAD"
+  ]
+}

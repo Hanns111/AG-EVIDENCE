@@ -1,0 +1,46 @@
+# Pre-commit hooks para AG-EVIDENCE
+# Instalar: pip install pre-commit && pre-commit install
+# Ejecutar manual: pre-commit run --all-files
+
+repos:
+  # Ruff linter (usa config de pyproject.toml)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        args: [--config, pyproject.toml]
+      - id: ruff-format
+        args: [--check, --config, pyproject.toml]
+
+  # Conventional Commits en mensajes de commit
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+
+  # Seguridad basica
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+  # Hook local: Governance Guard (bloquea commits en archivos protegidos)
+  - repo: local
+    hooks:
+      - id: governance-guard
+        name: Governance File Guard
+        entry: python scripts/governance_guard.py
+        language: python
+        pass_filenames: true
+        files: >-
+          (docs/GOVERNANCE_RULES\.md|docs/AGENT_GOVERNANCE_RULES\.md|
+          docs/PROJECT_SPEC\.md|AGENTS\.md|CLAUDE\.md|\.cursorrules|
+          \.cursor/mcp\.json|governance/SESSION_PROTOCOL\.md|
+          docs/security/SECURITY_GOVERNANCE_POLICY\.md)

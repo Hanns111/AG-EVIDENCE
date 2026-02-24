@@ -47,6 +47,27 @@ Claude Code ejecuta pasos 1-7 de todas formas y pregunta:
 3. **docs/CURRENT_STATE.md** — coherencia con progreso real (tests, fases, fechas)
 4. **Archivos destino** — verificar si existen o se crean desde cero (`test -f ruta`)
 5. **Evidencia en src/** — codigo real que sustenta dependencias declaradas
+6. **Audit de Integridad del Repositorio** — ejecutar automaticamente:
+
+```bash
+python scripts/audit_repo_integrity.py
+```
+
+- Si resultado es **PASS** (con o sin warnings) → continuar con verificaciones
+- Si resultado es **FAIL** → **DETENER**. Reportar a Hans:
+  - Que check fallo
+  - Posible causa
+  - Accion recomendada
+  - **NO continuar trabajo** hasta que Hans confirme
+
+El audit verifica 7 checks independientes:
+1. Integridad SHA-256 de archivos de gobernanza vs manifiesto
+2. Ramas remotas no autorizadas
+3. Autores desconocidos en commits recientes
+4. Push directo a main (post-branch-protection)
+5. Exceso de worktrees activos
+6. Existencia de archivos CI/proteccion
+7. Cambios no commiteados en archivos protegidos
 
 ### Reglas del Gate:
 
@@ -74,6 +95,7 @@ Claude Code ejecuta pasos 1-7 de todas formas y pregunta:
 | CURRENT_STATE.md | Fecha corte, tests totales, proximos pasos |
 | Codigo real | Existencia de archivos, clases, metodos referenciados |
 | Notion Tablero | Estado consistente con las 4 fuentes anteriores |
+| audit_repo_integrity.py | 7 checks PASS o WARN justificado, 0 FAIL |
 
 Si hay conflicto entre fuentes → listar conflicto + accion de sincronizacion
 antes de escribir cualquier linea de codigo.

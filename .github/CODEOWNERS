@@ -1,0 +1,29 @@
+# CODEOWNERS — AG-EVIDENCE Repository Protection
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Proyecto del Estado peruano (MINEDU). Todo cambio requiere aprobacion de Hans.
+# Ningun agente AI (Codex, Jules, Cursor) puede mergear sin revision humana.
+
+# Default: Hans es owner de todo el repositorio
+*                                       @Hanns111
+
+# ── GOBERNANZA (Tier 1: maxima proteccion) ──────────────────────
+# Solo Claude Code modifica estos archivos, con aprobacion explicita de Hans.
+docs/AGENT_GOVERNANCE_RULES.md          @Hanns111
+docs/GOVERNANCE_RULES.md                @Hanns111
+docs/PROJECT_SPEC.md                    @Hanns111
+AGENTS.md                               @Hanns111
+CLAUDE.md                               @Hanns111
+.cursorrules                            @Hanns111
+.cursor/mcp.json                        @Hanns111
+governance/SESSION_PROTOCOL.md          @Hanns111
+
+# ── SEGURIDAD ───────────────────────────────────────────────────
+docs/security/*                         @Hanns111
+
+# ── CI/CD Y CONFIGURACION DE REPO ──────────────────────────────
+# Meta-proteccion: nadie modifica las propias barreras sin revision
+.github/*                               @Hanns111
+.gitattributes                          @Hanns111
+.pre-commit-config.yaml                 @Hanns111
+pyproject.toml                          @Hanns111

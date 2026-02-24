@@ -1,0 +1,166 @@
+name: CI Lint & Governance Check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # ── Job 1: Lint Python (ruff + compile) ───────────────────────
+  lint:
+    name: "Ruff Lint + Syntax Check"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Run ruff check
+        run: ruff check src/ config/ scripts/ tests/ --config pyproject.toml
+
+      - name: Python syntax check (compile all)
+        run: python -m compileall src/ config/ tests/ scripts/ -q
+
+  # ── Job 2: Conventional Commits ───────────────────────────────
+  commit-lint:
+    name: "Conventional Commits Check"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check Conventional Commits
+        run: |
+          COMMITS=$(git log --format="%s" origin/main..HEAD)
+          FAILED=0
+          PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9_/.-]+\))?(!)?: .+"
+
+          while IFS= read -r msg; do
+            if [ -z "$msg" ]; then continue; fi
+            if ! echo "$msg" | grep -qE "$PATTERN"; then
+              echo "FAIL: '$msg'"
+              echo "  Expected: type(scope): description"
+              FAILED=1
+            else
+              echo "OK: '$msg'"
+            fi
+          done <<< "$COMMITS"
+
+          if [ $FAILED -eq 1 ]; then
+            echo ""
+            echo "ERROR: Commits do not follow Conventional Commits."
+            echo "See: https://www.conventionalcommits.org/"
+            exit 1
+          fi
+
+  # ── Job 3: Governance File Protection ─────────────────────────
+  governance-check:
+    name: "Governance File Protection"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect protected file changes
+        run: |
+          PROTECTED_FILES=(
+            "docs/AGENT_GOVERNANCE_RULES.md"
+            "docs/GOVERNANCE_RULES.md"
+            "docs/PROJECT_SPEC.md"
+            "AGENTS.md"
+            "CLAUDE.md"
+            ".cursorrules"
+            ".cursor/mcp.json"
+            "governance/SESSION_PROTOCOL.md"
+            "docs/security/SECURITY_GOVERNANCE_POLICY.md"
+          )
+
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+          ALERTS=""
+
+          for pf in "${PROTECTED_FILES[@]}"; do
+            if echo "$CHANGED" | grep -qF "$pf"; then
+              ALERTS="${ALERTS}\n  !! PROTECTED FILE MODIFIED: $pf"
+            fi
+          done
+
+          if [ -n "$ALERTS" ]; then
+            echo "========================================="
+            echo "GOVERNANCE ALERT"
+            echo "========================================="
+            echo -e "$ALERTS"
+            echo ""
+            echo "Per GOVERNANCE_RULES.md Section 10.5:"
+            echo "These files require explicit Hans approval."
+            echo ""
+            echo "If approved, this check can be overridden."
+            # Warning only — Hans decides in PR review
+            exit 0
+          else
+            echo "No protected files modified. OK."
+          fi
+
+  # ── Job 4: Author Verification (HARD BLOCK) ──────────────────
+  author-check:
+    name: "Author Verification"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify commit authors
+        run: |
+          AUTHORIZED_AUTHORS=(
+            "Hanns111"
+            "Hans"
+            "Claude Code"
+            "github-actions[bot]"
+          )
+
+          AUTHORS=$(git log --format="%an" origin/main..HEAD | sort -u)
+          UNKNOWN=""
+
+          while IFS= read -r author; do
+            if [ -z "$author" ]; then continue; fi
+            FOUND=0
+            for aa in "${AUTHORIZED_AUTHORS[@]}"; do
+              if [ "$author" = "$aa" ]; then
+                FOUND=1
+                break
+              fi
+            done
+            if [ $FOUND -eq 0 ]; then
+              UNKNOWN="${UNKNOWN}\n  UNAUTHORIZED: '$author'"
+            fi
+          done <<< "$AUTHORS"
+
+          if [ -n "$UNKNOWN" ]; then
+            echo "========================================="
+            echo "SECURITY BLOCK: Unknown commit authors"
+            echo "========================================="
+            echo -e "$UNKNOWN"
+            echo ""
+            echo "Only authorized agents may commit."
+            echo "Authorized: ${AUTHORIZED_AUTHORS[*]}"
+            exit 1
+          else
+            echo "All commit authors authorized. OK."
+            echo "Found: $AUTHORS"
+          fi

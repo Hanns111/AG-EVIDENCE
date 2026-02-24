@@ -167,6 +167,13 @@
 | .gitignore (datos sensibles) | .gitignore | A+ |
 | Sin secretos en codigo | Todo el proyecto | A+ |
 | Sin subprocesos inseguros | Todo el proyecto | A |
+| Branch protection + CI (4 jobs) | .github/workflows/ci-lint.yml | A |
+| Governance file integrity (SHA-256) | governance/integrity_manifest.json | A+ |
+| Pre-commit hooks (ruff + guard) | .pre-commit-config.yaml | A |
+| CODEOWNERS ownership control | .github/CODEOWNERS | A |
+| Merge protection (gitattributes) | .gitattributes | A |
+| Author verification (CI hard block) | .github/workflows/ci-lint.yml | A+ |
+| Repo integrity audit (7 checks) | scripts/audit_repo_integrity.py | A+ |
 
 ---
 
@@ -174,7 +181,7 @@
 
 | Metrica | Valor | Objetivo |
 |---------|-------|----------|
-| Controles implementados | 10/18 | 18/18 |
+| Controles implementados | 17/18 | 18/18 |
 | Hallazgos criticos | 0 | 0 |
 | Hallazgos medios | 4 | 0 |
 | Hallazgos bajos | 1 | 0 |
@@ -188,6 +195,7 @@
 | Version | Fecha | Cambio |
 |---------|-------|--------|
 | 1.0.0 | 2026-02-19 | Auditoria inicial completa |
+| 1.1.0 | 2026-02-24 | Blindaje repositorio: 4 capas defensa en profundidad |
 
 ---
 
