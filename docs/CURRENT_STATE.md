@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO — AG-EVIDENCE
 
 ## Fecha de Corte
-2026-02-23
+2026-02-25
 
 ---
 
@@ -45,6 +45,14 @@ estructural transversal.
 | `scripts/backup_local.py` | Vigente | Backup ZIP completo del proyecto |
 | `scripts/generar_excel_DEBEDSAR2026.py` | Operativo | Excel rendicion DEBEDSAR2026 (estrategia mixta PyMuPDF+VLM 500 DPI) |
 | `scripts/extraer_con_qwen_vl.py` | Operativo | Extraccion VLM Qwen2.5-VL via Ollama (11 grupos A-K) |
+| `scripts/audit_repo_integrity.py` | Operativo | Auditoria integridad: 7 checks SHA-256 + branches + CI + CRLF normalization |
+| `scripts/governance_guard.py` | Operativo | Pre-commit hook: bloquea cambios a 9 archivos protegidos (override: AG_GOVERNANCE_OVERRIDE) |
+| `governance/integrity_manifest.json` | Operativo | 13 hashes SHA-256 (9 gobernanza + 4 CI) |
+| `.pre-commit-config.yaml` | Operativo | 8 hooks: ruff, ruff-format, large files, merge conflicts, private key, eof-fixer, trailing whitespace, governance guard |
+| `.github/workflows/ci-lint.yml` | Operativo | CI pipeline: 4 jobs (lint, commit-lint, governance-check, author-check) |
+| `.github/CODEOWNERS` | Operativo | Propiedad archivos criticos → @Hanns111 |
+| `.github/pull_request_template.md` | Operativo | Template PRs con checklist gobernanza |
+| `.gitattributes` | Operativo | Merge protection (ours) para archivos protegidos |
 
 ---
 
@@ -71,6 +79,7 @@ estructural transversal.
 | Router multi-agente + Integrity Checkpoint | Fase 2 (#18) | ✅ Completado (1424 líneas, 86 tests) |
 | Calibrar umbrales con distribucion real | Fase 2 (#19) | ✅ Completado (500 lineas, 84 tests, 3 perfiles) |
 | Hoja DIAGNOSTICO en Excel | Fase 2 (#20) | ✅ Completado (850 lineas, 59 tests) |
+| Blindaje de Seguridad (4 capas) | Transversal (#41) | ✅ Completado (8 archivos, ACTA aprobada 2026-02-25) |
 | Integrar router en escribano_fiel.py | Fase 2 (#21) | ⬜ Pendiente — **SIGUIENTE** |
 | Qwen fallback LLM (motor para Capa C) | Fase 3 (#22-26) | Pendiente |
 | Validaciones cruzadas | Fase 4 (#27-29) | Pendiente |
@@ -109,6 +118,7 @@ estructural transversal.
 - Patron de 3 capas formalizado (Regla 8 en Gobernanza Transversal)
 - PDFs de directivas removidos del tracking git (~35 MB liberados)
 - Commit incremental obligatorio (ver governance/SESSION_PROTOCOL.md)
+- **Blindaje de Seguridad (#41):** 4 capas defense-in-depth implementadas, ACTA aprobada 2026-02-25
 
 ---
 
@@ -151,4 +161,4 @@ estructural transversal.
 
 ---
 
-**Ultima actualizacion:** 2026-02-23 por Claude Code
+**Ultima actualizacion:** 2026-02-25 por Claude Code

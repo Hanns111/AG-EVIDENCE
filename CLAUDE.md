@@ -16,10 +16,20 @@
 - **OCR Engine:** PaddleOCR 3.4.0 PP-OCRv5 server GPU (ADR-008) + Tesseract fallback
 - **VLM Engine:** Ollama 0.16.2 + Qwen2.5-VL-7B (Q4_K_M, 6GB) — ADR-009
 - **DuckDB:** 1.4.4 instalado (base analitica)
+- **Seguridad:** Blindaje 4 capas completado 2026-02-25 (ACTA aprobada por Hans)
 
 ---
 
 ## Última Tarea Completada
+
+- **Tarea #41** — Blindaje de Seguridad (Transversal)
+- 4 capas defense-in-depth: GitHub platform → CI → pre-commit hooks → session protocol
+- 8 archivos nuevos: audit_repo_integrity.py, governance_guard.py, .pre-commit-config.yaml, ci-lint.yml, CODEOWNERS, pull_request_template.md, .gitattributes, integrity_manifest.json
+- ACTA DE CIERRE: APROBADO CONDICIONAL (branch protection pendiente Hans)
+- Commits: 1540fe4, 35425aa, 1f7fe62, fdc0b1a (ruff), ec308c5 (CI fix), 8e6e7f8
+- Notion: Tarea #41 ✅, Bitácora actualizada, ACTA como página permanente
+
+## Tarea Anterior Completada
 
 - **Tarea #20** — Hoja DIAGNOSTICO en Excel (Fase 2)
 - src/extraction/excel_writer.py: ~850 líneas, VERSION_EXCEL_WRITER = "1.0.0"
@@ -184,11 +194,10 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 
 1. **Tarea #21** — Integrar router en escribano_fiel.py (última de Fase 2)
 2. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes, solo tras #21)
-3. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes procesados, en progreso)
-4. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
-5. Reprocesar Caja Chica N.3 con pipeline formal
-6. **Seguridad AG-EVIDENCE** — Framework UE+US 2026 (NIS2, GDPR Art.32, NIST CSF 2.0)
-7. **Investigar herramienta de lectura fina** — Qwen2.5-VL-7B confunde caracteres similares
+3. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
+4. Reprocesar Caja Chica N.3 con pipeline formal
+5. **Investigar herramienta de lectura fina** — Qwen2.5-VL-7B confunde caracteres similares
+6. **Branch protection** — Hans configura en GitHub UI (pendiente del cierre de seguridad)
 
 ### Investigacion Pendiente — TensorRT (pedido por Hans 2026-02-17)
 
@@ -321,6 +330,8 @@ recepcion, impresion) y `buscar_fecha()` toma la primera que encuentra.
 - .cursorrules
 - .cursor/mcp.json
 - CLAUDE.md (este archivo)
+- governance/SESSION_PROTOCOL.md
+- docs/security/SECURITY_GOVERNANCE_POLICY.md
 
 ### Gobernanza Cursor — Cuándo y cómo usarlo:
 Claude Code es quien decide cuándo Cursor debe actuar.
@@ -416,16 +427,24 @@ pdftotext "archivo_ocr.pdf" "archivo.txt"
 | 4: Validaciones | ⬜ Pendiente | #27-29 |
 | 5: Evaluación + Legal prep | ⬜ Pendiente | #30-34 |
 | 6: Motor Legal | ⬜ Pendiente | #35-40 |
+| Transversal: Seguridad | ✅ Completada | #41 (Blindaje 4 capas) |
 
 ---
 
 ## Estructura del Codebase
 
 ```
+.github/
+  workflows/ci-lint.yml     ← CI pipeline: 4 jobs (lint, commit-lint, governance, author)
+  CODEOWNERS                ← Propiedad de archivos criticos (@Hanns111)
+  pull_request_template.md  ← Template PRs con checklist gobernanza
+.gitattributes              ← Merge protection (ours) para archivos protegidos
+.pre-commit-config.yaml     ← 8 hooks: ruff, governance guard, seguridad
 config/
   __init__.py, settings.py
 governance/
-  SESSION_PROTOCOL.md       ← protocolo de apertura/cierre de sesión
+  SESSION_PROTOCOL.md       ← protocolo de apertura/cierre de sesion
+  integrity_manifest.json   ← 13 hashes SHA-256 (9 gobernanza + 4 CI)
 src/
   __init__.py
   agents/.gitkeep           ← placeholder Fase 2
@@ -441,6 +460,8 @@ src/
   tools/
     __init__.py, ocr_preprocessor.py
 scripts/
+  audit_repo_integrity.py   ← Auditoria integridad: 7 checks SHA-256 + branches + CI
+  governance_guard.py       ← Pre-commit hook: bloquea cambios a 9 archivos protegidos
   backup_local.py           ← backup ZIP del proyecto completo
   extraer_con_qwen_vl.py    ← Fase A: extraccion con Qwen2.5-VL via Ollama
   explorar_expediente.py    ← PyMuPDF + PaddleOCR para explorar PDFs
@@ -448,7 +469,7 @@ scripts/
   generar_excel_expediente.py
   generar_excel_DIRI2026.py ← Excel con datos hardcoded (referencia)
   generar_excel_OTIC2026.py
-  calibrar_umbrales.py      ← Calibración de umbrales (Tarea #19)
+  calibrar_umbrales.py      ← Calibracion de umbrales (Tarea #19)
   setup_ollama.sh           ← Setup Ollama server en WSL2
 tests/
   conftest.py,
@@ -459,9 +480,9 @@ tests/
 data/
   directivas/               ← PDFs locales (NO en git, ver INVENTARIO_DIRECTIVAS.md)
   expedientes/              ← PDFs sensibles (NO en git)
-  normativa/                ← JSON de reglas (SÍ en git)
+  normativa/                ← JSON de reglas (SI en git)
 ```
 
 ---
 
-*Actualizado: 2026-02-23 por Claude Code*
+*Actualizado: 2026-02-25 por Claude Code*

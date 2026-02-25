@@ -3,8 +3,8 @@
 > Fuente unica de verdad del panorama completo del proyecto.
 > Sincronizado con el tablero Notion (DB: 6003e907-28f5-4757-ba93-88aa3efe03e1).
 
-**Ultima actualizacion:** 2026-02-23
-**Progreso global:** 18/40 completadas (45.0%), 1 en progreso (#16)
+**Ultima actualizacion:** 2026-02-25
+**Progreso global:** 19/41 completadas (46.3%), 1 en progreso (#16)
 
 ---
 
@@ -103,6 +103,19 @@
 
 ---
 
+## Transversal: Seguridad — COMPLETADA (1/1)
+
+| # | Tarea | Estado | Modulo |
+|---|-------|--------|--------|
+| 41 | Blindaje de Seguridad (4 capas defense-in-depth) | ✅ | scripts/audit_repo_integrity.py, scripts/governance_guard.py, .pre-commit-config.yaml, .github/workflows/ci-lint.yml, .github/CODEOWNERS, .github/pull_request_template.md, .gitattributes, governance/integrity_manifest.json |
+
+> **Nota:** Implementacion transversal fuera de las fases funcionales. 4 capas independientes:
+> GitHub platform (CODEOWNERS, PR template, .gitattributes) → CI (4 jobs) → Pre-commit hooks
+> (8 hooks: ruff, governance guard, seguridad) → Session protocol (audit_repo_integrity.py).
+> ACTA DE CIERRE aprobada por Hans (2026-02-25). Branch protection pendiente configuracion manual.
+
+---
+
 ## Modulos Operativos (codigo real en src/)
 
 | Modulo | Archivo | Lineas | Tests |
@@ -122,6 +135,8 @@
 | Requisitos TDR | src/rules/tdr_requirements.py | — | 10 |
 | Integrador SPOT+TDR | src/rules/integrador.py | — | — |
 | Config global | config/settings.py | ~360 | — |
+| Audit Repo Integrity | scripts/audit_repo_integrity.py | ~400 | — |
+| Governance Guard | scripts/governance_guard.py | ~150 | — |
 
 **Total tests:** 835 passed, 8 skipped
 
@@ -137,4 +152,5 @@ Fase 3: Qwen           [░░░░░░░░░░] 0/5  — PENDIENTE
 Fase 4: Validaciones   [░░░░░░░░░░] 0/3  — PENDIENTE
 Fase 5: Evaluacion     [░░░░░░░░░░] 0/5  — PENDIENTE
 Fase 6: Motor Legal    [░░░░░░░░░░] 0/6  — PENDIENTE
+Transversal: Seguridad [██████████] 1/1  — COMPLETADA (#41 Blindaje 4 capas)
 ```
