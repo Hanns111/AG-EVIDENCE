@@ -1,14 +1,14 @@
 {
   "version": "1.0.0",
   "generated_by": "audit_repo_integrity.py --update-manifest",
-  "generated_at": "2026-02-25T08:19:30.899756+00:00",
+  "generated_at": "2026-02-25T08:32:38.828860+00:00",
   "hash_algorithm": "sha256",
   "files": {
     "docs/AGENT_GOVERNANCE_RULES.md": "d9f6d40e68452143731837dfb3a0a0e53eb5ef0ebffcd11f6f9dc7a336a00c45",
     "docs/GOVERNANCE_RULES.md": "b36a21ff8a965183d2365ee89b5eb93b3bbaf938a7cef9bd53b8be071ac75cfd",
     "docs/PROJECT_SPEC.md": "21da60e30d508bd3918a89f39f63cf914cee7057923368097e023d777127f8f2",
     "AGENTS.md": "c002de0e3fba7b552d9b1ff6d874951f3d15c079828068d37cc9bbd31e8cb8dd",
-    "CLAUDE.md": "a92330a285017457398d01ecfb9c9ff46fbfe09ec96a3a8cb206482be1f3adf1",
+    "CLAUDE.md": "286399a5660c3de8700a147105ac777aea781d13ecec60ffb7734956397a179b",
     ".cursorrules": "a6ec7f6d99844192a2ac1309634f6006ad808cf2d8fc52971383808e1b8db0a2",
     ".cursor/mcp.json": "dc47cbbbe5c9e41ba2301362b37558b2e898461eb9f2a67fc0757778eedc7cb4",
     "governance/SESSION_PROTOCOL.md": "d48b6f7a41dd6a507ad626aa7703f382ca43eb2db0d4096e25334658640f122e",
