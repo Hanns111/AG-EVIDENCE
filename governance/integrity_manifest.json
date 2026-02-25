@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "generated_by": "audit_repo_integrity.py --update-manifest",
-  "generated_at": "2026-02-24T22:06:40.620850+00:00",
+  "generated_at": "2026-02-25T08:07:38.590088+00:00",
   "hash_algorithm": "sha256",
   "files": {
     "docs/AGENT_GOVERNANCE_RULES.md": "2b3621457829b02d43aa2c0666191ae256d287ec39d0cc486197176f7e9712a7",
