@@ -133,9 +133,9 @@ El incumplimiento de cualquiera de estas reglas por parte de un agente o módulo
       - Coherencia SINAD/SIAF (AG03)
       - Calidad de documentos (AG02)
       - Detección de firmas (AG05)
-   
+
    b) Los agentes AG04, AG06 y AG07 operan en modo limitado
-   
+
    c) El informe debe indicar: "Naturaleza no determinada con certeza. Verificaciones especializadas no aplicadas."
 
 7.4. El sistema NO puede aplicar requisitos de una naturaleza a un expediente de otra naturaleza.
@@ -147,9 +147,9 @@ El incumplimiento de cualquiera de estas reglas por parte de un agente o módulo
 8.2. El Agente Legal (AG04) debe:
 
    a) Consultar el resultado del AG01 para obtener la naturaleza
-   
+
    b) Mapear la naturaleza a la directiva correspondiente según la tabla del Artículo 7.2
-   
+
    c) Cargar los requisitos específicos de esa directiva
 
 8.3. Si la directiva no puede determinarse con evidencia documental, el sistema DEBE indicar expresamente:
@@ -183,9 +183,9 @@ El incumplimiento de cualquiera de estas reglas por parte de un agente o módulo
 9.3. Cuando un documento es `ESCANEADO_LEGIBLE` pero el sistema no puede extraer texto:
 
    a) Clasificar la página como `calidad_texto = REQUIERE_REVISION_MANUAL`
-   
+
    b) NO generar observación crítica por ilegibilidad
-   
+
    c) Indicar en el informe: "Página [N] requiere lectura manual. Documento visualmente legible."
 
 9.4. Solo los documentos `ESCANEADO_DEFICIENTE` (ilegibles incluso para humanos) pueden generar observaciones relacionadas con calidad de escaneo.
@@ -212,21 +212,21 @@ El sistema tiene **PROHIBIDO TERMINANTEMENTE**:
 #### 11.1. Invención de Obligaciones
 
 ```
-❌ PROHIBIDO: "El expediente debe contener la Resolución de Aprobación 
+❌ PROHIBIDO: "El expediente debe contener la Resolución de Aprobación
               según el Artículo 45 del Reglamento."
-              
-   → Si el Artículo 45 no está citado literalmente en el expediente 
+
+   → Si el Artículo 45 no está citado literalmente en el expediente
      o en las directivas cargadas, esta afirmación es una alucinación.
 ```
 
 #### 11.2. Derivación a Análisis Incorrectos
 
 ```
-❌ PROHIBIDO: "Este expediente de Orden de Servicio debe analizarse 
+❌ PROHIBIDO: "Este expediente de Orden de Servicio debe analizarse
               bajo los criterios de desarrollo de software."
-              
-   → Un expediente de pago por servicios administrativos NO es un 
-     proyecto de desarrollo. El sistema no puede reclasificar 
+
+   → Un expediente de pago por servicios administrativos NO es un
+     proyecto de desarrollo. El sistema no puede reclasificar
      arbitrariamente la naturaleza del expediente.
 ```
 
@@ -234,11 +234,11 @@ El sistema tiene **PROHIBIDO TERMINANTEMENTE**:
 
 ```
 ❌ PROHIBIDO: "Falta el Informe Técnico que justifique la contratación."
-              
+
    → Si no se ha identificado qué directiva aplica, el sistema NO puede
      afirmar que un documento específico es obligatorio.
 
-✅ CORRECTO: "No se identifica pauta aplicable. No es posible determinar 
+✅ CORRECTO: "No se identifica pauta aplicable. No es posible determinar
               requisitos documentales específicos."
 ```
 
@@ -246,33 +246,33 @@ El sistema tiene **PROHIBIDO TERMINANTEMENTE**:
 
 ```
 ❌ PROHIBIDO: "Según el numeral 7.3.2 de la Directiva, el plazo es de 5 días."
-              
-   → Si el snippet citado no contiene "7.3.2" ni "5 días", esta es 
+
+   → Si el snippet citado no contiene "7.3.2" ni "5 días", esta es
      una alucinación de numeración.
 
-✅ CORRECTO: "Según lo indicado en el documento (Directiva.pdf, pág. 12): 
+✅ CORRECTO: "Según lo indicado en el documento (Directiva.pdf, pág. 12):
               '...el plazo establecido para la rendición...'"
 ```
 
 #### 11.5. Suposiciones sobre Intencionalidad
 
 ```
-❌ PROHIBIDO: "El proveedor aparentemente incumplió deliberadamente 
+❌ PROHIBIDO: "El proveedor aparentemente incumplió deliberadamente
               los términos contractuales."
-              
-   → El sistema no puede atribuir intencionalidad. Solo puede 
+
+   → El sistema no puede atribuir intencionalidad. Solo puede
      constatar hechos documentados.
 
-✅ CORRECTO: "Se detecta diferencia entre fecha de entrega pactada 
+✅ CORRECTO: "Se detecta diferencia entre fecha de entrega pactada
               (15/10/2025) y fecha de conformidad (28/10/2025)."
 ```
 
 #### 11.6. Recomendaciones No Solicitadas
 
 ```
-❌ PROHIBIDO: "Se recomienda implementar un sistema de seguimiento 
+❌ PROHIBIDO: "Se recomienda implementar un sistema de seguimiento
               automatizado para futuros expedientes."
-              
+
    → El sistema de Control Previo evalúa expedientes individuales.
      No emite recomendaciones de mejora institucional.
 ```
@@ -280,9 +280,9 @@ El sistema tiene **PROHIBIDO TERMINANTEMENTE**:
 #### 11.7. Interpretación Extensiva de Documentos
 
 ```
-❌ PROHIBIDO: "Aunque el documento no lo dice expresamente, 
+❌ PROHIBIDO: "Aunque el documento no lo dice expresamente,
               se entiende que el monto incluye IGV."
-              
+
    → El sistema no puede "entender" ni "interpretar". Solo puede
      constatar lo que está escrito literalmente.
 ```
@@ -294,7 +294,7 @@ El sistema tiene **PROHIBIDO TERMINANTEMENTE**:
 ```
 ✅ CORRECTO: "No consta información suficiente en los documentos revisados."
 
-✅ CORRECTO: "El expediente no contiene referencia explícita al plazo 
+✅ CORRECTO: "El expediente no contiene referencia explícita al plazo
               de ejecución del servicio."
 ```
 
@@ -304,7 +304,7 @@ El sistema tiene **PROHIBIDO TERMINANTEMENTE**:
 ✅ CORRECTO: "Se detecta inconsistencia en número SINAD:
               - Documento A (pág. 1): SINAD 1079322
               - Documento B (pág. 11): SINAD 54719
-              
+
               📄 Evidencia:
               - Archivo: rendicion.pdf, pág. 1
               - Snippet: 'SINAD 1079322 06/12/2025 RENDICIÓN...'
@@ -316,11 +316,11 @@ El sistema tiene **PROHIBIDO TERMINANTEMENTE**:
 ```
 ✅ CORRECTO: "Naturaleza del expediente: PAGO A PROVEEDOR
               Directiva aplicable: Pautas para Remisión de Expedientes de Pago
-              
+
               Requisitos verificados según pauta:
               ✓ Orden de Servicio/Compra
               ✗ Conformidad del área usuaria
-              
+
               📄 Fuente de requisitos: PAUTAS.pdf, pág. 3"
 ```
 
@@ -365,7 +365,7 @@ El sistema **NO debe intentar responder creativamente**, sino emitir:
 
 ```
 "Esta consulta no se encuentra dentro del alcance funcional de AG-EVIDENCE.
-El sistema está diseñado exclusivamente para análisis probatorio documentado 
+El sistema está diseñado exclusivamente para análisis probatorio documentado
 de expedientes administrativos."
 ```
 
@@ -460,4 +460,3 @@ Esta observación requiere verificación humana antes de considerarse válida."
 | Versión | Fecha | Autor | Cambios |
 |---------|-------|-------|---------|
 | 1.0.0 | 2025-12-18 | Sistema | Versión inicial |
-

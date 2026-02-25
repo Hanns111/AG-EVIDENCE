@@ -9,18 +9,18 @@ Motor fallback: Tesseract via pytesseract
 """
 
 from .core import (
-    renderizar_pagina,
-    ejecutar_ocr,
-    preprocesar_rotacion,
-    calcular_metricas_imagen,
-    verificar_tesseract,
-    verificar_paddleocr,
-    verificar_ocr,
-    ensure_lang_available,
-    LineaOCR,
     CV2_DISPONIBLE,
-    TESSERACT_DISPONIBLE,
     PADDLEOCR_DISPONIBLE,
+    TESSERACT_DISPONIBLE,
+    LineaOCR,
+    calcular_metricas_imagen,
+    ejecutar_ocr,
+    ensure_lang_available,
+    preprocesar_rotacion,
+    renderizar_pagina,
+    verificar_ocr,
+    verificar_paddleocr,
+    verificar_tesseract,
 )
 
 __all__ = [

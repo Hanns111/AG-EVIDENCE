@@ -261,5 +261,3 @@ pytest tests/test_tdr_requirements.py -v
 **Última actualización:** 2025-12-30  
 **Autor:** Sistema AG-EVIDENCE  
 **Versión:** 1.0.0
-
-

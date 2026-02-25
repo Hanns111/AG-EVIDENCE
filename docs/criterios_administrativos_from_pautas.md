@@ -408,7 +408,7 @@ La pauta NO contiene requisitos específicos sobre:
 
 ### Reglas que pueden convertirse en CANDADOS:
 
-1. **Contrato:** 
+1. **Contrato:**
    - SI `tipo_procedimiento` IN [LP, CP, AS, SCI, SIE, CM_PRECIOS, CD] AND `es_primera_armada` → OBLIGATORIO
    - SI `tipo_procedimiento` = MENOR_8_UIT → NO REQUERIDO
 
@@ -434,5 +434,3 @@ La pauta NO contiene requisitos específicos sobre:
 **Documento generado:** 2025-12-30  
 **Método de extracción:** Texto literal del PDF  
 **Advertencia:** Este documento NO interpreta la normativa. Solo transcribe lo que dice la pauta.
-
-

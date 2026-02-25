@@ -20,11 +20,11 @@ Herramientas utilizadas:
 - Qwen2.5-VL-7B (via Ollama, 500 DPI): Extracción visual de páginas escaneadas
 """
 
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
-from datetime import datetime
 import os
+
+import openpyxl
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 
 # ============================================================
 # DATOS EXTRAÍDOS — ANEXO 3 (Fuente: PDF Rendición, pág 1)
@@ -51,23 +51,159 @@ DATOS_EXPEDIENTE = {
 
 # Comprobantes del Anexo 3 (texto digital, PyMuPDF pág 1)
 ANEXO3_COMPROBANTES = [
-    {"nro": 1, "fecha": "07/02/2026", "tipo_doc": "Factura", "razon_social": "PALOMINO AGUILAR DAVID", "numero": "E001-3990", "concepto": "MOVILIDAD", "importe": 70.00},
-    {"nro": 2, "fecha": "07/02/2026", "tipo_doc": "Factura", "razon_social": "PAPACHOS RESTAURANTES S.A.C.", "numero": "F205-00012299", "concepto": "ALIMENTACION", "importe": 42.00},
-    {"nro": 3, "fecha": "07/02/2026", "tipo_doc": "Factura", "razon_social": "DIAZ RIOS ETY DORIS", "numero": "F001-00007330", "concepto": "ALIMENTACION", "importe": 22.00},
-    {"nro": 4, "fecha": "07/02/2026", "tipo_doc": "Factura", "razon_social": "HOTELERO DORDEAN SAC", "numero": "F002-4814", "concepto": "HOSPEDAJE", "importe": 150.00},
-    {"nro": 5, "fecha": "07/02/2026", "tipo_doc": "Factura", "razon_social": "EMPRESA DE TRANSPORTES Y TURISMO RIOJA S.A", "numero": "FT05-00016765", "concepto": "PASAJE", "importe": 50.00},
-    {"nro": 6, "fecha": "07/02/2026", "tipo_doc": "Factura", "razon_social": "EMPRESA DE TRANSPORTE EVANGELIO PODER DE DIOS", "numero": "FT06-00002741", "concepto": "PASAJE", "importe": 70.00},
-    {"nro": 7, "fecha": "08/02/2026", "tipo_doc": "Factura", "razon_social": "HOTELERO DORDEAN SAC", "numero": "F002-04814", "concepto": "HOSPEDAJE", "importe": 150.00},
-    {"nro": 8, "fecha": "08/02/2026", "tipo_doc": "Factura", "razon_social": "LA REAL CECINA E.I.R.L.", "numero": "E001-8818", "concepto": "ALIMENTACION", "importe": 37.00},
-    {"nro": 9, "fecha": "08/02/2026", "tipo_doc": "Factura", "razon_social": '"CORPORACION COMERCIAL Y DE SERVICIOS PARIS" E.I.R.L.', "numero": "FW01-00003756", "concepto": "ALIMENTACION", "importe": 24.00},
-    {"nro": 10, "fecha": "09/02/2026", "tipo_doc": "Boleta de Venta", "razon_social": "CIEZA BUSTAMANTE DARIO", "numero": "0001-005367", "concepto": "ALIMENTACION", "importe": 25.00},
-    {"nro": 11, "fecha": "09/02/2026", "tipo_doc": "Factura", "razon_social": "GRUPO EMPRESARIAL GLORIA A DIOS SAC", "numero": "FP01-233", "concepto": "ALIMENTACION", "importe": 49.00},
-    {"nro": 12, "fecha": "09/02/2026", "tipo_doc": "Factura", "razon_social": "LA OLLA DE BARRO E.I.R.L", "numero": "F002-12174", "concepto": "ALIMENTACION", "importe": 43.00},
-    {"nro": 13, "fecha": "09/02/2026", "tipo_doc": "Factura", "razon_social": "AMAZON GOLD GRAIN E.I.R.L.", "numero": "FA01-00000952", "concepto": "HOSPEDAJE", "importe": 120.00},
-    {"nro": 14, "fecha": "10/02/2026", "tipo_doc": "Factura", "razon_social": "INVERSIONES BGG ORIENTE SAC", "numero": "F021-00004515", "concepto": "ALIMENTACION", "importe": 34.50},
-    {"nro": 15, "fecha": "10/02/2026", "tipo_doc": "Factura", "razon_social": "PALOMINO AGUILAR DAVID", "numero": "E001-4002", "concepto": "MOVILIDAD", "importe": 80.00},
-    {"nro": 16, "fecha": "10/02/2026", "tipo_doc": "Factura", "razon_social": "W.E. CASTILLO S.A.C.", "numero": "F001-00000664", "concepto": "PASAJE", "importe": 75.00},
-    {"nro": 17, "fecha": "10/02/2026", "tipo_doc": "Factura", "razon_social": "EMPRESA SAN MARTIN SA", "numero": "FT27-526327", "concepto": "PASAJE", "importe": 40.00},
+    {
+        "nro": 1,
+        "fecha": "07/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "PALOMINO AGUILAR DAVID",
+        "numero": "E001-3990",
+        "concepto": "MOVILIDAD",
+        "importe": 70.00,
+    },
+    {
+        "nro": 2,
+        "fecha": "07/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "PAPACHOS RESTAURANTES S.A.C.",
+        "numero": "F205-00012299",
+        "concepto": "ALIMENTACION",
+        "importe": 42.00,
+    },
+    {
+        "nro": 3,
+        "fecha": "07/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "DIAZ RIOS ETY DORIS",
+        "numero": "F001-00007330",
+        "concepto": "ALIMENTACION",
+        "importe": 22.00,
+    },
+    {
+        "nro": 4,
+        "fecha": "07/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "HOTELERO DORDEAN SAC",
+        "numero": "F002-4814",
+        "concepto": "HOSPEDAJE",
+        "importe": 150.00,
+    },
+    {
+        "nro": 5,
+        "fecha": "07/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "EMPRESA DE TRANSPORTES Y TURISMO RIOJA S.A",
+        "numero": "FT05-00016765",
+        "concepto": "PASAJE",
+        "importe": 50.00,
+    },
+    {
+        "nro": 6,
+        "fecha": "07/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "EMPRESA DE TRANSPORTE EVANGELIO PODER DE DIOS",
+        "numero": "FT06-00002741",
+        "concepto": "PASAJE",
+        "importe": 70.00,
+    },
+    {
+        "nro": 7,
+        "fecha": "08/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "HOTELERO DORDEAN SAC",
+        "numero": "F002-04814",
+        "concepto": "HOSPEDAJE",
+        "importe": 150.00,
+    },
+    {
+        "nro": 8,
+        "fecha": "08/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "LA REAL CECINA E.I.R.L.",
+        "numero": "E001-8818",
+        "concepto": "ALIMENTACION",
+        "importe": 37.00,
+    },
+    {
+        "nro": 9,
+        "fecha": "08/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": '"CORPORACION COMERCIAL Y DE SERVICIOS PARIS" E.I.R.L.',
+        "numero": "FW01-00003756",
+        "concepto": "ALIMENTACION",
+        "importe": 24.00,
+    },
+    {
+        "nro": 10,
+        "fecha": "09/02/2026",
+        "tipo_doc": "Boleta de Venta",
+        "razon_social": "CIEZA BUSTAMANTE DARIO",
+        "numero": "0001-005367",
+        "concepto": "ALIMENTACION",
+        "importe": 25.00,
+    },
+    {
+        "nro": 11,
+        "fecha": "09/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "GRUPO EMPRESARIAL GLORIA A DIOS SAC",
+        "numero": "FP01-233",
+        "concepto": "ALIMENTACION",
+        "importe": 49.00,
+    },
+    {
+        "nro": 12,
+        "fecha": "09/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "LA OLLA DE BARRO E.I.R.L",
+        "numero": "F002-12174",
+        "concepto": "ALIMENTACION",
+        "importe": 43.00,
+    },
+    {
+        "nro": 13,
+        "fecha": "09/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "AMAZON GOLD GRAIN E.I.R.L.",
+        "numero": "FA01-00000952",
+        "concepto": "HOSPEDAJE",
+        "importe": 120.00,
+    },
+    {
+        "nro": 14,
+        "fecha": "10/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "INVERSIONES BGG ORIENTE SAC",
+        "numero": "F021-00004515",
+        "concepto": "ALIMENTACION",
+        "importe": 34.50,
+    },
+    {
+        "nro": 15,
+        "fecha": "10/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "PALOMINO AGUILAR DAVID",
+        "numero": "E001-4002",
+        "concepto": "MOVILIDAD",
+        "importe": 80.00,
+    },
+    {
+        "nro": 16,
+        "fecha": "10/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "W.E. CASTILLO S.A.C.",
+        "numero": "F001-00000664",
+        "concepto": "PASAJE",
+        "importe": 75.00,
+    },
+    {
+        "nro": 17,
+        "fecha": "10/02/2026",
+        "tipo_doc": "Factura",
+        "razon_social": "EMPRESA SAN MARTIN SA",
+        "numero": "FT27-526327",
+        "concepto": "PASAJE",
+        "importe": 40.00,
+    },
 ]
 
 # ============================================================
@@ -79,7 +215,8 @@ ANEXO3_COMPROBANTES = [
 COMPROBANTES_FUENTE = [
     # --- COMPROBANTE 1: E001-3990 (PyMuPDF, pág 38) ---
     {
-        "pagina_pdf": 38, "motor": "PyMuPDF",
+        "pagina_pdf": 38,
+        "motor": "PyMuPDF",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "E001-3990",
         "ruc_emisor": "10257530171",
@@ -99,7 +236,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 2: F205-00012200 (Qwen2.5-VL-7B 500DPI, pág 41) ---
     {
-        "pagina_pdf": 41, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 41,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "F205-00012200",
         "ruc_emisor": "20544822804",
@@ -119,7 +257,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 3: F001-00007330 (Qwen2.5-VL-7B 500DPI, pág 44) ---
     {
-        "pagina_pdf": 44, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 44,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "F001-00007330",
         "ruc_emisor": "10403765452",
@@ -140,7 +279,8 @@ COMPROBANTES_FUENTE = [
     # --- COMPROBANTE 4: F002-4814 (PyMuPDF, pág 47) ---
     # Una sola factura por 2 noches. Dato tal cual del documento fuente.
     {
-        "pagina_pdf": 47, "motor": "PyMuPDF",
+        "pagina_pdf": 47,
+        "motor": "PyMuPDF",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "F002-4814",
         "ruc_emisor": "20609843277",
@@ -160,7 +300,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 5: FT05-00016765 (Qwen2.5-VL-7B 500DPI, pág 14) ---
     {
-        "pagina_pdf": 14, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 14,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "FT05-00016765",
         "ruc_emisor": "20284896506",
@@ -180,7 +321,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 6: FT06-00002741 (PyMuPDF, pág 17) ---
     {
-        "pagina_pdf": 17, "motor": "PyMuPDF",
+        "pagina_pdf": 17,
+        "motor": "PyMuPDF",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "FT06-00002741",
         "ruc_emisor": "20487485463",
@@ -201,7 +343,8 @@ COMPROBANTES_FUENTE = [
     # --- COMPROBANTE 7: F002-4814 (misma factura que comp 4, línea 7 del Anexo 3) ---
     # El documento fuente es el MISMO de pág 47 — se repite tal cual
     {
-        "pagina_pdf": 47, "motor": "PyMuPDF",
+        "pagina_pdf": 47,
+        "motor": "PyMuPDF",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "F002-4814",
         "ruc_emisor": "20609843277",
@@ -221,7 +364,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 8: E001-8818 (PyMuPDF, pág 50) ---
     {
-        "pagina_pdf": 50, "motor": "PyMuPDF",
+        "pagina_pdf": 50,
+        "motor": "PyMuPDF",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "E001-8818",
         "ruc_emisor": "20487969231",
@@ -241,7 +385,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 9: FW01-00003756 (Qwen2.5-VL-7B 500DPI, pág 53) ---
     {
-        "pagina_pdf": 53, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 53,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "FW01-00003756",
         "ruc_emisor": "20602428452",
@@ -261,7 +406,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 10: 001-005367 (Qwen2.5-VL-7B 500DPI, pág 56) ---
     {
-        "pagina_pdf": 56, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 56,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "BOLETA DE VENTA",
         "serie_numero": "001-005367",
         "ruc_emisor": "10272647297",
@@ -281,7 +427,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 11: FP01-233 (Qwen2.5-VL-7B 500DPI, pág 60) ---
     {
-        "pagina_pdf": 60, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 60,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "FP01-233",
         "ruc_emisor": "20611761571",
@@ -301,7 +448,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 12: F002-12174 (Qwen2.5-VL-7B 500DPI, pág 63) ---
     {
-        "pagina_pdf": 63, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 63,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "FACTURA DE VENTA ELECTRONICA",
         "serie_numero": "F002-12174",
         "ruc_emisor": "20531527080",
@@ -321,7 +469,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 13: FA01-00000952 (Qwen2.5-VL-7B 500DPI, pág 66) ---
     {
-        "pagina_pdf": 66, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 66,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "FA01-00000952",
         "ruc_emisor": "20601209889",
@@ -341,7 +490,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 14: F021-00004515 (Qwen2.5-VL-7B 500DPI, pág 69) ---
     {
-        "pagina_pdf": 69, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 69,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "F021-00004515",
         "ruc_emisor": "20541192833",
@@ -361,7 +511,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 15: E001-4002 (PyMuPDF, pág 72) ---
     {
-        "pagina_pdf": 72, "motor": "PyMuPDF",
+        "pagina_pdf": 72,
+        "motor": "PyMuPDF",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "E001-4002",
         "ruc_emisor": "10257530171",
@@ -381,7 +532,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 16: F001-00000664 (Qwen2.5-VL-7B 500DPI, pág 20) ---
     {
-        "pagina_pdf": 20, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 20,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "F001-00000664",
         "ruc_emisor": "20604862311",
@@ -401,7 +553,8 @@ COMPROBANTES_FUENTE = [
     },
     # --- COMPROBANTE 17: FT27-00027639 (Qwen2.5-VL-7B 500DPI, pág 23) ---
     {
-        "pagina_pdf": 23, "motor": "Qwen2.5-VL-7B (500 DPI)",
+        "pagina_pdf": 23,
+        "motor": "Qwen2.5-VL-7B (500 DPI)",
         "tipo_comprobante": "FACTURA ELECTRONICA",
         "serie_numero": "FT27-00027639",
         "ruc_emisor": "20531409478",
@@ -427,13 +580,48 @@ COMPROBANTES_FUENTE = [
 # TEXTO LITERAL — sin completar palabras truncadas
 # ============================================================
 DJ_GASTOS = [
-    {"fecha": "07/02/2026", "concepto": "MOVILIDAD", "detalle": "MOVILIDAD MOYOBAMBA - NUEVA", "importe": 15.00},
-    {"fecha": "07/02/2026", "concepto": "MOVILIDAD", "detalle": "MOVILIDAD TERMINAL CHACHAPOYAS - HOSPEDAJE", "importe": 10.00},
-    {"fecha": "08/02/2026", "concepto": "MOVILIDAD", "detalle": "MOVILIDAD HOSPEDAJE CHACHAPOYAS - COAR AMAZONAS", "importe": 15.00},
-    {"fecha": "08/02/2026", "concepto": "MOVILIDAD", "detalle": "MOVILIDAD COAR AMAZONAS - HOSPEDAJE CHACHAPOYAS", "importe": 15.00},
-    {"fecha": "09/02/2026", "concepto": "MOVILIDAD", "detalle": "MOVILIDAD HOSPEDAJE CHACHAPOYAS - TERMINAL", "importe": 10.00},
-    {"fecha": "09/02/2026", "concepto": "MOVILIDAD", "detalle": "TERMINAL TARAPOTO - HOSPEDAJE TARAPOTO", "importe": 15.00},
-    {"fecha": "10/02/2026", "concepto": "MOVILIDAD", "detalle": "MOVILIDAD HOSPEDAJE TARAPOTO - AEROPUERTO", "importe": 20.00},
+    {
+        "fecha": "07/02/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "MOVILIDAD MOYOBAMBA - NUEVA",
+        "importe": 15.00,
+    },
+    {
+        "fecha": "07/02/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "MOVILIDAD TERMINAL CHACHAPOYAS - HOSPEDAJE",
+        "importe": 10.00,
+    },
+    {
+        "fecha": "08/02/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "MOVILIDAD HOSPEDAJE CHACHAPOYAS - COAR AMAZONAS",
+        "importe": 15.00,
+    },
+    {
+        "fecha": "08/02/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "MOVILIDAD COAR AMAZONAS - HOSPEDAJE CHACHAPOYAS",
+        "importe": 15.00,
+    },
+    {
+        "fecha": "09/02/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "MOVILIDAD HOSPEDAJE CHACHAPOYAS - TERMINAL",
+        "importe": 10.00,
+    },
+    {
+        "fecha": "09/02/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "TERMINAL TARAPOTO - HOSPEDAJE TARAPOTO",
+        "importe": 15.00,
+    },
+    {
+        "fecha": "10/02/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "MOVILIDAD HOSPEDAJE TARAPOTO - AEROPUERTO",
+        "importe": 20.00,
+    },
 ]
 
 # ============================================================
@@ -523,33 +711,38 @@ BOLETOS = [
 # GENERACIÓN DEL EXCEL
 # ============================================================
 
+
 def style_header(ws, row, max_col, fill_color="1F4E79"):
     """Aplica estilo de encabezado a una fila."""
     header_font = Font(bold=True, color="FFFFFF", size=10)
     header_fill = PatternFill(start_color=fill_color, end_color=fill_color, fill_type="solid")
     thin_border = Border(
-        left=Side(style='thin'), right=Side(style='thin'),
-        top=Side(style='thin'), bottom=Side(style='thin')
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
     )
     for col in range(1, max_col + 1):
         cell = ws.cell(row=row, column=col)
         cell.font = header_font
         cell.fill = header_fill
-        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         cell.border = thin_border
 
 
 def style_data(ws, start_row, end_row, max_col):
     """Aplica bordes y alineación a datos."""
     thin_border = Border(
-        left=Side(style='thin'), right=Side(style='thin'),
-        top=Side(style='thin'), bottom=Side(style='thin')
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin"),
     )
     for row in range(start_row, end_row + 1):
         for col in range(1, max_col + 1):
             cell = ws.cell(row=row, column=col)
             cell.border = thin_border
-            cell.alignment = Alignment(vertical='center', wrap_text=True)
+            cell.alignment = Alignment(vertical="center", wrap_text=True)
 
 
 def crear_hoja_anexo3(wb):
@@ -558,9 +751,9 @@ def crear_hoja_anexo3(wb):
     ws.title = "ANEXO_3"
 
     # Datos generales
-    ws['A1'] = "ANEXO 3 — RENDICION DE CUENTAS POR COMISION DE SERVICIOS"
-    ws['A1'].font = Font(bold=True, size=14, color="1F4E79")
-    ws.merge_cells('A1:G1')
+    ws["A1"] = "ANEXO 3 — RENDICION DE CUENTAS POR COMISION DE SERVICIOS"
+    ws["A1"].font = Font(bold=True, size=14, color="1F4E79")
+    ws.merge_cells("A1:G1")
 
     info_rows = [
         ("SINAD:", DATOS_EXPEDIENTE["sinad"]),
@@ -592,7 +785,7 @@ def crear_hoja_anexo3(wb):
         ws.cell(row=i, column=5, value=c["numero"])
         ws.cell(row=i, column=6, value=c["concepto"])
         ws.cell(row=i, column=7, value=c["importe"])
-        ws.cell(row=i, column=7).number_format = '#,##0.00'
+        ws.cell(row=i, column=7).number_format = "#,##0.00"
 
     last_data = header_row + len(ANEXO3_COMPROBANTES)
     style_data(ws, header_row + 1, last_data, len(headers))
@@ -600,23 +793,25 @@ def crear_hoja_anexo3(wb):
     # Totales
     r = last_data + 1
     ws.cell(row=r, column=5, value="(1) GASTOS CON DOCUMENTACION").font = Font(bold=True)
-    ws.cell(row=r, column=7, value=DATOS_EXPEDIENTE["total_comprobantes"]).number_format = '#,##0.00'
+    ws.cell(
+        row=r, column=7, value=DATOS_EXPEDIENTE["total_comprobantes"]
+    ).number_format = "#,##0.00"
     r += 1
     ws.cell(row=r, column=5, value="(2) GASTOS SIN DOCUMENTACION (DJ)").font = Font(bold=True)
-    ws.cell(row=r, column=7, value=DATOS_EXPEDIENTE["total_dj"]).number_format = '#,##0.00'
+    ws.cell(row=r, column=7, value=DATOS_EXPEDIENTE["total_dj"]).number_format = "#,##0.00"
     r += 1
     ws.cell(row=r, column=5, value="(3) TOTAL GASTADO").font = Font(bold=True, size=11)
     ws.cell(row=r, column=7, value=DATOS_EXPEDIENTE["total_gastado"])
     ws.cell(row=r, column=7).font = Font(bold=True, size=11)
-    ws.cell(row=r, column=7).number_format = '#,##0.00'
+    ws.cell(row=r, column=7).number_format = "#,##0.00"
     r += 1
     ws.cell(row=r, column=5, value="(4) DEVOLUCION").font = Font(bold=True)
-    ws.cell(row=r, column=7, value=DATOS_EXPEDIENTE["devolucion"]).number_format = '#,##0.00'
+    ws.cell(row=r, column=7, value=DATOS_EXPEDIENTE["devolucion"]).number_format = "#,##0.00"
     r += 1
     ws.cell(row=r, column=5, value="(5) MONTO RECIBIDO").font = Font(bold=True, size=11)
     ws.cell(row=r, column=7, value=DATOS_EXPEDIENTE["viatico_otorgado"])
     ws.cell(row=r, column=7).font = Font(bold=True, size=11)
-    ws.cell(row=r, column=7).number_format = '#,##0.00'
+    ws.cell(row=r, column=7).number_format = "#,##0.00"
 
     # Metadata
     r += 2
@@ -624,33 +819,48 @@ def crear_hoja_anexo3(wb):
     ws.cell(row=r, column=1).font = Font(italic=True, color="808080", size=8)
 
     # Anchos
-    ws.column_dimensions['A'].width = 5
-    ws.column_dimensions['B'].width = 12
-    ws.column_dimensions['C'].width = 15
-    ws.column_dimensions['D'].width = 40
-    ws.column_dimensions['E'].width = 20
-    ws.column_dimensions['F'].width = 18
-    ws.column_dimensions['G'].width = 14
+    ws.column_dimensions["A"].width = 5
+    ws.column_dimensions["B"].width = 12
+    ws.column_dimensions["C"].width = 15
+    ws.column_dimensions["D"].width = 40
+    ws.column_dimensions["E"].width = 20
+    ws.column_dimensions["F"].width = 18
+    ws.column_dimensions["G"].width = 14
 
 
 def crear_hoja_comprobantes(wb):
     """Hoja 2: Comprobantes de Pago — Documento Fuente."""
     ws = wb.create_sheet("COMPROBANTES_PAGO")
 
-    ws['A1'] = "COMPROBANTES DE PAGO — DOCUMENTO FUENTE"
-    ws['A1'].font = Font(bold=True, size=14, color="1F4E79")
-    ws.merge_cells('A1:R1')
+    ws["A1"] = "COMPROBANTES DE PAGO — DOCUMENTO FUENTE"
+    ws["A1"].font = Font(bold=True, size=14, color="1F4E79")
+    ws.merge_cells("A1:R1")
 
-    ws['A2'] = "Datos extraidos TAL CUAL del documento fuente. NULL = no visible al motor. Sin inferir, sin cruzar con Anexo 3, sin corregir."
-    ws['A2'].font = Font(italic=True, color="FF0000", size=9)
-    ws.merge_cells('A2:R2')
+    ws["A2"] = (
+        "Datos extraidos TAL CUAL del documento fuente. NULL = no visible al motor. Sin inferir, sin cruzar con Anexo 3, sin corregir."
+    )
+    ws["A2"].font = Font(italic=True, color="FF0000", size=9)
+    ws.merge_cells("A2:R2")
 
     headers = [
-        "Nro", "PAG PDF", "MOTOR", "TIPO", "SERIE-NUMERO",
-        "RUC EMISOR", "RAZON SOCIAL EMISOR", "DIRECCION EMISOR",
-        "FECHA EMISION", "RUC COMPRADOR", "MONEDA", "DESCRIPCION",
-        "VALOR VENTA", "IGV", "TOTAL", "EXONERADO",
-        "FORMA PAGO", "OBSERVACIONES"
+        "Nro",
+        "PAG PDF",
+        "MOTOR",
+        "TIPO",
+        "SERIE-NUMERO",
+        "RUC EMISOR",
+        "RAZON SOCIAL EMISOR",
+        "DIRECCION EMISOR",
+        "FECHA EMISION",
+        "RUC COMPRADOR",
+        "MONEDA",
+        "DESCRIPCION",
+        "VALOR VENTA",
+        "IGV",
+        "TOTAL",
+        "EXONERADO",
+        "FORMA PAGO",
+        "OBSERVACIONES",
     ]
     header_row = 4
     for col, h in enumerate(headers, 1):
@@ -697,15 +907,17 @@ def crear_hoja_dj(wb):
     """Hoja 3: Declaracion Jurada."""
     ws = wb.create_sheet("DECLARACION_JURADA")
 
-    ws['A1'] = "DECLARACION JURADA DE GASTOS (ANEXO 4)"
-    ws['A1'].font = Font(bold=True, size=14, color="1F4E79")
-    ws.merge_cells('A1:E1')
+    ws["A1"] = "DECLARACION JURADA DE GASTOS (ANEXO 4)"
+    ws["A1"].font = Font(bold=True, size=14, color="1F4E79")
+    ws.merge_cells("A1:E1")
 
-    ws['A2'] = "Comisionado: " + DATOS_EXPEDIENTE['comisionado'] + " | DNI: " + DATOS_EXPEDIENTE['dni']
-    ws['A2'].font = Font(size=10)
+    ws["A2"] = (
+        "Comisionado: " + DATOS_EXPEDIENTE["comisionado"] + " | DNI: " + DATOS_EXPEDIENTE["dni"]
+    )
+    ws["A2"].font = Font(size=10)
 
-    ws['A3'] = "TEXTO LITERAL del PDF (PyMuPDF). Sin completar palabras truncadas."
-    ws['A3'].font = Font(italic=True, color="FF0000", size=9)
+    ws["A3"] = "TEXTO LITERAL del PDF (PyMuPDF). Sin completar palabras truncadas."
+    ws["A3"].font = Font(italic=True, color="FF0000", size=9)
 
     headers = ["Nro", "FECHA", "CONCEPTO", "DETALLE", "IMPORTE S/"]
     header_row = 5
@@ -719,7 +931,7 @@ def crear_hoja_dj(wb):
         ws.cell(row=i, column=3, value=g["concepto"])
         ws.cell(row=i, column=4, value=g["detalle"])
         ws.cell(row=i, column=5, value=g["importe"])
-        ws.cell(row=i, column=5).number_format = '#,##0.00'
+        ws.cell(row=i, column=5).number_format = "#,##0.00"
 
     last_data = header_row + len(DJ_GASTOS)
     style_data(ws, header_row + 1, last_data, len(headers))
@@ -729,33 +941,44 @@ def crear_hoja_dj(wb):
     ws.cell(row=r, column=4, value="TOTAL S/").font = Font(bold=True)
     ws.cell(row=r, column=5, value=sum(g["importe"] for g in DJ_GASTOS))
     ws.cell(row=r, column=5).font = Font(bold=True)
-    ws.cell(row=r, column=5).number_format = '#,##0.00'
+    ws.cell(row=r, column=5).number_format = "#,##0.00"
 
     # Metadata
     r += 2
     ws.cell(row=r, column=1, value="Fuente: PDF Rendicion pag 3 | Motor: PyMuPDF (texto digital)")
     ws.cell(row=r, column=1).font = Font(italic=True, color="808080", size=8)
 
-    ws.column_dimensions['A'].width = 5
-    ws.column_dimensions['B'].width = 12
-    ws.column_dimensions['C'].width = 14
-    ws.column_dimensions['D'].width = 55
-    ws.column_dimensions['E'].width = 14
+    ws.column_dimensions["A"].width = 5
+    ws.column_dimensions["B"].width = 12
+    ws.column_dimensions["C"].width = 14
+    ws.column_dimensions["D"].width = 55
+    ws.column_dimensions["E"].width = 14
 
 
 def crear_hoja_boletos(wb):
     """Hoja 4: Boletos Aereos y Boarding Pass."""
     ws = wb.create_sheet("BOLETOS_BOARDING")
 
-    ws['A1'] = "BOLETOS AEREOS Y BOARDING PASS"
-    ws['A1'].font = Font(bold=True, size=14, color="1F4E79")
-    ws.merge_cells('A1:O1')
+    ws["A1"] = "BOLETOS AEREOS Y BOARDING PASS"
+    ws["A1"].font = Font(bold=True, size=14, color="1F4E79")
+    ws.merge_cells("A1:O1")
 
     headers = [
-        "Nro", "TIPO", "AEROLINEA", "RUC AEROLINEA", "Nro VUELO",
-        "PASAJERO", "ORIGEN", "DESTINO", "FECHA",
-        "HORA SALIDA", "HORA LLEGADA", "COD. RESERVA", "ASIENTO",
-        "TOTAL", "PAG/MOTOR"
+        "Nro",
+        "TIPO",
+        "AEROLINEA",
+        "RUC AEROLINEA",
+        "Nro VUELO",
+        "PASAJERO",
+        "ORIGEN",
+        "DESTINO",
+        "FECHA",
+        "HORA SALIDA",
+        "HORA LLEGADA",
+        "COD. RESERVA",
+        "ASIENTO",
+        "TOTAL",
+        "PAG/MOTOR",
     ]
     header_row = 3
     for col, h in enumerate(headers, 1):
@@ -777,7 +1000,7 @@ def crear_hoja_boletos(wb):
         ws.cell(row=i, column=12, value=b.get("codigo_reserva"))
         ws.cell(row=i, column=13, value=b.get("asiento"))
         ws.cell(row=i, column=14, value=b.get("total"))
-        ws.cell(row=i, column=15, value="P" + str(b['pagina_pdf']) + " / " + str(b['motor']))
+        ws.cell(row=i, column=15, value="P" + str(b["pagina_pdf"]) + " / " + str(b["motor"]))
 
         # Highlight NULL cells
         for col in range(1, len(headers) + 1):
@@ -806,9 +1029,7 @@ def main():
     # Guardar
     output_dir = os.path.dirname(os.path.abspath(__file__))
     output_path = os.path.join(
-        os.path.dirname(output_dir),
-        "output",
-        "RENDICION_DEBEDSAR2026-INT-0146130_v2.xlsx"
+        os.path.dirname(output_dir), "output", "RENDICION_DEBEDSAR2026-INT-0146130_v2.xlsx"
     )
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     wb.save(output_path)
@@ -817,7 +1038,13 @@ def main():
     print("=" * 70)
     print("  Hoja 1: ANEXO_3 (" + str(len(ANEXO3_COMPROBANTES)) + " comprobantes)")
     print("  Hoja 2: COMPROBANTES_PAGO (" + str(len(COMPROBANTES_FUENTE)) + " documentos fuente)")
-    print("  Hoja 3: DECLARACION_JURADA (" + str(len(DJ_GASTOS)) + " gastos, S/" + str(sum(g["importe"] for g in DJ_GASTOS)) + ")")
+    print(
+        "  Hoja 3: DECLARACION_JURADA ("
+        + str(len(DJ_GASTOS))
+        + " gastos, S/"
+        + str(sum(g["importe"] for g in DJ_GASTOS))
+        + ")"
+    )
     print("  Hoja 4: BOLETOS_BOARDING (" + str(len(BOLETOS)) + " documentos)")
     print()
     print("Herramientas utilizadas:")

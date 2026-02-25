@@ -14,7 +14,6 @@ Cobertura:
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import pytest
 from PIL import Image
@@ -26,10 +25,10 @@ from src.tools.vision import (
     preparar_pagina_pdf,
 )
 
-
 # ============================================================
 # Fixtures
 # ============================================================
+
 
 @pytest.fixture
 def tmp_dir():
@@ -134,6 +133,7 @@ def pdf_simple(tmp_dir):
 # Tests: _calcular_nuevas_dimensiones
 # ============================================================
 
+
 class TestCalcularNuevasDimensiones:
     """Tests para el cálculo de dimensiones con aspect ratio."""
 
@@ -186,6 +186,7 @@ class TestCalcularNuevasDimensiones:
 # ============================================================
 # Tests: preparar_imagen
 # ============================================================
+
 
 class TestPrepararImagen:
     """Tests para preparar_imagen con imágenes directas."""
@@ -289,6 +290,7 @@ class TestPrepararImagen:
 # Tests: preparar_pagina_pdf
 # ============================================================
 
+
 class TestPrepararPaginaPdf:
     """Tests para renderizar páginas de PDF y preparar para visión."""
 
@@ -325,9 +327,7 @@ class TestPrepararPaginaPdf:
             preparar_pagina_pdf(archivo_no_imagen, pagina=1, directorio_salida=tmp_dir)
 
     def test_dpi_custom(self, pdf_simple, tmp_dir):
-        resultado = preparar_pagina_pdf(
-            pdf_simple, pagina=1, dpi=72, directorio_salida=tmp_dir
-        )
+        resultado = preparar_pagina_pdf(pdf_simple, pagina=1, dpi=72, directorio_salida=tmp_dir)
         assert resultado.dpi_render == 72
         # A 72 DPI una página carta es ~612x792px → dentro del límite
         assert resultado.ancho_final <= 2000
@@ -335,9 +335,7 @@ class TestPrepararPaginaPdf:
 
     def test_dpi_alto_fuerza_resize(self, pdf_simple, tmp_dir):
         """A 300 DPI una página carta supera 2000px de alto."""
-        resultado = preparar_pagina_pdf(
-            pdf_simple, pagina=1, dpi=300, directorio_salida=tmp_dir
-        )
+        resultado = preparar_pagina_pdf(pdf_simple, pagina=1, dpi=300, directorio_salida=tmp_dir)
         assert resultado.dpi_render == 300
         # 792 * (300/72) = 3300px alto → necesita resize
         assert resultado.fue_redimensionada is True
@@ -361,56 +359,87 @@ class TestPrepararPaginaPdf:
 # Tests: ResultadoVision propiedades
 # ============================================================
 
+
 class TestResultadoVision:
     """Tests para propiedades calculadas de ResultadoVision."""
 
     def test_excedia_limite_true(self):
         r = ResultadoVision(
-            ruta_original="a.png", ruta_procesada="b.png",
-            ancho_original=4000, alto_original=3000,
-            ancho_final=2000, alto_final=1500,
-            fue_redimensionada=True, formato_salida="PNG",
-            tamanio_bytes=1000, pagina_pdf=None, dpi_render=None,
+            ruta_original="a.png",
+            ruta_procesada="b.png",
+            ancho_original=4000,
+            alto_original=3000,
+            ancho_final=2000,
+            alto_final=1500,
+            fue_redimensionada=True,
+            formato_salida="PNG",
+            tamanio_bytes=1000,
+            pagina_pdf=None,
+            dpi_render=None,
         )
         assert r.excedia_limite is True
 
     def test_excedia_limite_false(self):
         r = ResultadoVision(
-            ruta_original="a.png", ruta_procesada="b.png",
-            ancho_original=800, alto_original=600,
-            ancho_final=800, alto_final=600,
-            fue_redimensionada=False, formato_salida="PNG",
-            tamanio_bytes=1000, pagina_pdf=None, dpi_render=None,
+            ruta_original="a.png",
+            ruta_procesada="b.png",
+            ancho_original=800,
+            alto_original=600,
+            ancho_final=800,
+            alto_final=600,
+            fue_redimensionada=False,
+            formato_salida="PNG",
+            tamanio_bytes=1000,
+            pagina_pdf=None,
+            dpi_render=None,
         )
         assert r.excedia_limite is False
 
     def test_ratio_reduccion_con_resize(self):
         r = ResultadoVision(
-            ruta_original="a.png", ruta_procesada="b.png",
-            ancho_original=4000, alto_original=2000,
-            ancho_final=2000, alto_final=1000,
-            fue_redimensionada=True, formato_salida="PNG",
-            tamanio_bytes=1000, pagina_pdf=None, dpi_render=None,
+            ruta_original="a.png",
+            ruta_procesada="b.png",
+            ancho_original=4000,
+            alto_original=2000,
+            ancho_final=2000,
+            alto_final=1000,
+            fue_redimensionada=True,
+            formato_salida="PNG",
+            tamanio_bytes=1000,
+            pagina_pdf=None,
+            dpi_render=None,
         )
         assert r.ratio_reduccion == 0.5
 
     def test_ratio_reduccion_sin_resize(self):
         r = ResultadoVision(
-            ruta_original="a.png", ruta_procesada="b.png",
-            ancho_original=800, alto_original=600,
-            ancho_final=800, alto_final=600,
-            fue_redimensionada=False, formato_salida="PNG",
-            tamanio_bytes=1000, pagina_pdf=None, dpi_render=None,
+            ruta_original="a.png",
+            ruta_procesada="b.png",
+            ancho_original=800,
+            alto_original=600,
+            ancho_final=800,
+            alto_final=600,
+            fue_redimensionada=False,
+            formato_salida="PNG",
+            tamanio_bytes=1000,
+            pagina_pdf=None,
+            dpi_render=None,
         )
         assert r.ratio_reduccion == 1.0
 
     def test_contexto_pdf(self):
         r = ResultadoVision(
-            ruta_original="doc.pdf", ruta_procesada="doc_p1.png",
-            ancho_original=1700, alto_original=2200,
-            ancho_final=1545, alto_final=2000,
-            fue_redimensionada=True, formato_salida="PNG",
-            tamanio_bytes=5000, pagina_pdf=1, dpi_render=200,
+            ruta_original="doc.pdf",
+            ruta_procesada="doc_p1.png",
+            ancho_original=1700,
+            alto_original=2200,
+            ancho_final=1545,
+            alto_final=2000,
+            fue_redimensionada=True,
+            formato_salida="PNG",
+            tamanio_bytes=5000,
+            pagina_pdf=1,
+            dpi_render=200,
         )
         assert r.pagina_pdf == 1
         assert r.dpi_render == 200
@@ -420,18 +449,22 @@ class TestResultadoVision:
 # Tests: integración config
 # ============================================================
 
+
 class TestConfigIntegration:
     """Tests que verifican que la configuración se usa correctamente."""
 
     def test_vision_config_existe(self):
         from config.settings import VISION_CONFIG
+
         assert "max_dimension_px" in VISION_CONFIG
         assert VISION_CONFIG["max_dimension_px"] == 2000
 
     def test_config_formato_salida(self):
         from config.settings import VISION_CONFIG
+
         assert VISION_CONFIG["formato_salida"] in ("PNG", "JPEG")
 
     def test_config_dpi_render(self):
         from config.settings import VISION_CONFIG
+
         assert VISION_CONFIG["dpi_render_pdf"] >= 72

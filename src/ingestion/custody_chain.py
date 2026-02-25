@@ -30,23 +30,22 @@ import json
 import os
 import shutil
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, List, Dict
-
+from typing import Dict, List, Optional
 
 # ==============================================================================
 # CONFIGURACIÓN
 # ==============================================================================
 _DEFAULT_VAULT_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "data", "vault"
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "vault"
 )
 
 _DEFAULT_REGISTRY_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "data", "custody_registry"
+    "data",
+    "custody_registry",
 )
 
 HASH_ALGORITHM = "sha256"
@@ -62,35 +61,36 @@ class CustodyRecord:
     Registro de custodia para un expediente.
     Cada campo es inmutable una vez creado.
     """
+
     # Identificación
-    custody_id: str              # UUID único del registro
-    sinad: str                   # Identificador del expediente (SINAD)
+    custody_id: str  # UUID único del registro
+    sinad: str  # Identificador del expediente (SINAD)
 
     # Archivo original
-    original_filename: str       # Nombre del archivo tal como llegó
-    original_path: str           # Ruta completa del archivo original
-    original_size_bytes: int     # Tamaño en bytes
-    original_page_count: int     # Número de páginas (si es PDF)
+    original_filename: str  # Nombre del archivo tal como llegó
+    original_path: str  # Ruta completa del archivo original
+    original_size_bytes: int  # Tamaño en bytes
+    original_page_count: int  # Número de páginas (si es PDF)
 
     # Integridad
-    hash_sha256: str             # Hash SHA-256 del archivo original
+    hash_sha256: str  # Hash SHA-256 del archivo original
     hash_algorithm: str = HASH_ALGORITHM
 
     # Bóveda
-    vault_path: str = ""         # Ruta de la copia inmutable en bóveda
-    vault_filename: str = ""     # Nombre del archivo en bóveda
+    vault_path: str = ""  # Ruta de la copia inmutable en bóveda
+    vault_filename: str = ""  # Nombre del archivo en bóveda
 
     # Timestamps
-    ingested_at: str = ""        # ISO-8601 UTC del momento de ingesta
+    ingested_at: str = ""  # ISO-8601 UTC del momento de ingesta
 
     # Metadata adicional
-    source: str = "manual"       # Origen: manual, api, batch
-    operator: str = ""           # Quién ejecutó la ingesta
-    notes: str = ""              # Notas opcionales
+    source: str = "manual"  # Origen: manual, api, batch
+    operator: str = ""  # Quién ejecutó la ingesta
+    notes: str = ""  # Notas opcionales
 
     # Verificación
-    verified_at: str = ""        # Última verificación de integridad
-    is_verified: bool = False    # Resultado de última verificación
+    verified_at: str = ""  # Última verificación de integridad
+    is_verified: bool = False  # Resultado de última verificación
 
     def to_dict(self) -> Dict:
         """Serializa a diccionario para JSON."""
@@ -109,13 +109,14 @@ class CustodyRecord:
 @dataclass
 class VerificationResult:
     """Resultado de una verificación de integridad."""
+
     custody_id: str
-    is_intact: bool                # True si el hash coincide
-    expected_hash: str             # Hash registrado al ingreso
-    actual_hash: str               # Hash calculado ahora
-    vault_path: str                # Ruta del archivo verificado
-    verified_at: str = ""          # Timestamp de verificación
-    error: str = ""                # Mensaje de error si falló
+    is_intact: bool  # True si el hash coincide
+    expected_hash: str  # Hash registrado al ingreso
+    actual_hash: str  # Hash calculado ahora
+    vault_path: str  # Ruta del archivo verificado
+    verified_at: str = ""  # Timestamp de verificación
+    error: str = ""  # Mensaje de error si falló
 
     def to_dict(self) -> Dict:
         return asdict(self)
@@ -158,6 +159,7 @@ def _get_pdf_page_count(file_path: str) -> int:
     """
     try:
         import fitz  # PyMuPDF
+
         with fitz.open(file_path) as doc:
             return len(doc)
     except ImportError:
@@ -255,9 +257,7 @@ class CustodyChain:
             raise ValueError(f"No es un archivo válido: {path}")
 
         if path.suffix.lower() != ".pdf":
-            raise ValueError(
-                f"Solo se aceptan archivos PDF. Recibido: {path.suffix}"
-            )
+            raise ValueError(f"Solo se aceptan archivos PDF. Recibido: {path.suffix}")
 
         file_size = path.stat().st_size
         if file_size == 0:
@@ -476,7 +476,7 @@ class CustodyChain:
                 try:
                     data = json.loads(line)
                     records.append(CustodyRecord.from_dict(data))
-                except (json.JSONDecodeError, TypeError) as e:
+                except (json.JSONDecodeError, TypeError):
                     # Log pero no detener la lectura
                     pass
 
@@ -489,9 +489,7 @@ class CustodyChain:
                 return record
         return None
 
-    def _update_verification(
-        self, custody_id: str, timestamp: str, is_verified: bool
-    ) -> None:
+    def _update_verification(self, custody_id: str, timestamp: str, is_verified: bool) -> None:
         """
         Actualiza el registro de verificación.
         Reescribe el JSONL completo (operación atómica con archivo temporal).

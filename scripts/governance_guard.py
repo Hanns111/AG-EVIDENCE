@@ -35,9 +35,7 @@ def main():
         sys.exit(0)
 
     print("=" * 60)
-    print("GOVERNANCE GUARD v{}: Archivos protegidos detectados".format(
-        VERSION_GOVERNANCE_GUARD
-    ))
+    print("GOVERNANCE GUARD v{}: Archivos protegidos detectados".format(VERSION_GOVERNANCE_GUARD))
     print("=" * 60)
     for f in staged_protected:
         print("  BLOQUEADO: {}".format(f))
@@ -53,7 +51,7 @@ def main():
         sys.exit(0)
     else:
         print("Para overridear, ejecutar:")
-        print('  AG_GOVERNANCE_OVERRIDE=HANS_APPROVED git commit ...')
+        print("  AG_GOVERNANCE_OVERRIDE=HANS_APPROVED git commit ...")
         print()
         print("O en PowerShell:")
         print('  $env:AG_GOVERNANCE_OVERRIDE="HANS_APPROVED"; git commit ...')

@@ -242,16 +242,18 @@ def check_direct_pushes():
     # Informativo por ahora — se vuelve FAIL cuando branch protection este activo
     if direct_count > 0:
         status = "WARN"
-        results.append((
-            "direct pushes",
-            "{} directos, {} merges en ultimos 20 commits".format(
-                direct_count, merge_count
-            ),
-        ))
-        results.append((
-            "nota",
-            "Esto es WARN hasta que branch protection este activo en GitHub",
-        ))
+        results.append(
+            (
+                "direct pushes",
+                "{} directos, {} merges en ultimos 20 commits".format(direct_count, merge_count),
+            )
+        )
+        results.append(
+            (
+                "nota",
+                "Esto es WARN hasta que branch protection este activo en GitHub",
+            )
+        )
     else:
         results.append(("pushes", "Todos via merge/PR. OK."))
 
@@ -274,12 +276,12 @@ def check_worktrees():
 
     if worktree_count > 5:
         status = "WARN"
-        results.append((
-            "worktrees",
-            "{} activos (recomendado: <= 5). Considerar limpieza.".format(
-                worktree_count
-            ),
-        ))
+        results.append(
+            (
+                "worktrees",
+                "{} activos (recomendado: <= 5). Considerar limpieza.".format(worktree_count),
+            )
+        )
     else:
         results.append(("worktrees", "{} activos. OK.".format(worktree_count)))
 
@@ -401,12 +403,14 @@ def run_audit(as_json=False):
             status = "WARN"
             results = [("error", str(e))]
 
-        all_results.append({
-            "check": i,
-            "name": name,
-            "status": status,
-            "details": results,
-        })
+        all_results.append(
+            {
+                "check": i,
+                "name": name,
+                "status": status,
+                "details": results,
+            }
+        )
 
         if status == "FAIL":
             global_status = "FAIL"
@@ -432,11 +436,13 @@ def run_audit(as_json=False):
         for check_result in all_results:
             tag = check_result["status"]
             marker = {"PASS": "OK", "WARN": "!!", "FAIL": "XX"}[tag]
-            print("CHECK {}: {} [{}]".format(
-                check_result["check"],
-                check_result["name"],
-                tag,
-            ))
+            print(
+                "CHECK {}: {} [{}]".format(
+                    check_result["check"],
+                    check_result["name"],
+                    tag,
+                )
+            )
             for item, detail in check_result["details"]:
                 print("  [{}] {} — {}".format(marker, item, detail))
             print()
@@ -455,9 +461,7 @@ def run_audit(as_json=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="AG-EVIDENCE Repository Integrity Audit"
-    )
+    parser = argparse.ArgumentParser(description="AG-EVIDENCE Repository Integrity Audit")
     parser.add_argument(
         "--json",
         action="store_true",

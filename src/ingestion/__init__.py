@@ -7,9 +7,9 @@ Módulo de Ingestión — Extracción, Custodia y Trazabilidad de PDFs
 - Logger estructurado: trazabilidad JSONL con trace_id por expediente
 """
 
-from .pdf_text_extractor import extract_text_with_gating, get_texto_extraido
 from .custody_chain import CustodyChain, CustodyRecord, VerificationResult, compute_sha256
-from .trace_logger import TraceLogger, TraceContext, LogEntry
+from .pdf_text_extractor import extract_text_with_gating, get_texto_extraido
+from .trace_logger import LogEntry, TraceContext, TraceLogger
 
 __all__ = [
     "extract_text_with_gating",

@@ -28,20 +28,17 @@ Feature flag:
     Si False (default), analyze_evidence() retorna AnalysisNotes vacio.
 """
 
-import sys
-import os
 import logging
+import os
+import sys
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 # Asegurar path del proyecto
-_PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from config.settings import MetodoExtraccion
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +74,7 @@ CAMPOS_PROBATORIOS: Set[str] = {
 # DATACLASSES
 # ==============================================================================
 
+
 @dataclass
 class AnalysisNotes:
     """
@@ -89,6 +87,7 @@ class AnalysisNotes:
 
     NUNCA contiene valores de campos probatorios.
     """
+
     notas: List[str] = field(default_factory=list)
     tags_riesgo: List[str] = field(default_factory=list)
     sugerencias_revision: List[str] = field(default_factory=list)
@@ -118,6 +117,7 @@ class AnalysisNotes:
 # ==============================================================================
 # FUNCION GUARDIAN — BLOQUEO DE CAMPOS PROBATORIOS
 # ==============================================================================
+
 
 def _bloquear_valores_probatorios(
     output: Dict[str, Any],
@@ -149,14 +149,17 @@ def _bloquear_valores_probatorios(
 
         if es_probatorio:
             clean[key] = "NO_AUTORIZADO"
-            bloqueados.append({
-                "campo": key,
-                "valor_bloqueado": str(value)[:100],
-                "razon": "CAMPO_PROBATORIO_EN_CAPA_C",
-            })
+            bloqueados.append(
+                {
+                    "campo": key,
+                    "valor_bloqueado": str(value)[:100],
+                    "razon": "CAMPO_PROBATORIO_EN_CAPA_C",
+                }
+            )
             logger.warning(
                 "IA local intento escribir campo probatorio: %s = %s -> NO_AUTORIZADO",
-                key, str(value)[:50],
+                key,
+                str(value)[:50],
             )
             # Registrar en TraceLogger si disponible (duck typing)
             if trace_logger is not None:
@@ -181,6 +184,7 @@ def _bloquear_valores_probatorios(
 # ==============================================================================
 # FUNCION PRINCIPAL — INTERFAZ DE ANALISIS
 # ==============================================================================
+
 
 def analyze_evidence(
     records: List[Any],
@@ -211,6 +215,7 @@ def analyze_evidence(
     # Verificar feature flag
     try:
         from config.settings import LOCAL_ANALYST_CONFIG
+
         enabled = LOCAL_ANALYST_CONFIG.get("enabled", False)
     except (ImportError, AttributeError):
         enabled = False
@@ -222,9 +227,9 @@ def analyze_evidence(
     # Motor de IA no implementado aun (Fase 3, Tareas #22-26)
     # Por ahora retornamos vacio con log informativo
     logger.info(
-        "analyze_evidence llamado con %d records, %d flags. "
-        "Motor IA no implementado aun (Fase 3).",
-        len(records), len(flags),
+        "analyze_evidence llamado con %d records, %d flags. Motor IA no implementado aun (Fase 3).",
+        len(records),
+        len(flags),
     )
 
     return AnalysisNotes(
@@ -250,20 +255,16 @@ def _process_ia_output(
     Returns:
         AnalysisNotes limpio con campos probatorios bloqueados.
     """
-    clean_output, bloqueados = _bloquear_valores_probatorios(
-        raw_output, trace_logger
-    )
+    clean_output, bloqueados = _bloquear_valores_probatorios(raw_output, trace_logger)
 
     return AnalysisNotes(
-        notas=clean_output.get("notas", []) if isinstance(
-            clean_output.get("notas"), list
-        ) else [],
-        tags_riesgo=clean_output.get("tags_riesgo", []) if isinstance(
-            clean_output.get("tags_riesgo"), list
-        ) else [],
-        sugerencias_revision=clean_output.get("sugerencias_revision", []) if isinstance(
-            clean_output.get("sugerencias_revision"), list
-        ) else [],
+        notas=clean_output.get("notas", []) if isinstance(clean_output.get("notas"), list) else [],
+        tags_riesgo=clean_output.get("tags_riesgo", [])
+        if isinstance(clean_output.get("tags_riesgo"), list)
+        else [],
+        sugerencias_revision=clean_output.get("sugerencias_revision", [])
+        if isinstance(clean_output.get("sugerencias_revision"), list)
+        else [],
         confianza_analisis=float(clean_output.get("confianza_analisis", 0.0)),
         bloqueados=bloqueados,
     )

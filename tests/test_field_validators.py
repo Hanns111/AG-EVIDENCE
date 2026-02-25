@@ -10,23 +10,21 @@ Verifica:
   - validar_consistencia_aritmetica: subtotal + IGV = total
 """
 
-import sys
 import os
-
-import pytest
+import sys
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 from src.rules.field_validators import (
-    ValidationResult,
     ValidationFlag,
+    ValidationResult,
+    validar_consistencia_aritmetica,
+    validar_fecha,
+    validar_monto,
     validar_ruc,
     validar_serie_numero,
-    validar_monto,
-    validar_fecha,
-    validar_consistencia_aritmetica,
 )
 
 
@@ -34,7 +32,6 @@ from src.rules.field_validators import (
 # VALIDAR RUC
 # ==============================================================================
 class TestValidarRuc:
-
     def test_ruc_valido_persona_juridica(self):
         result = validar_ruc("20100039207")
         assert result.valido is True
@@ -91,7 +88,6 @@ class TestValidarRuc:
 # VALIDAR SERIE-NUMERO
 # ==============================================================================
 class TestValidarSerieNumero:
-
     def test_factura_electronica_valida(self):
         result = validar_serie_numero("F001-468")
         assert result.valido is True
@@ -167,7 +163,6 @@ class TestValidarSerieNumero:
 # VALIDAR MONTO
 # ==============================================================================
 class TestValidarMonto:
-
     def test_monto_valido(self):
         result = validar_monto("250.00")
         assert result.valido is True
@@ -217,7 +212,6 @@ class TestValidarMonto:
 # VALIDAR FECHA
 # ==============================================================================
 class TestValidarFecha:
-
     def test_fecha_peruana_valida(self):
         result = validar_fecha("06/02/2026")
         assert result.valido is True
@@ -267,65 +261,50 @@ class TestValidarFecha:
 # VALIDAR CONSISTENCIA ARITMETICA
 # ==============================================================================
 class TestValidarConsistenciaAritmetica:
-
     def test_consistencia_correcta(self):
-        result = validar_consistencia_aritmetica(
-            valor_venta=211.86, igv=38.14, total=250.00
-        )
+        result = validar_consistencia_aritmetica(valor_venta=211.86, igv=38.14, total=250.00)
         assert result.valido is True
 
     def test_consistencia_con_centimos(self):
-        result = validar_consistencia_aritmetica(
-            valor_venta=80.51, igv=14.49, total=95.00
-        )
+        result = validar_consistencia_aritmetica(valor_venta=80.51, igv=14.49, total=95.00)
         assert result.valido is True
 
     def test_discrepancia(self):
-        result = validar_consistencia_aritmetica(
-            valor_venta=100.00, igv=18.00, total=120.00
-        )
+        result = validar_consistencia_aritmetica(valor_venta=100.00, igv=18.00, total=120.00)
         assert result.valido is False
         assert "ARITMETICA_DISCREPANCIA" in result.flags
 
     def test_campos_faltantes(self):
-        result = validar_consistencia_aritmetica(
-            valor_venta=100.00, igv=None, total=118.00
-        )
+        result = validar_consistencia_aritmetica(valor_venta=100.00, igv=None, total=118.00)
         assert result.valido is False
         assert "ARITMETICA_CAMPOS_FALTANTES" in result.flags
 
     def test_todos_none(self):
-        result = validar_consistencia_aritmetica(
-            valor_venta=None, igv=None, total=None
-        )
+        result = validar_consistencia_aritmetica(valor_venta=None, igv=None, total=None)
         assert result.valido is False
 
     def test_tolerancia_dentro(self):
         """Diferencia de S/0.01 dentro de tolerancia default (0.02)."""
-        result = validar_consistencia_aritmetica(
-            valor_venta=100.00, igv=18.00, total=118.01
-        )
+        result = validar_consistencia_aritmetica(valor_venta=100.00, igv=18.00, total=118.01)
         assert result.valido is True
 
     def test_tolerancia_fuera(self):
         """Diferencia de S/0.05 fuera de tolerancia default (0.02)."""
-        result = validar_consistencia_aritmetica(
-            valor_venta=100.00, igv=18.00, total=118.05
-        )
+        result = validar_consistencia_aritmetica(valor_venta=100.00, igv=18.00, total=118.05)
         assert result.valido is False
 
     def test_tolerancia_custom(self):
         result = validar_consistencia_aritmetica(
-            valor_venta=100.00, igv=18.00, total=118.10,
+            valor_venta=100.00,
+            igv=18.00,
+            total=118.10,
             tolerancia=0.15,
         )
         assert result.valido is True
 
     def test_igv_cero(self):
         """Comprobante exonerado de IGV."""
-        result = validar_consistencia_aritmetica(
-            valor_venta=50.00, igv=0.00, total=50.00
-        )
+        result = validar_consistencia_aritmetica(valor_venta=50.00, igv=0.00, total=50.00)
         assert result.valido is True
 
 
@@ -333,7 +312,6 @@ class TestValidarConsistenciaAritmetica:
 # VALIDATION RESULT / FLAG SERIALIZATION
 # ==============================================================================
 class TestSerializacion:
-
     def test_validation_result_to_dict(self):
         r = ValidationResult(
             valido=False,

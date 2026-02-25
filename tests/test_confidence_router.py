@@ -12,57 +12,49 @@ Incluye test de regresión para _recolectar_todos_campos() (método privado).
 
 import shutil
 import tempfile
-from typing import List
 
 import pytest
 
 from config.settings import (
+    EvidenciaProbatoria,
     MetodoExtraccion,
     NivelObservacion,
     Observacion,
-    EvidenciaProbatoria,
 )
 from src.extraction.abstencion import (
-    CampoExtraido,
-    EvidenceStatus,
-    UmbralesAbstencion,
     AbstencionPolicy,
-    ResultadoAbstencion,
-)
-from src.extraction.expediente_contract import (
-    ExpedienteJSON,
-    IntegridadStatus,
-    IntegridadExpediente,
-    ConfianzaGlobal,
-    ComprobanteExtraido,
-    DatosEmisor,
-    DatosComprobante,
-    TotalesTributos,
-    MetadatosExtraccion,
-    ValidacionesAritmeticas,
-    GastoDeclaracionJurada,
-    BoletoTransporte,
+    CampoExtraido,
 )
 from src.extraction.confidence_router import (
-    VERSION_ROUTER,
     AGENTE_ID_DEFAULT,
-    UmbralesRouter,
-    EvidenceEnforcer,
-    DetalleEnforcement,
-    ReporteEnforcement,
-    SeccionDiagnostico,
-    DiagnosticoExpediente,
-    IntegrityCheckpoint,
-    DecisionCheckpoint,
-    ResultadoRouter,
+    VERSION_ROUTER,
     ConfidenceRouter,
+    DecisionCheckpoint,
+    DetalleEnforcement,
+    DiagnosticoExpediente,
+    EvidenceEnforcer,
+    IntegrityCheckpoint,
+    ReporteEnforcement,
+    ResultadoRouter,
+    SeccionDiagnostico,
+    UmbralesRouter,
+)
+from src.extraction.expediente_contract import (
+    ComprobanteExtraido,
+    ConfianzaGlobal,
+    DatosComprobante,
+    DatosEmisor,
+    ExpedienteJSON,
+    IntegridadStatus,
+    MetadatosExtraccion,
+    TotalesTributos,
 )
 from src.ingestion.trace_logger import TraceLogger
-
 
 # ==============================================================================
 # HELPERS
 # ==============================================================================
+
 
 def _crear_campo(
     nombre: str,
@@ -141,15 +133,17 @@ def _crear_observacion_critica_con_evidencia() -> Observacion:
         accion_requerida="Verificar cálculo de factura",
         regla_aplicada="RULE_ARIT_001",
     )
-    obs.agregar_evidencia(EvidenciaProbatoria(
-        archivo="factura_001.pdf",
-        pagina=3,
-        valor_detectado="118.00",
-        valor_esperado="120.00",
-        snippet="TOTAL S/ 118.00",
-        confianza=0.95,
-        regla_aplicada="RULE_ARIT_001",
-    ))
+    obs.agregar_evidencia(
+        EvidenciaProbatoria(
+            archivo="factura_001.pdf",
+            pagina=3,
+            valor_detectado="118.00",
+            valor_esperado="120.00",
+            snippet="TOTAL S/ 118.00",
+            confianza=0.95,
+            regla_aplicada="RULE_ARIT_001",
+        )
+    )
     return obs
 
 
@@ -225,6 +219,7 @@ def _crear_expediente_50pct_abstencion() -> ExpedienteJSON:
 # FIXTURES
 # ==============================================================================
 
+
 @pytest.fixture
 def umbrales_default():
     return UmbralesRouter()
@@ -267,6 +262,7 @@ def router_con_logger(temp_log_dir):
 # ==============================================================================
 # HITO 1: TESTS DE ESTRUCTURAS DE DATOS
 # ==============================================================================
+
 
 class TestUmbralesRouter:
     """Tests para UmbralesRouter dataclass."""
@@ -444,6 +440,7 @@ class TestEvidenceEnforcer:
 # HITO 1: TESTS DEL CONFIDENCE ROUTER
 # ==============================================================================
 
+
 class TestConfidenceRouterInit:
     """Tests de inicialización del router."""
 
@@ -507,6 +504,7 @@ class TestConfidenceRouterBasico:
 # HITO 1: TEST DE REGRESIÓN — _recolectar_todos_campos (método privado)
 # ==============================================================================
 
+
 class TestRegresionRecolectarCampos:
     """
     Tests de regresión para ExpedienteJSON._recolectar_todos_campos().
@@ -553,6 +551,7 @@ class TestRegresionRecolectarCampos:
 # ==============================================================================
 # HITO 1: TESTS DE ESCALACIÓN BÁSICA
 # ==============================================================================
+
 
 class TestEscalacionBasica:
     """Tests básicos de la lógica de escalación del router."""
@@ -629,34 +628,27 @@ class TestMaxStatus:
     """Tests para el helper _max_status."""
 
     def test_ok_vs_warning(self):
-        result = ConfidenceRouter._max_status(
-            IntegridadStatus.OK, IntegridadStatus.WARNING
-        )
+        result = ConfidenceRouter._max_status(IntegridadStatus.OK, IntegridadStatus.WARNING)
         assert result == IntegridadStatus.WARNING
 
     def test_warning_vs_critical(self):
-        result = ConfidenceRouter._max_status(
-            IntegridadStatus.WARNING, IntegridadStatus.CRITICAL
-        )
+        result = ConfidenceRouter._max_status(IntegridadStatus.WARNING, IntegridadStatus.CRITICAL)
         assert result == IntegridadStatus.CRITICAL
 
     def test_critical_vs_ok(self):
         """CRITICAL no baja a OK."""
-        result = ConfidenceRouter._max_status(
-            IntegridadStatus.CRITICAL, IntegridadStatus.OK
-        )
+        result = ConfidenceRouter._max_status(IntegridadStatus.CRITICAL, IntegridadStatus.OK)
         assert result == IntegridadStatus.CRITICAL
 
     def test_same_status(self):
-        result = ConfidenceRouter._max_status(
-            IntegridadStatus.WARNING, IntegridadStatus.WARNING
-        )
+        result = ConfidenceRouter._max_status(IntegridadStatus.WARNING, IntegridadStatus.WARNING)
         assert result == IntegridadStatus.WARNING
 
 
 # ==============================================================================
 # HITO 1: TESTS CON TRACE LOGGER
 # ==============================================================================
+
 
 class TestRouterConLogger:
     """Tests básicos de integración con TraceLogger."""
@@ -678,6 +670,7 @@ class TestRouterConLogger:
 # ==============================================================================
 # HITO 2: TESTS DE DetalleEnforcement Y ReporteEnforcement
 # ==============================================================================
+
 
 class TestDetalleEnforcement:
     """Tests para DetalleEnforcement dataclass."""
@@ -768,6 +761,7 @@ class TestReporteEnforcement:
 # HITO 2: TESTS DE SeccionDiagnostico Y DiagnosticoExpediente
 # ==============================================================================
 
+
 class TestSeccionDiagnostico:
     """Tests para SeccionDiagnostico dataclass."""
 
@@ -857,6 +851,7 @@ class TestDiagnosticoExpediente:
 # HITO 2: TESTS DE IntegrityCheckpoint
 # ==============================================================================
 
+
 class TestIntegrityCheckpointInit:
     """Tests de inicialización del IntegrityCheckpoint."""
 
@@ -945,10 +940,7 @@ class TestIntegrityCheckpointEvaluar:
         assert decision.reporte_enforcement is not None
         assert decision.reporte_enforcement.total_degradadas == 2
         # Los detalles incluyen campos faltantes
-        degradadas = [
-            d for d in decision.reporte_enforcement.detalles
-            if d.fue_degradada
-        ]
+        degradadas = [d for d in decision.reporte_enforcement.detalles if d.fue_degradada]
         assert len(degradadas) == 2
         for d in degradadas:
             assert len(d.campos_faltantes) > 0
@@ -995,6 +987,7 @@ class TestIntegrityCheckpointEvaluar:
         assert d["diagnostico"] is not None
         # Verificar que es JSON-serializable
         import json
+
         json_str = json.dumps(d, ensure_ascii=False)
         assert len(json_str) > 100
 
@@ -1032,12 +1025,14 @@ class TestDetectarCamposFaltantes:
             descripcion="test",
             accion_requerida="test",
         )
-        obs.agregar_evidencia(EvidenciaProbatoria(
-            archivo="test.pdf",
-            pagina=3,
-            valor_detectado="100.00",
-            # snippet vacío, regla_aplicada vacía
-        ))
+        obs.agregar_evidencia(
+            EvidenciaProbatoria(
+                archivo="test.pdf",
+                pagina=3,
+                valor_detectado="100.00",
+                # snippet vacío, regla_aplicada vacía
+            )
+        )
         faltantes = IntegrityCheckpoint._detectar_campos_faltantes(obs)
         assert "snippet" in faltantes
         assert "regla_aplicada" in faltantes
@@ -1051,13 +1046,15 @@ class TestDetectarCamposFaltantes:
             descripcion="test",
             accion_requerida="test",
         )
-        obs.agregar_evidencia(EvidenciaProbatoria(
-            archivo="test.pdf",
-            pagina=0,
-            valor_detectado="valor",
-            snippet="texto",
-            regla_aplicada="RULE_001",
-        ))
+        obs.agregar_evidencia(
+            EvidenciaProbatoria(
+                archivo="test.pdf",
+                pagina=0,
+                valor_detectado="valor",
+                snippet="texto",
+                regla_aplicada="RULE_001",
+            )
+        )
         faltantes = IntegrityCheckpoint._detectar_campos_faltantes(obs)
         assert "pagina" in faltantes
 
@@ -1101,6 +1098,7 @@ class TestIntegrityCheckpointConLogger:
 # HITO 2: TESTS DE DecisionCheckpoint
 # ==============================================================================
 
+
 class TestDecisionCheckpoint:
     """Tests para DecisionCheckpoint dataclass."""
 
@@ -1127,6 +1125,7 @@ class TestDecisionCheckpoint:
 # ==============================================================================
 # HITO 2: TESTS DE EDGE CASES
 # ==============================================================================
+
 
 class TestEdgeCases:
     """Tests de edge cases para Hito 2."""
@@ -1162,7 +1161,7 @@ class TestEdgeCases:
 
         reporte = decision.reporte_enforcement
         assert reporte.total_procesadas == 4
-        assert reporte.total_validas == 2   # CRITICA con evidencia + MENOR
+        assert reporte.total_validas == 2  # CRITICA con evidencia + MENOR
         assert reporte.total_degradadas == 2  # CRITICA sin + MAYOR sin
 
     def test_diagnostico_sinad_propagado(self):

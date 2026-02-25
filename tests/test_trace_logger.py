@@ -13,19 +13,18 @@ Verifica:
 """
 
 import json
-import os
-import tempfile
 import shutil
+import tempfile
 import time
-import pytest
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
 
 from src.ingestion.trace_logger import (
-    TraceLogger,
-    TraceContext,
     LogEntry,
-    LOG_LEVELS,
+    TraceContext,
+    TraceLogger,
 )
 
 

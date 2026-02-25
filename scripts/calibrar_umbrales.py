@@ -26,9 +26,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.extraction.calibracion import (
-    CalibradorUmbrales,
-    PerfilCalibracion,
     VERSION_CALIBRACION,
+    CalibradorUmbrales,
 )
 
 
@@ -42,14 +41,14 @@ def main():
         nargs="+",
         default=None,
         help="Ruta(s) a archivos JSON de benchmark. Si no se especifica, "
-             "busca todos los prueba_empirica_*.json en data/evaluacion/",
+        "busca todos los prueba_empirica_*.json en data/evaluacion/",
     )
     parser.add_argument(
         "--output",
         type=str,
         default="data/normativa/umbrales_calibrados.json",
         help="Ruta de salida para el JSON de umbrales calibrados "
-             "(default: data/normativa/umbrales_calibrados.json)",
+        "(default: data/normativa/umbrales_calibrados.json)",
     )
     parser.add_argument(
         "--perfil",
@@ -99,15 +98,19 @@ def main():
     print(f"Campos evaluados: {analisis.total_campos_evaluados}")
     print(f"Precisión global: {analisis.precision_pct}%")
     print(f"Tasa fallo global: {round(analisis.tasa_fallo_global * 100, 1)}%")
-    print(f"Confianza OCR: {analisis.confianza_ocr_min:.3f} - "
-          f"{analisis.confianza_ocr_max:.3f} (media {analisis.confianza_ocr_media:.3f})")
+    print(
+        f"Confianza OCR: {analisis.confianza_ocr_min:.3f} - "
+        f"{analisis.confianza_ocr_max:.3f} (media {analisis.confianza_ocr_media:.3f})"
+    )
 
     print("\nEstadísticas por campo:")
     for campo, stat in analisis.stats_por_campo.items():
         if stat.evaluados > 0:
-            print(f"  {campo:20s}: {stat.match}/{stat.evaluados} match "
-                  f"({round(stat.tasa_acierto * 100, 1)}%), "
-                  f"{stat.error} error, {stat.no_extraido} no extraído")
+            print(
+                f"  {campo:20s}: {stat.match}/{stat.evaluados} match "
+                f"({round(stat.tasa_acierto * 100, 1)}%), "
+                f"{stat.error} error, {stat.no_extraido} no extraído"
+            )
 
     if args.solo_analisis:
         print("\n--- Solo análisis (sin generar perfiles) ---")
@@ -154,13 +157,15 @@ def main():
         else:
             status = "OK"
 
-        print(f"  {perfil_enum.value.upper():15s}: "
-              f"tasa fallo {round(tasa * 100, 1)}% vs "
-              f"warning {round(warning_pct * 100)}%/critical {round(critical_pct * 100)}% "
-              f"→ {status}")
+        print(
+            f"  {perfil_enum.value.upper():15s}: "
+            f"tasa fallo {round(tasa * 100, 1)}% vs "
+            f"warning {round(warning_pct * 100)}%/critical {round(critical_pct * 100)}% "
+            f"→ {status}"
+        )
 
-    print(f"\n=== Calibración completada ===")
-    print(f"Perfil recomendado: BALANCEADO")
+    print("\n=== Calibración completada ===")
+    print("Perfil recomendado: BALANCEADO")
 
 
 if __name__ == "__main__":

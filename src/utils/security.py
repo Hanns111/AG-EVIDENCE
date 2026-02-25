@@ -17,7 +17,6 @@ Fecha: 2026-02-19
 """
 
 import logging
-import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -35,9 +34,16 @@ TAMANIO_MAX_JSON_BYTES: int = 50 * 1024 * 1024
 
 # Extensiones permitidas para archivos de entrada
 EXTENSIONES_PDF_PERMITIDAS: frozenset = frozenset({".pdf"})
-EXTENSIONES_IMAGEN_PERMITIDAS: frozenset = frozenset({
-    ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp",
-})
+EXTENSIONES_IMAGEN_PERMITIDAS: frozenset = frozenset(
+    {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".tiff",
+        ".tif",
+        ".bmp",
+    }
+)
 
 # Longitud maxima de ruta de archivo (previene paths excesivamente largos)
 LONGITUD_MAX_RUTA: int = 500
@@ -46,12 +52,13 @@ LONGITUD_MAX_RUTA: int = 500
 _PREFIJOS_PELIGROSOS = ("..", "~")
 
 # Caracteres no permitidos en nombres de archivo (cross-platform)
-_CARACTERES_PROHIBIDOS = set('\x00')
+_CARACTERES_PROHIBIDOS = set("\x00")
 
 
 # =============================================================================
 # EXCEPCIONES
 # =============================================================================
+
 
 class RutaInseguraError(ValueError):
     """
@@ -60,12 +67,14 @@ class RutaInseguraError(ValueError):
 
     SEC-INP-002: Proteccion contra path traversal.
     """
+
     pass
 
 
 # =============================================================================
 # VALIDACION DE PATHS (SEC-INP-002)
 # =============================================================================
+
 
 def validar_ruta_segura(
     ruta: Union[str, Path],
@@ -109,7 +118,7 @@ def validar_ruta_segura(
         )
 
     # --- Verificar caracteres nulos (null byte injection) ---
-    if '\x00' in ruta_str:
+    if "\x00" in ruta_str:
         raise RutaInseguraError(
             f"Ruta contiene caracteres nulos (null byte): {repr(ruta_str[:80])}"
         )
@@ -120,14 +129,10 @@ def validar_ruta_segura(
 
     for parte in partes:
         if parte == "..":
-            raise RutaInseguraError(
-                f"Ruta contiene componentes de traversal (..): {ruta_str}"
-            )
+            raise RutaInseguraError(f"Ruta contiene componentes de traversal (..): {ruta_str}")
         # Verificar caracteres prohibidos en cada componente
         if any(c in parte for c in _CARACTERES_PROHIBIDOS):
-            raise RutaInseguraError(
-                f"Ruta contiene caracteres prohibidos: {repr(parte)}"
-            )
+            raise RutaInseguraError(f"Ruta contiene caracteres prohibidos: {repr(parte)}")
 
     # --- Containment check contra directorio base ---
     if directorio_base is not None:
@@ -148,8 +153,7 @@ def validar_ruta_segura(
         extension = ruta_path.suffix.lower()
         if extension not in extensiones_permitidas:
             raise RutaInseguraError(
-                f"Extension no permitida: {extension}. "
-                f"Permitidas: {sorted(extensiones_permitidas)}"
+                f"Extension no permitida: {extension}. Permitidas: {sorted(extensiones_permitidas)}"
             )
 
     # Retornar ruta resuelta
@@ -202,6 +206,7 @@ def validar_ruta_imagen(
 # LIMPIEZA DE ARCHIVOS TEMPORALES (SEC-TMP-001)
 # =============================================================================
 
+
 class DirectorioTemporalSeguro:
     """
     Context manager para directorios temporales con limpieza garantizada.
@@ -240,10 +245,12 @@ class DirectorioTemporalSeguro:
         self._archivos_creados: int = 0
 
     def __enter__(self) -> Path:
-        self._ruta = Path(tempfile.mkdtemp(
-            prefix=self.prefijo,
-            dir=self.directorio_padre,
-        ))
+        self._ruta = Path(
+            tempfile.mkdtemp(
+                prefix=self.prefijo,
+                dir=self.directorio_padre,
+            )
+        )
         logger.debug(f"Directorio temporal creado: {self._ruta}")
         return self._ruta
 
@@ -272,9 +279,7 @@ class DirectorioTemporalSeguro:
                     f"({self._archivos_creados} archivos limpiados)"
                 )
         except OSError as e:
-            logger.error(
-                f"Error al eliminar directorio temporal {self._ruta}: {e}"
-            )
+            logger.error(f"Error al eliminar directorio temporal {self._ruta}: {e}")
 
         return False  # No suprimir excepciones
 
@@ -311,17 +316,13 @@ def limpiar_directorio_temporal(directorio: Union[str, Path]) -> int:
 
     # Validacion basica de seguridad
     if ".." in dir_path.parts:
-        raise RutaInseguraError(
-            f"No se permite limpiar directorio con traversal: {directorio}"
-        )
+        raise RutaInseguraError(f"No se permite limpiar directorio con traversal: {directorio}")
 
     if not dir_path.exists():
         return 0
 
     if not dir_path.is_dir():
-        raise RutaInseguraError(
-            f"La ruta no es un directorio: {directorio}"
-        )
+        raise RutaInseguraError(f"La ruta no es un directorio: {directorio}")
 
     archivos_eliminados = 0
     for archivo in dir_path.rglob("*"):
@@ -344,6 +345,7 @@ def limpiar_directorio_temporal(directorio: Union[str, Path]) -> int:
 # VALIDACION DE JSON (SEC-INP-003)
 # =============================================================================
 
+
 def validar_json_tamano(json_str: str, max_bytes: int = TAMANIO_MAX_JSON_BYTES) -> None:
     """
     Valida que un string JSON no exceda el tamano maximo permitido.
@@ -362,7 +364,7 @@ def validar_json_tamano(json_str: str, max_bytes: int = TAMANIO_MAX_JSON_BYTES) 
     if tamano > max_bytes:
         raise ValueError(
             f"JSON excede tamano maximo: {tamano:,} bytes > "
-            f"{max_bytes:,} bytes ({max_bytes // (1024*1024)} MB)"
+            f"{max_bytes:,} bytes ({max_bytes // (1024 * 1024)} MB)"
         )
 
 
@@ -406,9 +408,7 @@ def validar_expediente_json_estructura(data: dict) -> list:
         integridad = data["integridad"]
         for sub_campo in ["hash_expediente", "timestamp_verificacion"]:
             if sub_campo not in integridad:
-                errores.append(
-                    f"Campo obligatorio ausente en integridad: '{sub_campo}'"
-                )
+                errores.append(f"Campo obligatorio ausente en integridad: '{sub_campo}'")
 
     # Validar que archivos_fuente tenga al menos un elemento
     if isinstance(data.get("archivos_fuente"), list) and len(data["archivos_fuente"]) == 0:

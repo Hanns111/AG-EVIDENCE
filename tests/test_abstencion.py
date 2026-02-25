@@ -11,11 +11,10 @@ Verifica:
   - Criterios de aceptación Notion: valor=None, confianza=0.0, fuente=ABSTENCION
 """
 
-import sys
 import os
-import tempfile
 import shutil
-import json
+import sys
+import tempfile
 
 import pytest
 
@@ -24,16 +23,15 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from src.extraction.abstencion import (
-    CampoExtraido,
-    UmbralesAbstencion,
-    ResultadoAbstencion,
-    RazonAbstencion,
-    AbstencionPolicy,
-    FUENTE_ABSTENCION,
-    FRASE_ABSTENCION_ESTANDAR,
-)
 from config.settings import MetodoExtraccion, NivelObservacion
+from src.extraction.abstencion import (
+    FRASE_ABSTENCION_ESTANDAR,
+    FUENTE_ABSTENCION,
+    AbstencionPolicy,
+    CampoExtraido,
+    RazonAbstencion,
+    UmbralesAbstencion,
+)
 from src.ingestion.trace_logger import TraceLogger
 
 
@@ -540,37 +538,27 @@ class TestAbstencionGeneracion:
 
     def test_campo_generado_valor_none(self, policy):
         """Campo generado tiene valor=None."""
-        campo = policy.generar_campo_abstencion(
-            nombre_campo="ruc", razon="test"
-        )
+        campo = policy.generar_campo_abstencion(nombre_campo="ruc", razon="test")
         assert campo.valor is None
 
     def test_campo_generado_confianza_cero(self, policy):
         """Campo generado tiene confianza=0.0."""
-        campo = policy.generar_campo_abstencion(
-            nombre_campo="ruc", razon="test"
-        )
+        campo = policy.generar_campo_abstencion(nombre_campo="ruc", razon="test")
         assert campo.confianza == 0.0
 
     def test_campo_generado_fuente_abstencion(self, policy):
         """Campo generado tiene regla_aplicada=ABSTENCION."""
-        campo = policy.generar_campo_abstencion(
-            nombre_campo="ruc", razon="test"
-        )
+        campo = policy.generar_campo_abstencion(nombre_campo="ruc", razon="test")
         assert campo.regla_aplicada == FUENTE_ABSTENCION
 
     def test_campo_generado_es_abstencion(self, policy):
         """Campo generado detecta es_abstencion()=True."""
-        campo = policy.generar_campo_abstencion(
-            nombre_campo="ruc", razon="test"
-        )
+        campo = policy.generar_campo_abstencion(nombre_campo="ruc", razon="test")
         assert campo.es_abstencion() is True
 
     def test_campo_generado_pagina_cero(self, policy):
         """Campo generado tiene pagina=0."""
-        campo = policy.generar_campo_abstencion(
-            nombre_campo="ruc", razon="test"
-        )
+        campo = policy.generar_campo_abstencion(nombre_campo="ruc", razon="test")
         assert campo.pagina == 0
 
     def test_campo_generado_preserva_tipo(self, policy):
@@ -639,9 +627,7 @@ class TestIntegracionTraceLogger:
         eval_entries = [e for e in entries if "ruc_proveedor" in e.message]
         assert len(eval_entries) > 0
 
-    def test_evaluacion_sin_abstencion_se_registra(
-        self, policy_con_logger, logger, campo_valido
-    ):
+    def test_evaluacion_sin_abstencion_se_registra(self, policy_con_logger, logger, campo_valido):
         """Evaluación sin abstención también se registra."""
         policy_con_logger.evaluar_campo(campo_valido)
 
@@ -649,9 +635,7 @@ class TestIntegracionTraceLogger:
         eval_entries = [e for e in entries if "ruc_proveedor" in e.message]
         assert len(eval_entries) > 0
 
-    def test_abstencion_registra_nivel_warning(
-        self, policy_con_logger, logger, campo_sin_valor
-    ):
+    def test_abstencion_registra_nivel_warning(self, policy_con_logger, logger, campo_sin_valor):
         """Abstención se registra como WARNING en el logger."""
         policy_con_logger.evaluar_campo(campo_sin_valor)
 
@@ -659,18 +643,13 @@ class TestIntegracionTraceLogger:
         warning_entries = [e for e in entries if e.level == "WARNING"]
         assert len(warning_entries) > 0
 
-    def test_no_abstencion_registra_nivel_info(
-        self, policy_con_logger, logger, campo_valido
-    ):
+    def test_no_abstencion_registra_nivel_info(self, policy_con_logger, logger, campo_valido):
         """No-abstención se registra como INFO en el logger."""
         policy_con_logger.evaluar_campo(campo_valido)
 
         entries = logger.get_recent_entries(limit=10)
         # Filtrar solo las de evaluación (no start_trace)
-        info_eval = [
-            e for e in entries
-            if e.level == "INFO" and "evaluado" in e.message
-        ]
+        info_eval = [e for e in entries if e.level == "INFO" and "evaluado" in e.message]
         assert len(info_eval) > 0
 
     def test_policy_sin_logger_no_falla(self, campo_valido):
@@ -686,9 +665,7 @@ class TestIntegracionTraceLogger:
         policy_con_logger.evaluar_campo(campo_baja_confianza)
 
         entries = logger.get_recent_entries(limit=10)
-        eval_entries = [
-            e for e in entries if e.operation == "evaluar_abstencion"
-        ]
+        eval_entries = [e for e in entries if e.operation == "evaluar_abstencion"]
         assert len(eval_entries) > 0
         ctx = eval_entries[0].context
         assert "campo" in ctx
@@ -704,9 +681,7 @@ class TestIntegracionTraceLogger:
         policy_con_logger.evaluar_campo(campo_sin_valor)
 
         entries = logger.get_recent_entries(limit=20)
-        eval_entries = [
-            e for e in entries if e.operation == "evaluar_abstencion"
-        ]
+        eval_entries = [e for e in entries if e.operation == "evaluar_abstencion"]
         assert len(eval_entries) == 2
 
 
@@ -723,26 +698,20 @@ class TestEstadisticas:
         assert stats["total_abstenciones"] == 0
         assert stats["tasa_abstencion"] == 0.0
 
-    def test_stats_incrementan_con_evaluacion(
-        self, policy, campo_valido
-    ):
+    def test_stats_incrementan_con_evaluacion(self, policy, campo_valido):
         """Estadísticas incrementan al evaluar."""
         policy.evaluar_campo(campo_valido)
         stats = policy.get_stats()
         assert stats["total_evaluados"] == 1
         assert stats["total_abstenciones"] == 0
 
-    def test_stats_cuentan_abstenciones(
-        self, policy, campo_sin_valor
-    ):
+    def test_stats_cuentan_abstenciones(self, policy, campo_sin_valor):
         """Estadísticas cuentan abstenciones correctamente."""
         policy.evaluar_campo(campo_sin_valor)
         stats = policy.get_stats()
         assert stats["total_abstenciones"] == 1
 
-    def test_tasa_abstencion_correcta(
-        self, policy, campo_valido, campo_sin_valor
-    ):
+    def test_tasa_abstencion_correcta(self, policy, campo_valido, campo_sin_valor):
         """Tasa de abstención se calcula correctamente."""
         policy.evaluar_campo(campo_valido)
         policy.evaluar_campo(campo_sin_valor)

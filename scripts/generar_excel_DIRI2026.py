@@ -5,18 +5,19 @@ Comisionada: CRUZATT MENDOZA SANDRA
 Destino: Lima - Piura - Huancabamba - Lima
 Período: 26/01/2026 - 30/01/2026
 """
-import json
+
 import os
 
 try:
     from openpyxl import Workbook
-    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 except ImportError:
     print("Instalando openpyxl...")
     import subprocess
+
     subprocess.check_call(["pip3", "install", "openpyxl"])
     from openpyxl import Workbook
-    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 # =============================================================================
 # DATOS DEL EXPEDIENTE (extraídos de las 47 páginas)
@@ -69,7 +70,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 16,
         "pagina_validez": 17,
-        "observacion": "Importe en Anexo3=25.00 pero factura dice 29.50 con IGV. Verificar."
+        "observacion": "Importe en Anexo3=25.00 pero factura dice 29.50 con IGV. Verificar.",
     },
     {
         "nro": 2,
@@ -87,7 +88,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 18,
         "pagina_validez": 19,
-        "observacion": "Fecha emisión factura=29/01/2026, Anexo3=26/01/2026. IGV=0. Desc dice 26/02/26 (error de año?)."
+        "observacion": "Fecha emisión factura=29/01/2026, Anexo3=26/01/2026. IGV=0. Desc dice 26/02/26 (error de año?).",
     },
     {
         "nro": 3,
@@ -105,7 +106,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 20,  # OCR
         "pagina_validez": 21,
-        "observacion": "Incluye ICBPER S/1.76. RC S/0.61."
+        "observacion": "Incluye ICBPER S/1.76. RC S/0.61.",
     },
     {
         "nro": 4,
@@ -123,7 +124,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 22,
         "pagina_validez": 23,
-        "observacion": "Hospedaje 2 noches SWB. Factura muestra IGV 18%=41.48 + 10%=23.05. Check-in 26/01, Check-out 28/01. TC=3.56."
+        "observacion": "Hospedaje 2 noches SWB. Factura muestra IGV 18%=41.48 + 10%=23.05. Check-in 26/01, Check-out 28/01. TC=3.56.",
     },
     {
         "nro": 5,
@@ -141,7 +142,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 30,  # OCR
         "pagina_validez": 31,
-        "observacion": "Incluye RC S/0.61."
+        "observacion": "Incluye RC S/0.61.",
     },
     {
         "nro": 6,
@@ -159,7 +160,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 26,
         "pagina_validez": 27,
-        "observacion": ""
+        "observacion": "",
     },
     {
         "nro": 7,
@@ -177,7 +178,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 32,  # OCR
         "pagina_validez": 33,
-        "observacion": "Anexo3=64.00, factura=69.00. DISCREPANCIA DE MONTO. OCR lee Total=69.00 (sub=62.72+igv=6.28). Pago con tarjeta culqi: S/64+S/5=S/69."
+        "observacion": "Anexo3=64.00, factura=69.00. DISCREPANCIA DE MONTO. OCR lee Total=69.00 (sub=62.72+igv=6.28). Pago con tarjeta culqi: S/64+S/5=S/69.",
     },
     {
         "nro": 8,
@@ -195,7 +196,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 24,
         "pagina_validez": 25,
-        "observacion": ""
+        "observacion": "",
     },
     {
         "nro": 9,
@@ -213,7 +214,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 28,
         "pagina_validez": 29,
-        "observacion": "Anexo3=100.00, factura=100.01 (redondeo)."
+        "observacion": "Anexo3=100.00, factura=100.01 (redondeo).",
     },
     {
         "nro": 10,
@@ -231,7 +232,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 42,
         "pagina_validez": 43,
-        "observacion": "Fecha emisión factura=12/02/2026 (posterior a comisión). Hospedaje en Huancabamba 2 noches. IGV=19/181=10.5% aprox."
+        "observacion": "Fecha emisión factura=12/02/2026 (posterior a comisión). Hospedaje en Huancabamba 2 noches. IGV=19/181=10.5% aprox.",
     },
     {
         "nro": 11,
@@ -249,7 +250,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 38,
         "pagina_validez": 39,
-        "observacion": "Fecha emisión=29/01/2026. Op.Gravada=18.00, IGV=0.00. Boleta sin IGV desglosado."
+        "observacion": "Fecha emisión=29/01/2026. Op.Gravada=18.00, IGV=0.00. Boleta sin IGV desglosado.",
     },
     {
         "nro": 12,
@@ -267,7 +268,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 36,
         "pagina_validez": 37,
-        "observacion": "Salitral, Morropón, Piura."
+        "observacion": "Salitral, Morropón, Piura.",
     },
     {
         "nro": 13,
@@ -285,7 +286,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 40,
         "pagina_validez": 41,
-        "observacion": "Anexo3=100.00, factura=100.01 (redondeo)."
+        "observacion": "Anexo3=100.00, factura=100.01 (redondeo).",
     },
     {
         "nro": 14,
@@ -303,7 +304,7 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 44,
         "pagina_validez": 45,
-        "observacion": "Total Exonerado=65.00, IGV=0.00."
+        "observacion": "Total Exonerado=65.00, IGV=0.00.",
     },
     {
         "nro": 15,
@@ -321,29 +322,74 @@ COMPROBANTES = [
         "validez_sunat": "VALIDO",
         "pagina_comprobante": 34,
         "pagina_validez": 35,
-        "observacion": "Fecha emisión=10/02/2026 (posterior a comisión). Obs: 'Boleta del día 30 de enero 2026'. IGV=0."
+        "observacion": "Fecha emisión=10/02/2026 (posterior a comisión). Obs: 'Boleta del día 30 de enero 2026'. IGV=0.",
     },
 ]
 
 # Gastos sin comprobante (DJ - Anexo N°4, p4)
 GASTOS_DJ = [
-    {"fecha": "26/01/2026", "concepto": "MOVILIDAD", "detalle": "Hotel a restaurante y retorno al hotel", "importe": 24.00},
-    {"fecha": "27/01/2026", "concepto": "MOVILIDAD", "detalle": "Hotel a la DRE Piura, IE San Miguel, hotel", "importe": 30.00},
-    {"fecha": "28/01/2026", "concepto": "MOVILIDAD", "detalle": "Hotel a UGEL Piura, DRE Piura, Hotel", "importe": 30.00},
-    {"fecha": "28/01/2026", "concepto": "ALIMENTACION", "detalle": "Alimentos en el kiosco de la DRE Piura", "importe": 22.00},
-    {"fecha": "28/01/2026", "concepto": "MOVILIDAD", "detalle": "Del hotel al terminal terrestre salida a Huancabamba", "importe": 18.00},
-    {"fecha": "29/01/2026", "concepto": "MOVILIDAD", "detalle": "Terminal terrestre Huancabamba al hotel, hotel a la UGEL", "importe": 30.00},
-    {"fecha": "29/01/2026", "concepto": "ALIMENTACION", "detalle": "Almuerzo comedor UGEL Huancabamba", "importe": 20.00},
-    {"fecha": "30/01/2026", "concepto": "MOVILIDAD", "detalle": "Hotel a UGEL Huancabamba, Hotel, TT salida Piura", "importe": 30.00},
-    {"fecha": "30/01/2026", "concepto": "MOVILIDAD", "detalle": "Terminal terrestre Piura al aeropuerto Piura", "importe": 25.00},
+    {
+        "fecha": "26/01/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "Hotel a restaurante y retorno al hotel",
+        "importe": 24.00,
+    },
+    {
+        "fecha": "27/01/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "Hotel a la DRE Piura, IE San Miguel, hotel",
+        "importe": 30.00,
+    },
+    {
+        "fecha": "28/01/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "Hotel a UGEL Piura, DRE Piura, Hotel",
+        "importe": 30.00,
+    },
+    {
+        "fecha": "28/01/2026",
+        "concepto": "ALIMENTACION",
+        "detalle": "Alimentos en el kiosco de la DRE Piura",
+        "importe": 22.00,
+    },
+    {
+        "fecha": "28/01/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "Del hotel al terminal terrestre salida a Huancabamba",
+        "importe": 18.00,
+    },
+    {
+        "fecha": "29/01/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "Terminal terrestre Huancabamba al hotel, hotel a la UGEL",
+        "importe": 30.00,
+    },
+    {
+        "fecha": "29/01/2026",
+        "concepto": "ALIMENTACION",
+        "detalle": "Almuerzo comedor UGEL Huancabamba",
+        "importe": 20.00,
+    },
+    {
+        "fecha": "30/01/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "Hotel a UGEL Huancabamba, Hotel, TT salida Piura",
+        "importe": 30.00,
+    },
+    {
+        "fecha": "30/01/2026",
+        "concepto": "MOVILIDAD",
+        "detalle": "Terminal terrestre Piura al aeropuerto Piura",
+        "importe": 25.00,
+    },
 ]
 
 # =============================================================================
 # GENERAR EXCEL
 # =============================================================================
 
-OUTPUT_DIR = '/mnt/c/Users/Hans/Proyectos/AG-EVIDENCE/data/expedientes/pruebas/viaticos_2026/DIRI2026-INT-0068815/extraccion'
-OUTPUT_FILE = os.path.join(OUTPUT_DIR, f'RENDICION_{EXPEDIENTE["numero"]}.xlsx')
+OUTPUT_DIR = "/mnt/c/Users/Hans/Proyectos/AG-EVIDENCE/data/expedientes/pruebas/viaticos_2026/DIRI2026-INT-0068815/extraccion"
+OUTPUT_FILE = os.path.join(OUTPUT_DIR, f"RENDICION_{EXPEDIENTE['numero']}.xlsx")
 
 wb = Workbook()
 
@@ -355,29 +401,34 @@ alert_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="so
 ok_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
 warn_fill = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
 thin_border = Border(
-    left=Side(style='thin'), right=Side(style='thin'),
-    top=Side(style='thin'), bottom=Side(style='thin')
+    left=Side(style="thin"),
+    right=Side(style="thin"),
+    top=Side(style="thin"),
+    bottom=Side(style="thin"),
 )
+
 
 def apply_header(ws, row, cols):
     for col in range(1, cols + 1):
         cell = ws.cell(row=row, column=col)
         cell.font = header_font_white
         cell.fill = header_fill
-        cell.alignment = Alignment(horizontal='center', wrap_text=True)
+        cell.alignment = Alignment(horizontal="center", wrap_text=True)
         cell.border = thin_border
+
 
 def apply_border(ws, row, cols):
     for col in range(1, cols + 1):
         ws.cell(row=row, column=col).border = thin_border
+
 
 # =============================================================================
 # HOJA 1: DATOS GENERALES
 # =============================================================================
 ws1 = wb.active
 ws1.title = "Datos Generales"
-ws1.column_dimensions['A'].width = 25
-ws1.column_dimensions['B'].width = 60
+ws1.column_dimensions["A"].width = 25
+ws1.column_dimensions["B"].width = 60
 
 datos = [
     ("EXPEDIENTE", EXPEDIENTE["numero"]),
@@ -395,11 +446,11 @@ datos = [
     ("Motivo", EXPEDIENTE["motivo"]),
     ("", ""),
     ("RESUMEN FINANCIERO", ""),
-    ("Monto Recibido", f'S/ {EXPEDIENTE["monto_recibido"]:,.2f}'),
-    ("Gastos con Documentación", f'S/ {EXPEDIENTE["monto_gastado_con_doc"]:,.2f}'),
-    ("Gastos sin Documentación (DJ)", f'S/ {EXPEDIENTE["monto_gastado_sin_doc"]:,.2f}'),
-    ("Total Gastado", f'S/ {EXPEDIENTE["total_gastado"]:,.2f}'),
-    ("Devolución", f'S/ {EXPEDIENTE["devolucion"]:,.2f}'),
+    ("Monto Recibido", f"S/ {EXPEDIENTE['monto_recibido']:,.2f}"),
+    ("Gastos con Documentación", f"S/ {EXPEDIENTE['monto_gastado_con_doc']:,.2f}"),
+    ("Gastos sin Documentación (DJ)", f"S/ {EXPEDIENTE['monto_gastado_sin_doc']:,.2f}"),
+    ("Total Gastado", f"S/ {EXPEDIENTE['total_gastado']:,.2f}"),
+    ("Devolución", f"S/ {EXPEDIENTE['devolucion']:,.2f}"),
     ("", ""),
     ("PASAJE AÉREO", ""),
     ("Aerolínea", EXPEDIENTE["pasaje_aereo"]["aerolinea"]),
@@ -407,7 +458,7 @@ datos = [
     ("Código Reserva", EXPEDIENTE["pasaje_aereo"]["codigo_reserva"]),
     ("Vuelo Ida", EXPEDIENTE["pasaje_aereo"]["ida"]),
     ("Vuelo Vuelta", EXPEDIENTE["pasaje_aereo"]["vuelta"]),
-    ("Monto Total (USD)", f'USD {EXPEDIENTE["pasaje_aereo"]["monto_usd"]:,.2f}'),
+    ("Monto Total (USD)", f"USD {EXPEDIENTE['pasaje_aereo']['monto_usd']:,.2f}"),
 ]
 
 for i, (label, value) in enumerate(datos, 1):
@@ -420,9 +471,23 @@ for i, (label, value) in enumerate(datos, 1):
 # HOJA 2: COMPROBANTES (detalle SUNAT)
 # =============================================================================
 ws2 = wb.create_sheet("Comprobantes")
-headers2 = ["Nro", "Fecha", "Tipo Doc", "Serie-Número", "RUC", "Razón Social",
-            "Concepto", "Descripción", "Valor Venta", "IGV", "Tasa IGV",
-            "Importe Total", "Válido SUNAT", "Página", "Observación"]
+headers2 = [
+    "Nro",
+    "Fecha",
+    "Tipo Doc",
+    "Serie-Número",
+    "RUC",
+    "Razón Social",
+    "Concepto",
+    "Descripción",
+    "Valor Venta",
+    "IGV",
+    "Tasa IGV",
+    "Importe Total",
+    "Válido SUNAT",
+    "Página",
+    "Observación",
+]
 
 for j, h in enumerate(headers2, 1):
     ws2.cell(row=1, column=j, value=h)
@@ -454,14 +519,18 @@ for i, c in enumerate(COMPROBANTES, 2):
 # Totales
 row_total = len(COMPROBANTES) + 2
 ws2.cell(row=row_total, column=7, value="TOTALES").font = Font(bold=True)
-ws2.cell(row=row_total, column=9, value=sum(c["valor_venta"] for c in COMPROBANTES)).font = Font(bold=True)
+ws2.cell(row=row_total, column=9, value=sum(c["valor_venta"] for c in COMPROBANTES)).font = Font(
+    bold=True
+)
 ws2.cell(row=row_total, column=10, value=sum(c["igv"] for c in COMPROBANTES)).font = Font(bold=True)
-ws2.cell(row=row_total, column=12, value=sum(c["importe_total"] for c in COMPROBANTES)).font = Font(bold=True)
+ws2.cell(row=row_total, column=12, value=sum(c["importe_total"] for c in COMPROBANTES)).font = Font(
+    bold=True
+)
 
 # Ajustar anchos
 widths2 = [5, 12, 14, 18, 14, 40, 15, 45, 12, 10, 10, 12, 10, 8, 50]
 for j, w in enumerate(widths2, 1):
-    ws2.column_dimensions[chr(64 + j) if j <= 26 else 'A' + chr(64 + j - 26)].width = w
+    ws2.column_dimensions[chr(64 + j) if j <= 26 else "A" + chr(64 + j - 26)].width = w
 
 # =============================================================================
 # HOJA 3: DECLARACIÓN JURADA (gastos sin comprobante)
@@ -482,12 +551,14 @@ for i, g in enumerate(GASTOS_DJ, 2):
 
 row_total3 = len(GASTOS_DJ) + 2
 ws3.cell(row=row_total3, column=3, value="TOTAL").font = Font(bold=True)
-ws3.cell(row=row_total3, column=4, value=sum(g["importe"] for g in GASTOS_DJ)).font = Font(bold=True)
+ws3.cell(row=row_total3, column=4, value=sum(g["importe"] for g in GASTOS_DJ)).font = Font(
+    bold=True
+)
 
-ws3.column_dimensions['A'].width = 14
-ws3.column_dimensions['B'].width = 15
-ws3.column_dimensions['C'].width = 55
-ws3.column_dimensions['D'].width = 12
+ws3.column_dimensions["A"].width = 14
+ws3.column_dimensions["B"].width = 15
+ws3.column_dimensions["C"].width = 55
+ws3.column_dimensions["D"].width = 12
 
 # =============================================================================
 # HOJA 4: HALLAZGOS Y OBSERVACIONES
@@ -500,16 +571,76 @@ for j, h in enumerate(headers4, 1):
 apply_header(ws4, 1, len(headers4))
 
 hallazgos = [
-    ("H-01", "INFO", "Factura E001-858: Anexo3=S/25, factura=S/29.50 (diferencia=IGV S/4.50). Anexo3 registra valor venta, no importe total.", 16, "E001-858"),
-    ("H-02", "ALERTA", "Factura E001-1692: Fecha emisión=29/01/2026, pero Anexo3=26/01/2026. Descripción dice '26/02/26' (posible error de mes).", 18, "E001-1692"),
-    ("H-03", "ALERTA", "Factura F002-0011835 GIASAL: Anexo3=S/64.00, factura OCR=S/69.00. Discrepancia de S/5.00. Pago fraccionado con tarjeta.", 32, "F002-0011835"),
-    ("H-04", "INFO", "Facturas E001-887 y E001-888: Importe=S/100.01 (redondeo), Anexo3=S/100.00.", 28, "E001-887/888"),
-    ("H-05", "INFO", "Factura E001-1771 hospedaje Huancabamba: Fecha emisión=12/02/2026 (13 días después de la estancia). Práctica común en hospedajes rurales.", 42, "E001-1771"),
-    ("H-06", "INFO", "Boleta EB01-703: Fecha emisión=10/02/2026, observación dice 'Boleta del día 30 de enero 2026'. Emisión posterior.", 34, "EB01-703"),
-    ("H-07", "INFO", "Hotel Win & Win: Factura muestra doble tasa IGV (18%=S/41.48 + 10%=S/23.05). Posible MYPE con tasa diferenciada.", 22, "F700-00000141"),
-    ("H-08", "OK", "Todos los 15 comprobantes validados como VÁLIDOS en consulta SUNAT.", "-", "Todos"),
-    ("H-09", "OK", "Devolución S/650.12 acreditada en Banco de la Nación el 16/02/2026. Voucher en p47.", 47, "Depósito BN"),
-    ("H-10", "INFO", "Verificación aritmética: Recibido S/2,033.30 - Gastado S/1,383.18 = Devolución S/650.12. CUADRA.", "-", "-"),
+    (
+        "H-01",
+        "INFO",
+        "Factura E001-858: Anexo3=S/25, factura=S/29.50 (diferencia=IGV S/4.50). Anexo3 registra valor venta, no importe total.",
+        16,
+        "E001-858",
+    ),
+    (
+        "H-02",
+        "ALERTA",
+        "Factura E001-1692: Fecha emisión=29/01/2026, pero Anexo3=26/01/2026. Descripción dice '26/02/26' (posible error de mes).",
+        18,
+        "E001-1692",
+    ),
+    (
+        "H-03",
+        "ALERTA",
+        "Factura F002-0011835 GIASAL: Anexo3=S/64.00, factura OCR=S/69.00. Discrepancia de S/5.00. Pago fraccionado con tarjeta.",
+        32,
+        "F002-0011835",
+    ),
+    (
+        "H-04",
+        "INFO",
+        "Facturas E001-887 y E001-888: Importe=S/100.01 (redondeo), Anexo3=S/100.00.",
+        28,
+        "E001-887/888",
+    ),
+    (
+        "H-05",
+        "INFO",
+        "Factura E001-1771 hospedaje Huancabamba: Fecha emisión=12/02/2026 (13 días después de la estancia). Práctica común en hospedajes rurales.",
+        42,
+        "E001-1771",
+    ),
+    (
+        "H-06",
+        "INFO",
+        "Boleta EB01-703: Fecha emisión=10/02/2026, observación dice 'Boleta del día 30 de enero 2026'. Emisión posterior.",
+        34,
+        "EB01-703",
+    ),
+    (
+        "H-07",
+        "INFO",
+        "Hotel Win & Win: Factura muestra doble tasa IGV (18%=S/41.48 + 10%=S/23.05). Posible MYPE con tasa diferenciada.",
+        22,
+        "F700-00000141",
+    ),
+    (
+        "H-08",
+        "OK",
+        "Todos los 15 comprobantes validados como VÁLIDOS en consulta SUNAT.",
+        "-",
+        "Todos",
+    ),
+    (
+        "H-09",
+        "OK",
+        "Devolución S/650.12 acreditada en Banco de la Nación el 16/02/2026. Voucher en p47.",
+        47,
+        "Depósito BN",
+    ),
+    (
+        "H-10",
+        "INFO",
+        "Verificación aritmética: Recibido S/2,033.30 - Gastado S/1,383.18 = Devolución S/650.12. CUADRA.",
+        "-",
+        "-",
+    ),
     ("H-11", "INFO", "Total DJ S/229.00 = suma de 9 items. CUADRA.", "-", "DJ"),
 ]
 
@@ -531,11 +662,11 @@ for i, (cod, sev, desc, pag, comp) in enumerate(hallazgos, 2):
         for j in range(1, len(headers4) + 1):
             ws4.cell(row=i, column=j).fill = warn_fill
 
-ws4.column_dimensions['A'].width = 8
-ws4.column_dimensions['B'].width = 10
-ws4.column_dimensions['C'].width = 80
-ws4.column_dimensions['D'].width = 8
-ws4.column_dimensions['E'].width = 18
+ws4.column_dimensions["A"].width = 8
+ws4.column_dimensions["B"].width = 10
+ws4.column_dimensions["C"].width = 80
+ws4.column_dimensions["D"].width = 8
+ws4.column_dimensions["E"].width = 18
 
 # =============================================================================
 # HOJA 5: MAPA DE PÁGINAS
@@ -613,12 +744,14 @@ for i, (pag, pdf, doc, metodo) in enumerate(mapa, 2):
     ws5.cell(row=i, column=4, value=metodo)
     apply_border(ws5, i, len(headers5))
     if metodo == "paddleocr":
-        ws5.cell(row=i, column=4).fill = PatternFill(start_color="D9E2F3", end_color="D9E2F3", fill_type="solid")
+        ws5.cell(row=i, column=4).fill = PatternFill(
+            start_color="D9E2F3", end_color="D9E2F3", fill_type="solid"
+        )
 
-ws5.column_dimensions['A'].width = 8
-ws5.column_dimensions['B'].width = 8
-ws5.column_dimensions['C'].width = 50
-ws5.column_dimensions['D'].width = 18
+ws5.column_dimensions["A"].width = 8
+ws5.column_dimensions["B"].width = 8
+ws5.column_dimensions["C"].width = 50
+ws5.column_dimensions["D"].width = 18
 
 # =============================================================================
 # GUARDAR
@@ -630,9 +763,9 @@ for s in wb.sheetnames:
     print(f"    - {s}")
 
 # Resumen de extracción
-print(f"\n{'='*60}")
-print(f"RESUMEN DE EXTRACCIÓN")
-print(f"{'='*60}")
+print(f"\n{'=' * 60}")
+print("RESUMEN DE EXTRACCIÓN")
+print(f"{'=' * 60}")
 print(f"Expediente: {EXPEDIENTE['numero']}")
 print(f"Comisionada: {EXPEDIENTE['comisionado']}")
 print(f"Destino: {EXPEDIENTE['destino']}")
@@ -641,24 +774,26 @@ print(f"Comprobantes con documento: {len(COMPROBANTES)}")
 print(f"Gastos DJ sin documento: {len(GASTOS_DJ)}")
 print(f"Total comprobantes extraídos: S/ {sum(c['importe_total'] for c in COMPROBANTES):,.2f}")
 print(f"Total DJ: S/ {sum(g['importe'] for g in GASTOS_DJ):,.2f}")
-print(f"Total gastado: S/ {sum(c['importe_total'] for c in COMPROBANTES) + sum(g['importe'] for g in GASTOS_DJ):,.2f}")
+print(
+    f"Total gastado: S/ {sum(c['importe_total'] for c in COMPROBANTES) + sum(g['importe'] for g in GASTOS_DJ):,.2f}"
+)
 print(f"Monto recibido: S/ {EXPEDIENTE['monto_recibido']:,.2f}")
 print(f"Devolución: S/ {EXPEDIENTE['devolucion']:,.2f}")
 print(f"Hallazgos: {len(hallazgos)}")
 
 # Verificación aritmética
-total_comp = sum(c['importe_total'] for c in COMPROBANTES)
-total_dj = sum(g['importe'] for g in GASTOS_DJ)
+total_comp = sum(c["importe_total"] for c in COMPROBANTES)
+total_dj = sum(g["importe"] for g in GASTOS_DJ)
 total = total_comp + total_dj
-devolucion_calc = EXPEDIENTE['monto_recibido'] - total
-print(f"\nVERIFICACIÓN ARITMÉTICA:")
+devolucion_calc = EXPEDIENTE["monto_recibido"] - total
+print("\nVERIFICACIÓN ARITMÉTICA:")
 print(f"  Sum comprobantes: S/ {total_comp:,.2f}")
 print(f"  Sum DJ: S/ {total_dj:,.2f}")
 print(f"  Total: S/ {total:,.2f}")
 print(f"  Recibido - Total = S/ {devolucion_calc:,.2f}")
 print(f"  Devolución declarada: S/ {EXPEDIENTE['devolucion']:,.2f}")
 print(f"  Diferencia: S/ {devolucion_calc - EXPEDIENTE['devolucion']:,.2f}")
-if abs(devolucion_calc - EXPEDIENTE['devolucion']) < 0.10:
-    print(f"  ✓ CUADRA")
+if abs(devolucion_calc - EXPEDIENTE["devolucion"]) < 0.10:
+    print("  ✓ CUADRA")
 else:
-    print(f"  ✗ NO CUADRA — revisar")
+    print("  ✗ NO CUADRA — revisar")

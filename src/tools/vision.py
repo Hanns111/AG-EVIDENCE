@@ -18,7 +18,6 @@ Fecha: 2026-02-13
 
 import logging
 import tempfile
-import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Tuple
@@ -44,7 +43,7 @@ class ResultadoVision:
 
     # Rutas
     ruta_original: str
-    ruta_procesada: str          # Ruta de la imagen lista para el proveedor
+    ruta_procesada: str  # Ruta de la imagen lista para el proveedor
 
     # Dimensiones
     ancho_original: int
@@ -54,12 +53,12 @@ class ResultadoVision:
 
     # Estado
     fue_redimensionada: bool
-    formato_salida: str          # "PNG", "JPEG", etc.
-    tamanio_bytes: int           # Tamaño del archivo procesado
+    formato_salida: str  # "PNG", "JPEG", etc.
+    tamanio_bytes: int  # Tamaño del archivo procesado
 
     # Contexto (para PDFs)
-    pagina_pdf: Optional[int]    # None si es imagen directa, 1-indexed si es PDF
-    dpi_render: Optional[int]    # DPI usado para renderizar PDF
+    pagina_pdf: Optional[int]  # None si es imagen directa, 1-indexed si es PDF
+    dpi_render: Optional[int]  # DPI usado para renderizar PDF
 
     @property
     def excedia_limite(self) -> bool:
@@ -148,14 +147,21 @@ def preparar_imagen(
 
     logger.info(
         "vision.preparar_imagen: %s original=%dx%d max=%d resize=%s",
-        ruta.name, ancho_orig, alto_orig, max_dim, necesita_resize,
+        ruta.name,
+        ancho_orig,
+        alto_orig,
+        max_dim,
+        necesita_resize,
     )
 
     if necesita_resize:
         img_resized = img.resize((nuevo_ancho, nuevo_alto), _obtener_resample())
         logger.info(
             "vision.preparar_imagen: redimensionada %dx%d -> %dx%d (ratio=%.3f)",
-            ancho_orig, alto_orig, nuevo_ancho, nuevo_alto,
+            ancho_orig,
+            alto_orig,
+            nuevo_ancho,
+            nuevo_alto,
             min(nuevo_ancho / ancho_orig, nuevo_alto / alto_orig),
         )
     else:
@@ -237,8 +243,7 @@ def preparar_pagina_pdf(
         import fitz
     except ImportError:
         raise ImportError(
-            "PyMuPDF (fitz) es requerido para renderizar PDFs. "
-            "Instalar con: pip install PyMuPDF"
+            "PyMuPDF (fitz) es requerido para renderizar PDFs. Instalar con: pip install PyMuPDF"
         )
 
     max_dim = max_dimension or VISION_CONFIG["max_dimension_px"]
@@ -257,9 +262,7 @@ def preparar_pagina_pdf(
 
     if pagina < 1 or pagina > total_paginas:
         doc.close()
-        raise ValueError(
-            f"Página {pagina} fuera de rango. El PDF tiene {total_paginas} páginas."
-        )
+        raise ValueError(f"Página {pagina} fuera de rango. El PDF tiene {total_paginas} páginas.")
 
     # Renderizar página (0-indexed internamente)
     page = doc[pagina - 1]
@@ -272,7 +275,12 @@ def preparar_pagina_pdf(
 
     logger.info(
         "vision.preparar_pagina_pdf: %s pag=%d dpi=%d render=%dx%d max=%d",
-        ruta.name, pagina, render_dpi, ancho_orig, alto_orig, max_dim,
+        ruta.name,
+        pagina,
+        render_dpi,
+        ancho_orig,
+        alto_orig,
+        max_dim,
     )
 
     # Convertir pixmap a PIL Image
@@ -287,7 +295,10 @@ def preparar_pagina_pdf(
         img_resized = img.resize((nuevo_ancho, nuevo_alto), _obtener_resample())
         logger.info(
             "vision.preparar_pagina_pdf: redimensionada %dx%d -> %dx%d (ratio=%.3f)",
-            ancho_orig, alto_orig, nuevo_ancho, nuevo_alto,
+            ancho_orig,
+            alto_orig,
+            nuevo_ancho,
+            nuevo_alto,
             min(nuevo_ancho / ancho_orig, nuevo_alto / alto_orig),
         )
     else:

@@ -104,12 +104,12 @@ def create_backup(destino: Path | None = None) -> Path:
     total_files = len(all_files)
     total_size = sum(f.stat().st_size for f in all_files)
 
-    print(f"AG-EVIDENCE Backup")
-    print(f"=" * 50)
+    print("AG-EVIDENCE Backup")
+    print("=" * 50)
     print(f"Archivos a respaldar: {total_files}")
-    print(f"Tamano total:         {total_size / (1024*1024):.1f} MB")
+    print(f"Tamano total:         {total_size / (1024 * 1024):.1f} MB")
     print(f"Destino:              {zip_path}")
-    print(f"=" * 50)
+    print("=" * 50)
 
     # Crear ZIP
     archived = 0
@@ -125,25 +125,23 @@ def create_backup(destino: Path | None = None) -> Path:
     zip_size = zip_path.stat().st_size
     compression = (1 - zip_size / total_size) * 100 if total_size > 0 else 0
 
-    print(f"=" * 50)
-    print(f"Backup completado!")
+    print("=" * 50)
+    print("Backup completado!")
     print(f"Archivo:     {zip_path.name}")
-    print(f"Tamano ZIP:  {zip_size / (1024*1024):.1f} MB")
+    print(f"Tamano ZIP:  {zip_size / (1024 * 1024):.1f} MB")
     print(f"Compresion:  {compression:.1f}%")
     print(f"Ubicacion:   {zip_path}")
     print()
-    print(f"RECOMENDACION: Copiar este ZIP a una ubicacion externa:")
-    print(f"  - OneDrive/Google Drive")
-    print(f"  - USB/Disco externo")
-    print(f"  - Otra maquina")
+    print("RECOMENDACION: Copiar este ZIP a una ubicacion externa:")
+    print("  - OneDrive/Google Drive")
+    print("  - USB/Disco externo")
+    print("  - Otra maquina")
 
     return zip_path
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Backup completo del proyecto AG-EVIDENCE"
-    )
+    parser = argparse.ArgumentParser(description="Backup completo del proyecto AG-EVIDENCE")
     parser.add_argument(
         "--destino",
         type=str,

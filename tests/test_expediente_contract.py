@@ -18,11 +18,8 @@ Cobertura:
 ≥50 tests requeridos por criterio de aceptación de Tarea #17.
 """
 
-import json
-import sys
 import os
-import pytest
-from copy import deepcopy
+import sys
 
 # Asegurar path del proyecto
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,51 +29,48 @@ if _PROJECT_ROOT not in sys.path:
 from config.settings import MetodoExtraccion
 from src.extraction.abstencion import (
     CampoExtraido,
-    EvidenceStatus,
-    AbstencionPolicy,
-    FUENTE_ABSTENCION,
 )
 from src.extraction.expediente_contract import (
+    TOLERANCIA_ARITMETICA,
     # Constantes
     VERSION_CONTRATO,
-    TOLERANCIA_ARITMETICA,
-    # Enums
-    TipoComprobante,
+    ArchivoFuente,
+    BoletoTransporte,
     CategoriaGasto,
-    MetodoExtraccionContrato,
-    TipoBoleto,
-    ConfianzaGlobal,
-    IntegridadStatus,
-    # Grupos A-K
-    DatosEmisor,
-    DatosComprobante,
-    DatosAdquirente,
-    CondicionesComerciales,
-    ItemDetalle,
-    TotalesTributos,
     ClasificacionGasto,
-    DatosHospedaje,
-    DatosMovilidad,
-    ValidacionesAritmeticas,
-    MetadatosExtraccion,
     # Contenedores
     ComprobanteExtraido,
-    GastoDeclaracionJurada,
-    BoletoTransporte,
-    ItemAnexo3,
+    CondicionesComerciales,
+    ConfianzaGlobal,
+    DatosAdquirente,
     DatosAnexo3,
+    DatosComprobante,
+    # Grupos A-K
+    DatosEmisor,
+    DatosHospedaje,
+    DatosMovilidad,
     DocumentosConvenio,
-    ArchivoFuente,
-    ResumenExtraccion,
-    IntegridadExpediente,
     # Top-level
     ExpedienteJSON,
+    GastoDeclaracionJurada,
+    IntegridadExpediente,
+    IntegridadStatus,
+    ItemAnexo3,
+    ItemDetalle,
+    MetadatosExtraccion,
+    MetodoExtraccionContrato,
+    ResumenExtraccion,
+    TipoBoleto,
+    # Enums
+    TipoComprobante,
+    TotalesTributos,
+    ValidacionesAritmeticas,
 )
-
 
 # ==============================================================================
 # FIXTURES
 # ==============================================================================
+
 
 def _crear_campo(nombre: str, valor: str, confianza: float = 0.92) -> CampoExtraido:
     """Helper para crear CampoExtraido con datos mínimos."""
@@ -179,6 +173,7 @@ def _crear_expediente_completo() -> ExpedienteJSON:
 # 1. ENUMERACIONES
 # ==============================================================================
 
+
 class TestEnumeraciones:
     """Tests para las 6 enumeraciones del contrato."""
 
@@ -217,6 +212,7 @@ class TestEnumeraciones:
 # ==============================================================================
 # 2. GRUPO A — DatosEmisor
 # ==============================================================================
+
 
 class TestDatosEmisor:
     """Tests para Grupo A."""
@@ -266,6 +262,7 @@ class TestDatosEmisor:
 # 3. GRUPO B — DatosComprobante
 # ==============================================================================
 
+
 class TestDatosComprobante:
     """Tests para Grupo B."""
 
@@ -300,6 +297,7 @@ class TestDatosComprobante:
 # 4. GRUPO C — DatosAdquirente
 # ==============================================================================
 
+
 class TestDatosAdquirente:
     """Tests para Grupo C."""
 
@@ -318,6 +316,7 @@ class TestDatosAdquirente:
 # 5. GRUPO D — CondicionesComerciales
 # ==============================================================================
 
+
 class TestCondicionesComerciales:
     """Tests para Grupo D."""
 
@@ -335,6 +334,7 @@ class TestCondicionesComerciales:
 # ==============================================================================
 # 6. GRUPO E — ItemDetalle
 # ==============================================================================
+
 
 class TestItemDetalle:
     """Tests para Grupo E."""
@@ -359,6 +359,7 @@ class TestItemDetalle:
 # ==============================================================================
 # 7. GRUPO F — TotalesTributos
 # ==============================================================================
+
 
 class TestTotalesTributos:
     """Tests para Grupo F."""
@@ -385,6 +386,7 @@ class TestTotalesTributos:
 # 8. GRUPO G — ClasificacionGasto
 # ==============================================================================
 
+
 class TestClasificacionGasto:
     """Tests para Grupo G."""
 
@@ -401,6 +403,7 @@ class TestClasificacionGasto:
 # ==============================================================================
 # 9. GRUPO H — DatosHospedaje
 # ==============================================================================
+
 
 class TestDatosHospedaje:
     """Tests para Grupo H."""
@@ -427,6 +430,7 @@ class TestDatosHospedaje:
 # 10. GRUPO I — DatosMovilidad
 # ==============================================================================
 
+
 class TestDatosMovilidad:
     """Tests para Grupo I."""
 
@@ -445,6 +449,7 @@ class TestDatosMovilidad:
 # ==============================================================================
 # 11. GRUPO J — ValidacionesAritmeticas
 # ==============================================================================
+
 
 class TestValidacionesAritmeticas:
     """Tests para Grupo J — Python calcula, no la IA."""
@@ -494,6 +499,7 @@ class TestValidacionesAritmeticas:
 # 12. GRUPO K — MetadatosExtraccion
 # ==============================================================================
 
+
 class TestMetadatosExtraccion:
     """Tests para Grupo K."""
 
@@ -520,6 +526,7 @@ class TestMetadatosExtraccion:
 # ==============================================================================
 # 13. ComprobanteExtraido
 # ==============================================================================
+
 
 class TestComprobanteExtraido:
     """Tests para el comprobante completo (Grupos A-K)."""
@@ -591,6 +598,7 @@ class TestComprobanteExtraido:
 # 14. GastoDeclaracionJurada
 # ==============================================================================
 
+
 class TestGastoDeclaracionJurada:
     """Tests para DJ de movilidad."""
 
@@ -616,6 +624,7 @@ class TestGastoDeclaracionJurada:
 # 15. BoletoTransporte
 # ==============================================================================
 
+
 class TestBoletoTransporte:
     """Tests para boletos de transporte."""
 
@@ -637,6 +646,7 @@ class TestBoletoTransporte:
 # ==============================================================================
 # 16. DatosAnexo3
 # ==============================================================================
+
 
 class TestDatosAnexo3:
     """Tests para Anexo 3 de rendición."""
@@ -683,6 +693,7 @@ class TestDatosAnexo3:
 # ==============================================================================
 # 17. DocumentosConvenio (Pautas 5.1.11)
 # ==============================================================================
+
 
 class TestDocumentosConvenio:
     """Tests para convenios interinstitucionales."""
@@ -752,6 +763,7 @@ class TestDocumentosConvenio:
 # 18. ArchivoFuente
 # ==============================================================================
 
+
 class TestArchivoFuente:
     """Tests para archivo fuente con hash."""
 
@@ -773,6 +785,7 @@ class TestArchivoFuente:
 # ==============================================================================
 # 19. ResumenExtraccion
 # ==============================================================================
+
 
 class TestResumenExtraccion:
     """Tests para estadísticas."""
@@ -797,6 +810,7 @@ class TestResumenExtraccion:
 # 20. IntegridadExpediente
 # ==============================================================================
 
+
 class TestIntegridadExpediente:
     """Tests para integridad."""
 
@@ -817,6 +831,7 @@ class TestIntegridadExpediente:
 # ==============================================================================
 # 21. ExpedienteJSON — Serialización
 # ==============================================================================
+
 
 class TestExpedienteJSONSerializacion:
     """Tests de serialización to_dict/from_dict y to_json/from_json."""
@@ -870,6 +885,7 @@ class TestExpedienteJSONSerializacion:
 # 22. ExpedienteJSON — Validación
 # ==============================================================================
 
+
 class TestExpedienteJSONValidacion:
     """Tests de validación de completitud."""
 
@@ -918,6 +934,7 @@ class TestExpedienteJSONValidacion:
 # 23. ExpedienteJSON — Unicidad
 # ==============================================================================
 
+
 class TestExpedienteJSONUnicidad:
     """Tests de verificación de unicidad de comprobantes."""
 
@@ -946,6 +963,7 @@ class TestExpedienteJSONUnicidad:
 # ==============================================================================
 # 24. ExpedienteJSON — Hash
 # ==============================================================================
+
 
 class TestExpedienteJSONHash:
     """Tests para hash SHA-256."""
@@ -976,6 +994,7 @@ class TestExpedienteJSONHash:
 # 25. ExpedienteJSON — Resumen de Extracción
 # ==============================================================================
 
+
 class TestExpedienteJSONResumen:
     """Tests para generar_resumen()."""
 
@@ -998,6 +1017,7 @@ class TestExpedienteJSONResumen:
 # ==============================================================================
 # 26. Integración con AbstencionPolicy
 # ==============================================================================
+
 
 class TestIntegracionAbstencion:
     """Tests de integración con CampoExtraido y AbstencionPolicy."""
@@ -1051,6 +1071,7 @@ class TestIntegracionAbstencion:
 # 27. DocumentosConvenio en ExpedienteJSON
 # ==============================================================================
 
+
 class TestConvenioEnExpediente:
     """Tests de DocumentosConvenio integrado en ExpedienteJSON."""
 
@@ -1097,6 +1118,7 @@ class TestConvenioEnExpediente:
 # 28. Constantes y versión
 # ==============================================================================
 
+
 class TestConstantes:
     """Tests para constantes del módulo."""
 
@@ -1110,6 +1132,7 @@ class TestConstantes:
 # ==============================================================================
 # 29. Edge Cases
 # ==============================================================================
+
 
 class TestEdgeCases:
     """Tests de casos borde."""
@@ -1147,7 +1170,7 @@ class TestEdgeCases:
         comps = [_crear_comprobante_minimo() for _ in range(50)]
         # Cambiar serie/número para evitar duplicados en test
         for i, comp in enumerate(comps):
-            comp.grupo_b.numero = _crear_campo("numero", f"{i+1:08d}")
+            comp.grupo_b.numero = _crear_campo("numero", f"{i + 1:08d}")
         exp = ExpedienteJSON(
             sinad="BULK-TEST",
             naturaleza="CAJA CHICA",

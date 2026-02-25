@@ -11,10 +11,8 @@ Tests CRITICOS de seguridad:
   - Integracion con TraceLogger (duck typing)
 """
 
-import sys
 import os
-import tempfile
-import shutil
+import sys
 
 import pytest
 
@@ -22,15 +20,15 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
+from config.settings import MetodoExtraccion
+from src.extraction.abstencion import CampoExtraido, EvidenceStatus
 from src.extraction.local_analyst import (
+    CAMPOS_PROBATORIOS,
     AnalysisNotes,
-    analyze_evidence,
     _bloquear_valores_probatorios,
     _process_ia_output,
-    CAMPOS_PROBATORIOS,
+    analyze_evidence,
 )
-from src.extraction.abstencion import CampoExtraido, EvidenceStatus
-from config.settings import MetodoExtraccion
 
 
 # ==============================================================================
@@ -262,7 +260,6 @@ class TestProcessIaOutput:
 # ANALYSIS NOTES
 # ==============================================================================
 class TestAnalysisNotes:
-
     def test_empty(self):
         notes = AnalysisNotes()
         assert notes.is_empty() is True

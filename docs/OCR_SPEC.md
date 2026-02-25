@@ -128,34 +128,34 @@ Referencia: `docs/AGENT_GOVERNANCE_RULES.md`, Artículos 9-10.
 @dataclass
 class ResultadoOCRPagina:
     """Resultado de OCR para una página individual"""
-    
+
     # Identificación
     archivo: str                          # Nombre del PDF
     pagina: int                           # Número de página (1-indexed)
-    
+
     # Clasificación
     categoria: str                        # NATIVO_DIGITAL | ESCANEADO_LEGIBLE | ESCANEADO_DEFICIENTE
-    
+
     # Texto extraído
     texto: str                            # Texto completo extraído
     snippet: str                          # Primeros 200 caracteres (para evidencia)
-    
+
     # Métricas de calidad
     dpi_estimado: int                     # DPI calculado
     contraste: float                      # 0.0 a 1.0
     rotacion_grados: float                # Grados de rotación detectada
     blur_score: float                     # Varianza del Laplacian
     confianza_ocr: float                  # 0.0 a 1.0 (promedio Tesseract)
-    
+
     # Metadatos de extracción
     metodo_extraccion: str                # PDF_TEXT | OCR_TESSERACT | OCR_EASYOCR | MANUAL
     tiempo_extraccion_ms: int             # Tiempo de procesamiento
-    
+
     # Flags
     requiere_revision_manual: bool        # True si OCR falló pero es legible
     tiene_imagenes: bool                  # True si la página contiene imágenes
     es_formulario: bool                   # True si detecta campos de formulario
-    
+
     # Coordenadas (futuro)
     # bboxes: List[BoundingBox]           # Coordenadas de texto detectado
 ```
@@ -421,11 +421,11 @@ $env:TESSDATA_PREFIX = "C:\Program Files\Tesseract-OCR\tessdata"
 ```
 
 > **⚠️ IMPORTANTE — Arquitectura WSL-Only:**
-> 
+>
 > El OCR de este proyecto está diseñado para ejecutarse **exclusivamente en WSL (Ubuntu)**.
 > Windows actúa únicamente como **host/editor** y no requiere instalación de Tesseract ni Ghostscript.
 > Todo el runtime OCR (Tesseract, Ghostscript, ocrmypdf) debe estar instalado y configurado en WSL.
-> 
+>
 > **No es necesario** configurar variables de entorno en Windows ni instalar binarios OCR en Windows.
 
 **Criterio de aceptación:**
@@ -580,4 +580,3 @@ python -m pytest tests/test_pdf_text_extractor.py -v
 **Última actualización:** 2026-01-07  
 **Autor:** Sistema AG-EVIDENCE  
 **Estado:** Fase 1c cerrada, Fase 2 cerrada
-

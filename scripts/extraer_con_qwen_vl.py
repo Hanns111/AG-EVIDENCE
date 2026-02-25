@@ -6,14 +6,15 @@ Basado en PARSING_COMPROBANTES_SPEC.md (11 grupos A-K)
 Regla de Oro: La IA extrae LITERALMENTE lo que ve. Python valida aritméticamente.
 """
 
-import json
 import base64
-import requests
-import sys
+import json
 import os
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
+
+import requests
 
 # === CONFIGURACIÓN ===
 OLLAMA_URL = "http://localhost:11434/api/chat"
@@ -124,27 +125,21 @@ def encode_image(image_path: str) -> str:
 
 def extract_invoice(image_path: str) -> dict:
     """Send image to Qwen2.5-VL via Ollama and extract invoice data."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Procesando: {os.path.basename(image_path)}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     img_b64 = encode_image(image_path)
 
     payload = {
         "model": MODEL,
-        "messages": [
-            {
-                "role": "user",
-                "content": EXTRACTION_PROMPT,
-                "images": [img_b64]
-            }
-        ],
+        "messages": [{"role": "user", "content": EXTRACTION_PROMPT, "images": [img_b64]}],
         "stream": False,
         "options": {
             "temperature": 0.0,  # Deterministic
             "num_predict": 4096,
-            "num_ctx": 8192
-        }
+            "num_ctx": 8192,
+        },
     }
 
     start = time.time()
@@ -167,7 +162,9 @@ def extract_invoice(image_path: str) -> dict:
         if json_str.startswith("```"):
             # Remove markdown code block
             lines = json_str.split("\n")
-            json_str = "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
+            json_str = (
+                "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
+            )
             json_str = json_str.strip()
 
         try:
@@ -176,7 +173,7 @@ def extract_invoice(image_path: str) -> dict:
                 "tiempo_inferencia_s": round(elapsed, 2),
                 "tokens_evaluados": data.get("eval_count"),
                 "modelo": MODEL,
-                "imagen": os.path.basename(image_path)
+                "imagen": os.path.basename(image_path),
             }
             return result
         except json.JSONDecodeError as e:
@@ -185,7 +182,7 @@ def extract_invoice(image_path: str) -> dict:
             return {
                 "error": "JSON parse failed",
                 "raw_response": content[:2000],
-                "elapsed_s": elapsed
+                "elapsed_s": elapsed,
             }
 
     except requests.exceptions.Timeout:
@@ -216,13 +213,15 @@ def validate_arithmetic(result: dict) -> dict:
         )
         subtotal = totales["subtotal"]
         diff = abs(suma_items - subtotal)
-        validaciones.append({
-            "validacion": "J1_suma_items",
-            "formula": f"Σ(items.importe) = {suma_items:.2f} vs subtotal = {subtotal:.2f}",
-            "diferencia": round(diff, 2),
-            "resultado": "OK" if diff <= TOLERANCIA else "ERROR",
-            "tolerancia": TOLERANCIA
-        })
+        validaciones.append(
+            {
+                "validacion": "J1_suma_items",
+                "formula": f"Σ(items.importe) = {suma_items:.2f} vs subtotal = {subtotal:.2f}",
+                "diferencia": round(diff, 2),
+                "resultado": "OK" if diff <= TOLERANCIA else "ERROR",
+                "tolerancia": TOLERANCIA,
+            }
+        )
 
     # J2: IGV = subtotal × tasa
     if totales.get("subtotal") is not None and totales.get("igv_monto") is not None:
@@ -231,13 +230,15 @@ def validate_arithmetic(result: dict) -> dict:
         igv_esperado = subtotal * (igv_tasa / 100)
         igv_real = totales["igv_monto"]
         diff = abs(igv_esperado - igv_real)
-        validaciones.append({
-            "validacion": "J2_igv",
-            "formula": f"{subtotal:.2f} × {igv_tasa}% = {igv_esperado:.2f} vs IGV = {igv_real:.2f}",
-            "diferencia": round(diff, 2),
-            "resultado": "OK" if diff <= TOLERANCIA else "ERROR",
-            "tolerancia": TOLERANCIA
-        })
+        validaciones.append(
+            {
+                "validacion": "J2_igv",
+                "formula": f"{subtotal:.2f} × {igv_tasa}% = {igv_esperado:.2f} vs IGV = {igv_real:.2f}",
+                "diferencia": round(diff, 2),
+                "resultado": "OK" if diff <= TOLERANCIA else "ERROR",
+                "tolerancia": TOLERANCIA,
+            }
+        )
 
     # J3: Total = subtotal + IGV + otros - descuentos
     if totales.get("subtotal") is not None and totales.get("importe_total") is not None:
@@ -250,34 +251,45 @@ def validate_arithmetic(result: dict) -> dict:
         total_calculado = subtotal + igv + otros - desc + exonerado + inafecto
         total_real = totales["importe_total"]
         diff = abs(total_calculado - total_real)
-        validaciones.append({
-            "validacion": "J3_total",
-            "formula": f"{subtotal:.2f} + {igv:.2f} + {otros:.2f} - {desc:.2f} + exon({exonerado:.2f}) + inaf({inafecto:.2f}) = {total_calculado:.2f} vs total = {total_real:.2f}",
-            "diferencia": round(diff, 2),
-            "resultado": "OK" if diff <= TOLERANCIA else "ERROR",
-            "tolerancia": TOLERANCIA
-        })
+        validaciones.append(
+            {
+                "validacion": "J3_total",
+                "formula": f"{subtotal:.2f} + {igv:.2f} + {otros:.2f} - {desc:.2f} + exon({exonerado:.2f}) + inaf({inafecto:.2f}) = {total_calculado:.2f} vs total = {total_real:.2f}",
+                "diferencia": round(diff, 2),
+                "resultado": "OK" if diff <= TOLERANCIA else "ERROR",
+                "tolerancia": TOLERANCIA,
+            }
+        )
 
     # J4: Noches de hospedaje
-    if hospedaje.get("fecha_checkin") and hospedaje.get("fecha_checkout") and hospedaje.get("numero_noches"):
+    if (
+        hospedaje.get("fecha_checkin")
+        and hospedaje.get("fecha_checkout")
+        and hospedaje.get("numero_noches")
+    ):
         try:
             from datetime import datetime as dt
+
             checkin = dt.strptime(hospedaje["fecha_checkin"], "%d/%m/%Y")
             checkout = dt.strptime(hospedaje["fecha_checkout"], "%d/%m/%Y")
             noches_calc = (checkout - checkin).days
             noches_decl = hospedaje["numero_noches"]
-            validaciones.append({
-                "validacion": "J4_noches",
-                "formula": f"({hospedaje['fecha_checkout']} - {hospedaje['fecha_checkin']}).days = {noches_calc} vs declarado = {noches_decl}",
-                "diferencia": abs(noches_calc - noches_decl),
-                "resultado": "OK" if noches_calc == noches_decl else "ERROR"
-            })
+            validaciones.append(
+                {
+                    "validacion": "J4_noches",
+                    "formula": f"({hospedaje['fecha_checkout']} - {hospedaje['fecha_checkin']}).days = {noches_calc} vs declarado = {noches_decl}",
+                    "diferencia": abs(noches_calc - noches_decl),
+                    "resultado": "OK" if noches_calc == noches_decl else "ERROR",
+                }
+            )
         except (ValueError, TypeError):
-            validaciones.append({
-                "validacion": "J4_noches",
-                "resultado": "SKIP",
-                "motivo": "Formato de fecha no parseable"
-            })
+            validaciones.append(
+                {
+                    "validacion": "J4_noches",
+                    "resultado": "SKIP",
+                    "motivo": "Formato de fecha no parseable",
+                }
+            )
 
     return {
         "grupo_j_validaciones": validaciones,
@@ -285,15 +297,19 @@ def validate_arithmetic(result: dict) -> dict:
             "total_validaciones": len(validaciones),
             "ok": sum(1 for v in validaciones if v["resultado"] == "OK"),
             "errores": sum(1 for v in validaciones if v["resultado"] == "ERROR"),
-            "skipped": sum(1 for v in validaciones if v["resultado"] == "SKIP")
-        }
+            "skipped": sum(1 for v in validaciones if v["resultado"] == "SKIP"),
+        },
     }
 
 
 def main():
     """Process reference invoices."""
-    base_dir = Path("data/expedientes/pruebas/viaticos_2026/DIRI2026-INT-0068815/extraccion/facturas_ref")
-    output_dir = Path("data/expedientes/pruebas/viaticos_2026/DIRI2026-INT-0068815/extraccion/json_extraido")
+    base_dir = Path(
+        "data/expedientes/pruebas/viaticos_2026/DIRI2026-INT-0068815/extraccion/facturas_ref"
+    )
+    output_dir = Path(
+        "data/expedientes/pruebas/viaticos_2026/DIRI2026-INT-0068815/extraccion/json_extraido"
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # 3 reference invoices as specified by the user
@@ -327,9 +343,9 @@ def main():
             print(f"SKIP: {filename} no encontrado")
             continue
 
-        print(f"\n{'#'*60}")
+        print(f"\n{'#' * 60}")
         print(f"# {label}")
-        print(f"{'#'*60}")
+        print(f"{'#' * 60}")
 
         # Extract with Qwen-VL
         extraction = extract_invoice(str(img_path))
@@ -360,13 +376,13 @@ def main():
     combined_path = output_dir / "resultados_fase_a.json"
     with open(combined_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Resultados combinados: {combined_path}")
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("RESUMEN FASE A")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     for label, res in results.items():
         if "error" in res:
             print(f"  ❌ {label}: {res['error']}")
@@ -377,7 +393,9 @@ def main():
             total = res.get("grupo_f_totales", {}).get("importe_total", "?")
             print(f"  ✓ {label}")
             print(f"    RUC: {emisor} | Total: S/{total} | Confianza: {conf}")
-            print(f"    Validaciones: {j.get('ok', 0)} OK, {j.get('errores', 0)} ERR, {j.get('skipped', 0)} SKIP")
+            print(
+                f"    Validaciones: {j.get('ok', 0)} OK, {j.get('errores', 0)} ERR, {j.get('skipped', 0)} SKIP"
+            )
 
     return results
 

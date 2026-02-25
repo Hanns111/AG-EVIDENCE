@@ -26,11 +26,11 @@ Uso:
         print(f"Flags: {result.flags}")
 """
 
-import re
 import logging
+import re
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
 from datetime import datetime
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 # ==============================================================================
 # DATACLASSES
 # ==============================================================================
+
 
 @dataclass
 class ValidationResult:
@@ -50,6 +51,7 @@ class ValidationResult:
         needs_human_review: True si el campo requiere revision manual.
         detalle: Descripcion legible del resultado.
     """
+
     valido: bool
     flags: List[str] = field(default_factory=list)
     needs_human_review: bool = False
@@ -76,6 +78,7 @@ class ValidationFlag:
         detalle: Descripcion legible.
         needs_human_review: Si requiere revision manual.
     """
+
     campo: str
     codigo: str
     detalle: str = ""
@@ -93,6 +96,7 @@ class ValidationFlag:
 # ==============================================================================
 # VALIDADOR DE RUC
 # ==============================================================================
+
 
 def validar_ruc(valor: Optional[str]) -> ValidationResult:
     """
@@ -229,6 +233,7 @@ def validar_serie_numero(valor: Optional[str]) -> ValidationResult:
 # VALIDADOR DE MONTO
 # ==============================================================================
 
+
 def validar_monto(valor: Optional[str]) -> ValidationResult:
     """
     Valida un monto monetario.
@@ -298,10 +303,10 @@ def validar_monto(valor: Optional[str]) -> ValidationResult:
 # ==============================================================================
 
 _FORMATOS_FECHA = [
-    "%d/%m/%Y",     # DD/MM/YYYY (formato peruano)
-    "%Y-%m-%d",     # ISO 8601
-    "%d-%m-%Y",     # DD-MM-YYYY
-    "%d.%m.%Y",     # DD.MM.YYYY
+    "%d/%m/%Y",  # DD/MM/YYYY (formato peruano)
+    "%Y-%m-%d",  # ISO 8601
+    "%d-%m-%Y",  # DD-MM-YYYY
+    "%d.%m.%Y",  # DD.MM.YYYY
 ]
 
 
@@ -376,6 +381,7 @@ def validar_fecha(
 # VALIDACION DE CONSISTENCIA ARITMETICA
 # ==============================================================================
 
+
 def validar_consistencia_aritmetica(
     valor_venta: Optional[float],
     igv: Optional[float],
@@ -429,8 +435,5 @@ def validar_consistencia_aritmetica(
 
     return ValidationResult(
         valido=True,
-        detalle=(
-            f"Consistencia OK: {valor_venta:.2f} + {igv:.2f} = "
-            f"{suma:.2f} == {total:.2f}"
-        ),
+        detalle=(f"Consistencia OK: {valor_venta:.2f} + {igv:.2f} = {suma:.2f} == {total:.2f}"),
     )

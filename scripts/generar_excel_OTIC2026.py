@@ -23,15 +23,19 @@ METODO DE EXTRACCION:
 Version: 4 (10 facturas completas desde documento fuente)
 """
 
-import openpyxl
-from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
-from openpyxl.utils import get_column_letter
 import os
+
+import openpyxl
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 
 OUTPUT_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "expedientes", "pruebas", "viaticos_2026",
-    "OTIC2026-INT-0115085_11_02_26"
+    "data",
+    "expedientes",
+    "pruebas",
+    "viaticos_2026",
+    "OTIC2026-INT-0115085_11_02_26",
 )
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "RENDICION_OTIC2026-INT-0115085.xlsx")
 
@@ -43,10 +47,12 @@ HEADER_FILL = PatternFill(start_color="2F5496", end_color="2F5496", fill_type="s
 TITLE_FONT = Font(name="Calibri", bold=True, size=14, color="2F5496")
 SUBTITLE_FONT = Font(name="Calibri", bold=True, size=11, color="2F5496")
 DATA_FONT = Font(name="Calibri", size=10)
-MONEY_FORMAT = '#,##0.00'
+MONEY_FORMAT = "#,##0.00"
 THIN_BORDER = Border(
-    left=Side(style="thin"), right=Side(style="thin"),
-    top=Side(style="thin"), bottom=Side(style="thin"),
+    left=Side(style="thin"),
+    right=Side(style="thin"),
+    top=Side(style="thin"),
+    bottom=Side(style="thin"),
 )
 WRAP = Alignment(wrap_text=True, vertical="center")
 CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -105,13 +111,19 @@ def crear_hoja_anexo3(wb):
         ("N. Planilla", "00302"),
         ("N. Exp SIAF", "00001288"),
         ("N. Comprobante", "2600858"),
-        ("Motivo", "Participar como enlace tecnico-operativo del aplicativo Matricula Digital en la UGEL Tacna"),
+        (
+            "Motivo",
+            "Participar como enlace tecnico-operativo del aplicativo Matricula Digital en la UGEL Tacna",
+        ),
         ("Direccion/Oficina", "OTIC - Oficina de Tecnologias de la Informacion y Comunicacion"),
         ("DNI", "40765970"),
         ("Domicilio", "JR. SUCCHA 338, BRENA, LIMA"),
         ("CEL", "902736762"),
         ("SINAD", "0115085"),
-        ("Centro de Costo", "026.30.04.01 - OFICINA DE TECNOLOGIAS DE LA INFORMACION Y COMUNICACION"),
+        (
+            "Centro de Costo",
+            "026.30.04.01 - OFICINA DE TECNOLOGIAS DE LA INFORMACION Y COMUNICACION",
+        ),
         ("Solicitante", "REYES GUTIERREZ JOSE ALBERTO"),
         ("Salida", "02/02/2026 06:00 hrs"),
         ("Regreso", "04/02/2026 22:00 hrs"),
@@ -141,14 +153,62 @@ def crear_hoja_anexo3(wb):
     row += 1
 
     gastos = [
-        (1, "02/02/2026", "Factura", "E001-8998", "EMP. DE SERV. TURISTICOS EL MESON S.R.L.", "HOSPEDAJE", 130.00),
-        (2, "02/02/2026", "Factura", "E001-390", "MANTARI VASQUEZ WALTER BRADY", "MOVILIDAD", 70.00),
-        (3, "02/02/2026", "Factura", "FN5E-194", "OPERACIONES ARCOS DORADOS DE PERU SA", "ALIMENTACION", 25.00),
+        (
+            1,
+            "02/02/2026",
+            "Factura",
+            "E001-8998",
+            "EMP. DE SERV. TURISTICOS EL MESON S.R.L.",
+            "HOSPEDAJE",
+            130.00,
+        ),
+        (
+            2,
+            "02/02/2026",
+            "Factura",
+            "E001-390",
+            "MANTARI VASQUEZ WALTER BRADY",
+            "MOVILIDAD",
+            70.00,
+        ),
+        (
+            3,
+            "02/02/2026",
+            "Factura",
+            "FN5E-194",
+            "OPERACIONES ARCOS DORADOS DE PERU SA",
+            "ALIMENTACION",
+            25.00,
+        ),
         (4, "02/02/2026", "Factura", "FA01-1245", "ROOFTOP", "ALIMENTACION", 95.00),
-        (5, "03/02/2026", "Factura", "E001-08998", "EMP. DE SERV. TURISTICOS EL MESON S.R.L.", "HOSPEDAJE", 130.00),
+        (
+            5,
+            "03/02/2026",
+            "Factura",
+            "E001-08998",
+            "EMP. DE SERV. TURISTICOS EL MESON S.R.L.",
+            "HOSPEDAJE",
+            130.00,
+        ),
         (6, "03/02/2026", "Factura", "FPP1-027804", "GLORIETA TACNENA SAC", "ALIMENTACION", 96.00),
-        (7, "04/02/2026", "Factura", "E001-394", "MANTARI VASQUEZ WALTER BRADY", "MOVILIDAD", 70.00),
-        (8, "04/02/2026", "Factura", "F005-1302", "GANADERA MALAGA 1967 E.I.R.L.", "ALIMENTACION", 59.00),
+        (
+            7,
+            "04/02/2026",
+            "Factura",
+            "E001-394",
+            "MANTARI VASQUEZ WALTER BRADY",
+            "MOVILIDAD",
+            70.00,
+        ),
+        (
+            8,
+            "04/02/2026",
+            "Factura",
+            "F005-1302",
+            "GANADERA MALAGA 1967 E.I.R.L.",
+            "ALIMENTACION",
+            59.00,
+        ),
         (9, "04/02/2026", "Factura", "F001-2309", "NUQANCHIK S.A.C.", "ALIMENTACION", 127.00),
         (10, "04/02/2026", "Factura", "F009-4337", "13 MONJAS S.A.C.", "ALIMENTACION", 26.00),
     ]
@@ -256,23 +316,41 @@ def crear_hoja_comprobantes(wb):
     ws["A1"].alignment = Alignment(horizontal="center")
 
     ws.merge_cells("A2:T2")
-    ws["A2"] = "Expediente: OTIC2026-INT-0115085 | Comisionado: ZENOZAIN FLORES JACK EDWARDS | DNI: 40765970"
+    ws["A2"] = (
+        "Expediente: OTIC2026-INT-0115085 | Comisionado: ZENOZAIN FLORES JACK EDWARDS | DNI: 40765970"
+    )
     ws["A2"].font = NOTE_FONT
     ws["A2"].alignment = Alignment(horizontal="center")
 
     ws.merge_cells("A3:T3")
-    ws["A3"] = "FUENTE: Documento fuente = cada factura individual. Datos extraidos por lectura visual directa del PDF (PyMuPDF imagen)."
+    ws["A3"] = (
+        "FUENTE: Documento fuente = cada factura individual. Datos extraidos por lectura visual directa del PDF (PyMuPDF imagen)."
+    )
     ws["A3"].font = NOTE_FONT
     ws["A3"].alignment = Alignment(horizontal="center")
 
     row = 5
     headers = [
-        "N.", "Fecha Emision", "Tipo Comprobante", "Comprobante Electronico",
-        "Serie-Numero", "RUC Proveedor", "Razon Social Proveedor",
-        "Direccion Proveedor", "Cliente (Senior/es)", "RUC/DNI Cliente",
-        "Direccion Cliente", "Concepto / Descripcion", "Detalle Items",
-        "Forma de Pago", "Valor Venta (Base Imponible)", "IGV S/",
-        "% IGV Aplicado", "Otros cargos", "Importe Total S/", "Observaciones",
+        "N.",
+        "Fecha Emision",
+        "Tipo Comprobante",
+        "Comprobante Electronico",
+        "Serie-Numero",
+        "RUC Proveedor",
+        "Razon Social Proveedor",
+        "Direccion Proveedor",
+        "Cliente (Senior/es)",
+        "RUC/DNI Cliente",
+        "Direccion Cliente",
+        "Concepto / Descripcion",
+        "Detalle Items",
+        "Forma de Pago",
+        "Valor Venta (Base Imponible)",
+        "IGV S/",
+        "% IGV Aplicado",
+        "Otros cargos",
+        "Importe Total S/",
+        "Observaciones",
     ]
 
     for i, h in enumerate(headers, 1):
@@ -286,7 +364,7 @@ def crear_hoja_comprobantes(wb):
     # 10 COMPROBANTES — datos de cada factura (documento fuente)
     # -------------------------------------------------------
     comprobantes = [
-        {   # FACTURA 1 — El Meson Hotel (Pag 50 y 53 del PDF)
+        {  # FACTURA 1 — El Meson Hotel (Pag 50 y 53 del PDF)
             "n": 1,
             "fecha": "03/02/2026",
             "tipo_cp": "FACTURA ELECTRONICA",
@@ -308,7 +386,7 @@ def crear_hoja_comprobantes(wb):
             "importe_total": 260.00,
             "obs": "Observacion en factura: JACK EDWARDS ZENOZAIN FLORES - DNI: 40765970. Factura cubre 2 noches.",
         },
-        {   # FACTURA 2 — Mantari Vasquez taxi ida (Pag 49)
+        {  # FACTURA 2 — Mantari Vasquez taxi ida (Pag 49)
             "n": 2,
             "fecha": "02/02/2026",
             "tipo_cp": "FACTURA ELECTRONICA",
@@ -330,7 +408,7 @@ def crear_hoja_comprobantes(wb):
             "importe_total": 70.00,
             "obs": "Persona natural con negocio (taxi). IGV exonerado.",
         },
-        {   # FACTURA 3 — Arcos Dorados / McDonald's (Pag 51)
+        {  # FACTURA 3 — Arcos Dorados / McDonald's (Pag 51)
             "n": 3,
             "fecha": "02/02/2026",
             "tipo_cp": "FACTURA DE VENTA ELECTRONICA",
@@ -352,7 +430,7 @@ def crear_hoja_comprobantes(wb):
             "importe_total": 27.40,
             "obs": "RCC (1.00%) = S/0.23. EVS = S/27.40. Restaurante LIM. Resolucion SUNAT Nro. 0180050001988.",
         },
-        {   # FACTURA 4 — Rooftop77 Restaurant (Pag 52)
+        {  # FACTURA 4 — Rooftop77 Restaurant (Pag 52)
             "n": 4,
             "fecha": "02/02/2026",
             "tipo_cp": "FACTURA ELECTRONICA",
@@ -374,7 +452,7 @@ def crear_hoja_comprobantes(wb):
             "importe_total": 95.00,
             "obs": "Telf: 956225505. Resolucion SUNAT Nro. 034-005-0005294. Op. Exonerada S/0.00.",
         },
-        {   # FACTURA 5 — Glorieta Tacnena (Pag 54)
+        {  # FACTURA 5 — Glorieta Tacnena (Pag 54)
             "n": 5,
             "fecha": "03/02/2026",
             "tipo_cp": "FACTURA ELECTRONICA",
@@ -396,7 +474,7 @@ def crear_hoja_comprobantes(wb):
             "importe_total": 96.00,
             "obs": "Tel: 052-245097 / 962964957 / 978000714. Vuelto S/0.00. Fecha Venc: 03/02/2026.",
         },
-        {   # FACTURA 6 — Mantari Vasquez taxi retorno (Pag 58)
+        {  # FACTURA 6 — Mantari Vasquez taxi retorno (Pag 58)
             "n": 6,
             "fecha": "08/02/2026",
             "tipo_cp": "FACTURA ELECTRONICA",
@@ -418,7 +496,7 @@ def crear_hoja_comprobantes(wb):
             "importe_total": 70.00,
             "obs": "Fecha emision en factura: 08/02/2026. Persona natural taxi. IGV exonerado.",
         },
-        {   # FACTURA 7 — Ganadera Malaga / La Lecheria (Pag 55)
+        {  # FACTURA 7 — Ganadera Malaga / La Lecheria (Pag 55)
             "n": 7,
             "fecha": "04/02/2026",
             "tipo_cp": "FACTURA ELECTRONICA",
@@ -440,7 +518,7 @@ def crear_hoja_comprobantes(wb):
             "importe_total": 59.00,
             "obs": "Cel: 052-608859. Gratuitas S/0.00. Exoneradas S/0.00.",
         },
-        {   # FACTURA 8 — Nuqanchik / Biru (Pag 56)
+        {  # FACTURA 8 — Nuqanchik / Biru (Pag 56)
             "n": 8,
             "fecha": "04/02/2026",
             "tipo_cp": "FACTURA ELECTRONICA",
@@ -462,7 +540,7 @@ def crear_hoja_comprobantes(wb):
             "importe_total": 127.00,
             "obs": "Tel: 977322071. Operacion 00026232. Mesero: Carlos Jimenez. Mesa: M16. Cant. Personas: 1. Total venta S/126 + Propina S/1 = S/127. Oper Visa 0183-311374.",
         },
-        {   # FACTURA 9 — 13 Monjas (Pag 57)
+        {  # FACTURA 9 — 13 Monjas (Pag 57)
             "n": 9,
             "fecha": "04/02/2026",
             "tipo_cp": "FACTURA ELECTRONICA",
@@ -488,12 +566,26 @@ def crear_hoja_comprobantes(wb):
 
     for cp in comprobantes:
         values = [
-            cp["n"], cp["fecha"], cp["tipo_cp"], cp["electronico"],
-            cp["serie_num"], cp["ruc_prov"], cp["razon_social_prov"],
-            cp["dir_prov"], cp["cliente"], cp["ruc_cliente"],
-            cp["dir_cliente"], cp["concepto"], cp["detalle_items"],
-            cp["forma_pago"], cp["valor_venta"], cp["igv"],
-            cp["pct_igv"], cp["otros"], cp["importe_total"], cp["obs"],
+            cp["n"],
+            cp["fecha"],
+            cp["tipo_cp"],
+            cp["electronico"],
+            cp["serie_num"],
+            cp["ruc_prov"],
+            cp["razon_social_prov"],
+            cp["dir_prov"],
+            cp["cliente"],
+            cp["ruc_cliente"],
+            cp["dir_cliente"],
+            cp["concepto"],
+            cp["detalle_items"],
+            cp["forma_pago"],
+            cp["valor_venta"],
+            cp["igv"],
+            cp["pct_igv"],
+            cp["otros"],
+            cp["importe_total"],
+            cp["obs"],
         ]
         for i, val in enumerate(values, 1):
             cell = ws.cell(row=row, column=i, value=val)
@@ -557,7 +649,10 @@ def crear_hoja_boarding(wb):
         ("Numero de Orden", "bbbn125132"),
         ("Tarifa", "Light"),
         ("Comprador / Pagador", "PROGRAMA EDUCACION BASICA PARA TODOS"),
-        ("Pasajero Acompanante", "SOLEDAD ADELA CANAZA ESPEJO (DNI 00490589) - Ticket 6052109130258"),
+        (
+            "Pasajero Acompanante",
+            "SOLEDAD ADELA CANAZA ESPEJO (DNI 00490589) - Ticket 6052109130258",
+        ),
     ]
 
     row = 3
@@ -574,9 +669,16 @@ def crear_hoja_boarding(wb):
     row += 1
 
     headers = [
-        "Tramo", "N. Vuelo", "Fecha", "Origen", "Destino",
-        "Hora Salida", "Hora Llegada", "Duracion",
-        "Asiento", "Tarjeta Embarque"
+        "Tramo",
+        "N. Vuelo",
+        "Fecha",
+        "Origen",
+        "Destino",
+        "Hora Salida",
+        "Hora Llegada",
+        "Duracion",
+        "Asiento",
+        "Tarjeta Embarque",
     ]
     for i, h in enumerate(headers, 1):
         ws.cell(row=row, column=i, value=h)
@@ -584,12 +686,30 @@ def crear_hoja_boarding(wb):
     row += 1
 
     vuelos = [
-        ("IDA", "H2 5190", "02/02/2026", "LIMA (LIM)", "TACNA (TCQ)",
-         "16:10 (prog. 14:35, retraso)", "17:55 aprox", "1h 55m",
-         "22F", "GEHZAF-Light-BN65"),
-        ("RETORNO", "H2 5191", "04/02/2026", "TACNA (TCQ)", "LIMA (LIM)",
-         "17:15", "19:15", "2h 00m",
-         "21F", "GEHZAF-Light-BN75"),
+        (
+            "IDA",
+            "H2 5190",
+            "02/02/2026",
+            "LIMA (LIM)",
+            "TACNA (TCQ)",
+            "16:10 (prog. 14:35, retraso)",
+            "17:55 aprox",
+            "1h 55m",
+            "22F",
+            "GEHZAF-Light-BN65",
+        ),
+        (
+            "RETORNO",
+            "H2 5191",
+            "04/02/2026",
+            "TACNA (TCQ)",
+            "LIMA (LIM)",
+            "17:15",
+            "19:15",
+            "2h 00m",
+            "21F",
+            "GEHZAF-Light-BN75",
+        ),
     ]
 
     for v in vuelos:
@@ -599,7 +719,9 @@ def crear_hoja_boarding(wb):
         row += 1
 
     row += 2
-    ws.cell(row=row, column=1, value="DESGLOSE DE PAGO DEL TIQUETE (ZENOZAIN FLORES)").font = SUBTITLE_FONT
+    ws.cell(
+        row=row, column=1, value="DESGLOSE DE PAGO DEL TIQUETE (ZENOZAIN FLORES)"
+    ).font = SUBTITLE_FONT
     row += 1
 
     headers_p = ["Concepto", "Moneda", "Monto"]
@@ -618,7 +740,7 @@ def crear_hoja_boarding(wb):
     for p in pagos:
         for i, val in enumerate(p, 1):
             cell = ws.cell(row=row, column=i, value=val)
-            is_money = (i == 3 and isinstance(val, (int, float)))
+            is_money = i == 3 and isinstance(val, (int, float))
             style_data_cell(cell, is_money=is_money)
             if p[0].startswith("TOTAL"):
                 cell.font = Font(bold=True, size=10)
@@ -637,7 +759,7 @@ def crear_hoja_boarding(wb):
     for r in resumen:
         for i, val in enumerate(r, 1):
             cell = ws.cell(row=row, column=i, value=val)
-            is_money = (i == 3 and isinstance(val, (int, float)))
+            is_money = i == 3 and isinstance(val, (int, float))
             style_data_cell(cell, is_money=is_money)
             if r[0].startswith("TOTAL"):
                 cell.font = Font(bold=True, size=10)
@@ -680,9 +802,9 @@ def main():
     wb.save(OUTPUT_FILE)
     print(f"\n[OK] Excel generado: {OUTPUT_FILE}")
     print(f"   Hojas: {wb.sheetnames}")
-    print(f"   9 facturas (documento fuente) con desglose completo")
-    print(f"   4 items DJ = S/128.00")
-    print(f"   2 vuelos Sky Airline H2 5190/5191")
+    print("   9 facturas (documento fuente) con desglose completo")
+    print("   4 items DJ = S/128.00")
+    print("   2 vuelos Sky Airline H2 5190/5191")
 
 
 if __name__ == "__main__":

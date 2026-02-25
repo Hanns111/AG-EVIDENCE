@@ -10,27 +10,24 @@ Cubre:
 """
 
 import json
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
 
 from src.utils.security import (
-    validar_ruta_segura,
-    validar_ruta_pdf,
-    validar_ruta_imagen,
-    RutaInseguraError,
-    DirectorioTemporalSeguro,
-    limpiar_directorio_temporal,
-    validar_json_tamano,
-    validar_expediente_json_estructura,
-    TAMANIO_MAX_JSON_BYTES,
-    EXTENSIONES_PDF_PERMITIDAS,
     EXTENSIONES_IMAGEN_PERMITIDAS,
+    EXTENSIONES_PDF_PERMITIDAS,
     LONGITUD_MAX_RUTA,
+    TAMANIO_MAX_JSON_BYTES,
+    DirectorioTemporalSeguro,
+    RutaInseguraError,
+    limpiar_directorio_temporal,
+    validar_expediente_json_estructura,
+    validar_json_tamano,
+    validar_ruta_imagen,
+    validar_ruta_pdf,
+    validar_ruta_segura,
 )
-
 
 # =============================================================================
 # CONSTANTES
@@ -244,6 +241,7 @@ class TestDirectorioTemporalSeguro:
         assert ruta_guardada.exists()
         # Limpiar manualmente
         import shutil
+
         shutil.rmtree(str(ruta_guardada))
 
     def test_prefijo_personalizado(self):

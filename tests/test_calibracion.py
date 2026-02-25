@@ -19,26 +19,18 @@ Cobertura:
 """
 
 import json
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
 
 from src.extraction.calibracion import (
     VERSION_CALIBRACION,
-    CAMPOS_BENCHMARK,
-    RESULTADO_MATCH,
-    RESULTADO_ERROR,
-    RESULTADO_NO_EXTRAIDO,
-    RESULTADO_SKIP,
-    PerfilCalibracion,
-    EstadisticaCampo,
     AnalisisBenchmark,
-    ResultadoCalibracion,
     CalibradorUmbrales,
+    EstadisticaCampo,
+    PerfilCalibracion,
+    ResultadoCalibracion,
 )
-
 
 # ==============================================================================
 # FIXTURES
@@ -66,7 +58,11 @@ BENCHMARK_MINIMO = {
             "chars": 500,
             "campos": {
                 "ruc": {"extraido": "20000000001", "esperado": "20000000001", "resultado": "MATCH"},
-                "serie_numero": {"extraido": "F001-100", "esperado": "F001-100", "resultado": "MATCH"},
+                "serie_numero": {
+                    "extraido": "F001-100",
+                    "esperado": "F001-100",
+                    "resultado": "MATCH",
+                },
                 "total": {"extraido": 100.0, "esperado": 100.0, "resultado": "MATCH"},
                 "igv": {"extraido": None, "esperado": None, "resultado": "SKIP_GT_NULL"},
                 "fecha": {"extraido": "01/01/2026", "esperado": "02/01/2026", "resultado": "ERROR"},
@@ -80,7 +76,11 @@ BENCHMARK_MINIMO = {
             "chars": 400,
             "campos": {
                 "ruc": {"extraido": "20000000002", "esperado": "20000000003", "resultado": "ERROR"},
-                "serie_numero": {"extraido": None, "esperado": "E001-200", "resultado": "NO_EXTRAIDO"},
+                "serie_numero": {
+                    "extraido": None,
+                    "esperado": "E001-200",
+                    "resultado": "NO_EXTRAIDO",
+                },
                 "total": {"extraido": None, "esperado": None, "resultado": "SKIP_GT_NULL"},
                 "igv": {"extraido": None, "esperado": None, "resultado": "SKIP_GT_NULL"},
                 "fecha": {"extraido": None, "esperado": None, "resultado": "SKIP_GT_NULL"},
@@ -99,7 +99,12 @@ def benchmark_minimo():
 @pytest.fixture
 def benchmark_cc003_path():
     """Ruta al benchmark real cc003."""
-    path = Path(__file__).resolve().parent.parent / "data" / "evaluacion" / "prueba_empirica_cc003.json"
+    path = (
+        Path(__file__).resolve().parent.parent
+        / "data"
+        / "evaluacion"
+        / "prueba_empirica_cc003.json"
+    )
     if not path.exists():
         pytest.skip(f"Benchmark cc003 no disponible: {path}")
     return str(path)
@@ -130,6 +135,7 @@ def tmp_json_path(tmp_path):
 # ==============================================================================
 # TEST ESTADÍSTICA CAMPO
 # ==============================================================================
+
 
 class TestEstadisticaCampo:
     """Tests para la dataclass EstadisticaCampo."""
@@ -173,7 +179,9 @@ class TestEstadisticaCampo:
         assert d["tasa_error"] == pytest.approx(1.0, abs=0.001)
 
     def test_from_dict_roundtrip(self):
-        original = EstadisticaCampo(campo="fecha", evaluados=16, match=5, error=8, no_extraido=3, skip=0)
+        original = EstadisticaCampo(
+            campo="fecha", evaluados=16, match=5, error=8, no_extraido=3, skip=0
+        )
         d = original.to_dict()
         restored = EstadisticaCampo.from_dict(d)
         assert restored.campo == original.campo
@@ -185,6 +193,7 @@ class TestEstadisticaCampo:
 # ==============================================================================
 # TEST ANÁLISIS BENCHMARK
 # ==============================================================================
+
 
 class TestAnalisisBenchmark:
     """Tests para la dataclass AnalisisBenchmark."""
@@ -238,6 +247,7 @@ class TestAnalisisBenchmark:
 # TEST PERFIL CALIBRACIÓN
 # ==============================================================================
 
+
 class TestPerfilCalibracion:
     """Tests para el Enum PerfilCalibracion."""
 
@@ -256,6 +266,7 @@ class TestPerfilCalibracion:
 # ==============================================================================
 # TEST RESULTADO CALIBRACIÓN
 # ==============================================================================
+
 
 class TestResultadoCalibracion:
     """Tests para la dataclass ResultadoCalibracion."""
@@ -284,6 +295,7 @@ class TestResultadoCalibracion:
 # ==============================================================================
 # TEST CALIBRADOR — CARGA
 # ==============================================================================
+
 
 class TestCalibradorCarga:
     """Tests para carga de benchmarks."""
@@ -340,6 +352,7 @@ class TestCalibradorCarga:
 # ==============================================================================
 # TEST CALIBRADOR — ANÁLISIS
 # ==============================================================================
+
 
 class TestCalibradorAnalisis:
     """Tests para el análisis de benchmarks."""
@@ -449,6 +462,7 @@ class TestCalibradorAnalisis:
 # TEST CALIBRADOR — PERFILES
 # ==============================================================================
 
+
 class TestCalibradorPerfiles:
     """Tests para la generación de perfiles."""
 
@@ -531,6 +545,7 @@ class TestCalibradorPerfiles:
 # TEST MONOTONÍA — WARNING < CRITICAL (dentro de cada perfil)
 # ==============================================================================
 
+
 class TestMonotonia:
     """Verifica que warning < critical en todos los umbrales de cada perfil."""
 
@@ -547,7 +562,9 @@ class TestMonotonia:
     def test_obs_degradadas_warning_menor_que_critical(self, calibrador_con_perfiles, perfil_enum):
         perfil = calibrador_con_perfiles.obtener_perfil(perfil_enum)
         ur = perfil.umbrales_router
-        assert ur["max_observaciones_degradadas_warning"] < ur["max_observaciones_degradadas_critical"], (
+        assert (
+            ur["max_observaciones_degradadas_warning"] < ur["max_observaciones_degradadas_critical"]
+        ), (
             f"Perfil {perfil_enum.value}: obs warning ({ur['max_observaciones_degradadas_warning']}) "
             f"≥ critical ({ur['max_observaciones_degradadas_critical']})"
         )
@@ -582,6 +599,7 @@ class TestMonotonia:
 # TEST MONOTONÍA ENTRE PERFILES
 # ==============================================================================
 
+
 class TestMonotoniaEntrePerfiles:
     """
     Verifica que CONSERVADOR ≤ BALANCEADO ≤ PERMISIVO para umbrales
@@ -606,13 +624,21 @@ class TestMonotoniaEntrePerfiles:
 
     def test_obs_degradadas_warning_monotona(self, calibrador_con_perfiles):
         c, b, p = self._get_perfiles(calibrador_con_perfiles)
-        assert c["max_observaciones_degradadas_warning"] <= b["max_observaciones_degradadas_warning"]
-        assert b["max_observaciones_degradadas_warning"] <= p["max_observaciones_degradadas_warning"]
+        assert (
+            c["max_observaciones_degradadas_warning"] <= b["max_observaciones_degradadas_warning"]
+        )
+        assert (
+            b["max_observaciones_degradadas_warning"] <= p["max_observaciones_degradadas_warning"]
+        )
 
     def test_obs_degradadas_critical_monotona(self, calibrador_con_perfiles):
         c, b, p = self._get_perfiles(calibrador_con_perfiles)
-        assert c["max_observaciones_degradadas_critical"] <= b["max_observaciones_degradadas_critical"]
-        assert b["max_observaciones_degradadas_critical"] <= p["max_observaciones_degradadas_critical"]
+        assert (
+            c["max_observaciones_degradadas_critical"] <= b["max_observaciones_degradadas_critical"]
+        )
+        assert (
+            b["max_observaciones_degradadas_critical"] <= p["max_observaciones_degradadas_critical"]
+        )
 
     def test_errores_arit_warning_monotona(self, calibrador_con_perfiles):
         c, b, p = self._get_perfiles(calibrador_con_perfiles)
@@ -645,6 +671,7 @@ class TestMonotoniaEntrePerfiles:
 # ==============================================================================
 # TEST JSON ROUNDTRIP
 # ==============================================================================
+
 
 class TestJsonRoundtrip:
     """Tests para exportar → importar JSON."""
@@ -702,6 +729,7 @@ class TestJsonRoundtrip:
 # TEST UTILIDADES
 # ==============================================================================
 
+
 class TestCalibradorUtilidades:
     """Tests para propiedades y utilidades."""
 
@@ -750,6 +778,7 @@ class TestCalibradorUtilidades:
 # TEST VALIDACIÓN CRUZADA CON BENCHMARK
 # ==============================================================================
 
+
 class TestValidacionCruzada:
     """Verifica que los perfiles evalúan cc003 según lo esperado."""
 
@@ -789,9 +818,7 @@ class TestValidacionCruzada:
 
     def test_umbrales_abstencion_sin_cambios(self, calibrador_con_perfiles):
         """Los umbrales de abstención per-campo NO cambian entre perfiles."""
-        perfiles = [
-            calibrador_con_perfiles.obtener_perfil(p) for p in PerfilCalibracion
-        ]
+        perfiles = [calibrador_con_perfiles.obtener_perfil(p) for p in PerfilCalibracion]
         base = perfiles[0].umbrales_abstencion
         for perfil in perfiles[1:]:
             assert perfil.umbrales_abstencion == base, (

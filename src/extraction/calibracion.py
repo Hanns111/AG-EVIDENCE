@@ -38,12 +38,11 @@ Gobernanza:
 """
 
 import json
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Optional, List, Dict, Any, Tuple
-
+from typing import Any, Dict, List, Optional
 
 # ==============================================================================
 # CONSTANTES
@@ -67,6 +66,7 @@ RESULTADO_SKIP = "SKIP_GT_NULL"
 # PERFILES DE CALIBRACIÓN
 # ==============================================================================
 
+
 class PerfilCalibracion(Enum):
     """
     Perfiles de riesgo para calibración de umbrales.
@@ -78,6 +78,7 @@ class PerfilCalibracion(Enum):
     PERMISIVO:   Mayor tolerancia. Para expedientes donde se espera alta
                  tasa de campos no extraíbles (escaneados degradados).
     """
+
     CONSERVADOR = "conservador"
     BALANCEADO = "balanceado"
     PERMISIVO = "permisivo"
@@ -87,6 +88,7 @@ class PerfilCalibracion(Enum):
 # ESTADÍSTICAS POR CAMPO
 # ==============================================================================
 
+
 @dataclass
 class EstadisticaCampo:
     """
@@ -94,6 +96,7 @@ class EstadisticaCampo:
 
     Computed a partir de los resultados empíricos del benchmark.
     """
+
     campo: str
     """Nombre del campo (ruc, serie_numero, total, igv, fecha)."""
 
@@ -166,6 +169,7 @@ class EstadisticaCampo:
 # ANÁLISIS DE BENCHMARK
 # ==============================================================================
 
+
 @dataclass
 class AnalisisBenchmark:
     """
@@ -174,6 +178,7 @@ class AnalisisBenchmark:
     Contiene las métricas globales y por campo del benchmark,
     más metadata de trazabilidad.
     """
+
     # Identificación
     prueba_id: str = ""
     """Identificador de la prueba (ej: 'empirica_cc003')."""
@@ -244,9 +249,7 @@ class AnalisisBenchmark:
             "confianza_ocr_min": round(self.confianza_ocr_min, 4),
             "confianza_ocr_max": round(self.confianza_ocr_max, 4),
             "confianza_ocr_media": round(self.confianza_ocr_media, 4),
-            "stats_por_campo": {
-                k: v.to_dict() for k, v in self.stats_por_campo.items()
-            },
+            "stats_por_campo": {k: v.to_dict() for k, v in self.stats_por_campo.items()},
         }
         return result
 
@@ -282,6 +285,7 @@ class AnalisisBenchmark:
 # RESULTADO DE CALIBRACIÓN (un perfil)
 # ==============================================================================
 
+
 @dataclass
 class ResultadoCalibracion:
     """
@@ -290,6 +294,7 @@ class ResultadoCalibracion:
     Contiene los valores numéricos del perfil más la justificación
     empírica de cada umbral.
     """
+
     perfil: str = ""
     """Nombre del perfil (conservador, balanceado, permisivo)."""
 
@@ -325,6 +330,7 @@ class ResultadoCalibracion:
 # ==============================================================================
 # CALIBRADOR DE UMBRALES
 # ==============================================================================
+
 
 class CalibradorUmbrales:
     """
@@ -374,13 +380,9 @@ class CalibradorUmbrales:
 
         # Validar estructura mínima
         if "resultados_por_comprobante" not in data:
-            raise ValueError(
-                f"Benchmark inválido: falta 'resultados_por_comprobante' en {path}"
-            )
+            raise ValueError(f"Benchmark inválido: falta 'resultados_por_comprobante' en {path}")
         if "metricas" not in data:
-            raise ValueError(
-                f"Benchmark inválido: falta 'metricas' en {path}"
-            )
+            raise ValueError(f"Benchmark inválido: falta 'metricas' en {path}")
 
         self._benchmarks_raw.append(data)
         # Invalidar análisis previo
@@ -491,7 +493,9 @@ class CalibradorUmbrales:
 
         total_evaluados = total_match + total_error + total_no_extraido
         precision = (total_match / total_evaluados * 100) if total_evaluados > 0 else 0.0
-        tasa_fallo = ((total_error + total_no_extraido) / total_evaluados) if total_evaluados > 0 else 0.0
+        tasa_fallo = (
+            ((total_error + total_no_extraido) / total_evaluados) if total_evaluados > 0 else 0.0
+        )
 
         self._analisis = AnalisisBenchmark(
             prueba_id=prueba_id,
@@ -759,9 +763,7 @@ class CalibradorUmbrales:
                 "max_observaciones_degradadas_critical": (
                     "10 obs degradadas → critical: máxima tolerancia."
                 ),
-                "min_comprobantes_con_datos": (
-                    "Mínimo 1 comprobante: acepta datos parciales."
-                ),
+                "min_comprobantes_con_datos": ("Mínimo 1 comprobante: acepta datos parciales."),
                 "min_campos_por_comprobante": (
                     "Mínimo 2 campos: acepta comprobantes con serie+total solamente."
                 ),
@@ -811,8 +813,7 @@ class CalibradorUmbrales:
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "analisis_benchmark": self._analisis.to_dict(),
             "perfiles": {
-                perfil.value: resultado.to_dict()
-                for perfil, resultado in self._perfiles.items()
+                perfil.value: resultado.to_dict() for perfil, resultado in self._perfiles.items()
             },
             "perfil_recomendado": PerfilCalibracion.BALANCEADO.value,
             "nota": (
@@ -862,9 +863,7 @@ class CalibradorUmbrales:
 
         # Restaurar análisis si existe
         if "analisis_benchmark" in data:
-            calibrador._analisis = AnalisisBenchmark.from_dict(
-                data["analisis_benchmark"]
-            )
+            calibrador._analisis = AnalisisBenchmark.from_dict(data["analisis_benchmark"])
 
         # Restaurar perfiles
         for nombre_perfil, perfil_data in data["perfiles"].items():
@@ -873,9 +872,7 @@ class CalibradorUmbrales:
             except ValueError:
                 continue  # Ignorar perfiles desconocidos
 
-            calibrador._perfiles[perfil_enum] = ResultadoCalibracion.from_dict(
-                perfil_data
-            )
+            calibrador._perfiles[perfil_enum] = ResultadoCalibracion.from_dict(perfil_data)
 
         return calibrador
 
@@ -917,17 +914,19 @@ class CalibradorUmbrales:
 
         if self._analisis:
             a = self._analisis
-            lines.extend([
-                f"\n--- Análisis: {a.prueba_id} ---",
-                f"Expediente: {a.expediente}",
-                f"Comprobantes: {a.total_comprobantes}",
-                f"Campos evaluados: {a.total_campos_evaluados}",
-                f"Precisión: {a.precision_pct}%",
-                f"Tasa fallo: {round(a.tasa_fallo_global * 100, 1)}%",
-                f"Confianza OCR: {a.confianza_ocr_min:.3f} - {a.confianza_ocr_max:.3f} "
-                f"(media {a.confianza_ocr_media:.3f})",
-                "\nEstadísticas por campo:",
-            ])
+            lines.extend(
+                [
+                    f"\n--- Análisis: {a.prueba_id} ---",
+                    f"Expediente: {a.expediente}",
+                    f"Comprobantes: {a.total_comprobantes}",
+                    f"Campos evaluados: {a.total_campos_evaluados}",
+                    f"Precisión: {a.precision_pct}%",
+                    f"Tasa fallo: {round(a.tasa_fallo_global * 100, 1)}%",
+                    f"Confianza OCR: {a.confianza_ocr_min:.3f} - {a.confianza_ocr_max:.3f} "
+                    f"(media {a.confianza_ocr_media:.3f})",
+                    "\nEstadísticas por campo:",
+                ]
+            )
             for campo, stat in a.stats_por_campo.items():
                 if stat.evaluados > 0 or stat.skip > 0:
                     lines.append(

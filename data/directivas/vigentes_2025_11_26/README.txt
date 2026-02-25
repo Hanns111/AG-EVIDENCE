@@ -32,4 +32,3 @@ NOTAS:
 - El sistema indexará todo el contenido para búsquedas
 
 ================================================================================
-

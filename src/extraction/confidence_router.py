@@ -47,29 +47,24 @@ Gobernanza:
   - ADR-005: No es módulo monolítico; preparado para nodo LangGraph
 """
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from config.settings import (
     Observacion,
-    NivelObservacion,
-    EvidenciaProbatoria,
 )
 from src.extraction.abstencion import (
-    CampoExtraido,
-    EvidenceStatus,
-    UmbralesAbstencion,
     AbstencionPolicy,
+    EvidenceStatus,
     ResultadoAbstencion,
+    UmbralesAbstencion,
 )
 from src.extraction.expediente_contract import (
+    ConfianzaGlobal,
     ExpedienteJSON,
     IntegridadStatus,
-    IntegridadExpediente,
-    ConfianzaGlobal,
 )
-
 
 # ==============================================================================
 # CONSTANTES
@@ -86,6 +81,7 @@ AGENTE_ID_DEFAULT = "ROUTER"
 # UMBRALES DEL ROUTER
 # ==============================================================================
 
+
 @dataclass
 class UmbralesRouter:
     """
@@ -97,6 +93,7 @@ class UmbralesRouter:
 
     Porcentajes como fracciones (0.0 a 1.0).
     """
+
     # --- Abstención ---
     max_campos_abstencion_warning_pct: float = 0.30
     """>=30% campos abstenidos → WARNING."""
@@ -144,6 +141,7 @@ class UmbralesRouter:
 # ==============================================================================
 # EVIDENCE ENFORCER
 # ==============================================================================
+
 
 class EvidenceEnforcer:
     """
@@ -229,6 +227,7 @@ class EvidenceEnforcer:
 # REPORTE DE ENFORCEMENT DETALLADO (Hito 2)
 # ==============================================================================
 
+
 @dataclass
 class DetalleEnforcement:
     """
@@ -238,6 +237,7 @@ class DetalleEnforcement:
     el estándar probatorio (Art. 4-5 Gobernanza), permitiendo al
     usuario saber qué completar.
     """
+
     agente: str = ""
     nivel_original: str = ""
     nivel_post: str = ""
@@ -269,6 +269,7 @@ class ReporteEnforcement:
     más estadísticas globales. Diseñado para alimentar la hoja
     DIAGNOSTICO del Excel (Tarea #20).
     """
+
     detalles: List[DetalleEnforcement] = field(default_factory=list)
     total_procesadas: int = 0
     total_validas: int = 0
@@ -307,6 +308,7 @@ class ReporteEnforcement:
 # DIAGNOSTICO DEL EXPEDIENTE (Hito 2)
 # ==============================================================================
 
+
 @dataclass
 class SeccionDiagnostico:
     """
@@ -315,6 +317,7 @@ class SeccionDiagnostico:
     Cada sección corresponde a un paso del pipeline de evaluación
     (campos, enforcement, completitud, unicidad, aritmética).
     """
+
     nombre: str = ""
     status: str = "OK"  # OK, WARNING, CRITICAL, SKIP
     mensaje: str = ""
@@ -348,6 +351,7 @@ class DiagnosticoExpediente:
       5. aritmetica — Errores de validación aritmética (Grupo J)
       6. decision — Status final y confianza global
     """
+
     sinad: str = ""
     timestamp: str = ""
     version_router: str = VERSION_ROUTER
@@ -373,19 +377,23 @@ class DiagnosticoExpediente:
         for s in self.secciones:
             if s.detalles:
                 for detalle in s.detalles:
-                    rows.append({
+                    rows.append(
+                        {
+                            "seccion": s.nombre,
+                            "status": s.status,
+                            "mensaje": s.mensaje,
+                            "detalle": detalle,
+                        }
+                    )
+            else:
+                rows.append(
+                    {
                         "seccion": s.nombre,
                         "status": s.status,
                         "mensaje": s.mensaje,
-                        "detalle": detalle,
-                    })
-            else:
-                rows.append({
-                    "seccion": s.nombre,
-                    "status": s.status,
-                    "mensaje": s.mensaje,
-                    "detalle": "",
-                })
+                        "detalle": "",
+                    }
+                )
         return rows
 
     def resumen_texto(self) -> str:
@@ -394,9 +402,7 @@ class DiagnosticoExpediente:
             f"=== Diagnóstico {self.sinad} (v{self.version_router}) ===",
         ]
         for s in self.secciones:
-            icon = {"OK": "✅", "WARNING": "⚠️", "CRITICAL": "🔴", "SKIP": "⏭️"}.get(
-                s.status, "❓"
-            )
+            icon = {"OK": "✅", "WARNING": "⚠️", "CRITICAL": "🔴", "SKIP": "⏭️"}.get(s.status, "❓")
             lineas.append(f"  {icon} {s.nombre}: {s.status} — {s.mensaje}")
             for d in s.detalles[:3]:
                 lineas.append(f"      • {d}")
@@ -408,6 +414,7 @@ class DiagnosticoExpediente:
 # ==============================================================================
 # INTEGRITY CHECKPOINT (Hito 2)
 # ==============================================================================
+
 
 class IntegrityCheckpoint:
     """
@@ -534,27 +541,31 @@ class IntegrityCheckpoint:
         # Procesar degradadas (las que fallaron enforcement)
         for obs in resultado.observaciones_degradadas:
             campos_faltantes = self._detectar_campos_faltantes(obs)
-            detalles.append(DetalleEnforcement(
-                agente=obs.agente,
-                nivel_original="CRITICA/MAYOR",  # Fue degradada desde ahí
-                nivel_post=obs.nivel.value,
-                fue_degradada=True,
-                descripcion=obs.descripcion,
-                campos_faltantes=campos_faltantes,
-                requiere_revision_humana=obs.requiere_revision_humana,
-            ))
+            detalles.append(
+                DetalleEnforcement(
+                    agente=obs.agente,
+                    nivel_original="CRITICA/MAYOR",  # Fue degradada desde ahí
+                    nivel_post=obs.nivel.value,
+                    fue_degradada=True,
+                    descripcion=obs.descripcion,
+                    campos_faltantes=campos_faltantes,
+                    requiere_revision_humana=obs.requiere_revision_humana,
+                )
+            )
 
         # Procesar válidas (las que pasaron enforcement)
         for obs in resultado.observaciones_validas:
-            detalles.append(DetalleEnforcement(
-                agente=obs.agente,
-                nivel_original=obs.nivel.value,
-                nivel_post=obs.nivel.value,
-                fue_degradada=False,
-                descripcion=obs.descripcion,
-                campos_faltantes=[],
-                requiere_revision_humana=obs.requiere_revision_humana,
-            ))
+            detalles.append(
+                DetalleEnforcement(
+                    agente=obs.agente,
+                    nivel_original=obs.nivel.value,
+                    nivel_post=obs.nivel.value,
+                    fue_degradada=False,
+                    descripcion=obs.descripcion,
+                    campos_faltantes=[],
+                    requiere_revision_humana=obs.requiere_revision_humana,
+                )
+            )
 
         total = len(detalles)
         n_degradadas = sum(1 for d in detalles if d.fue_degradada)
@@ -705,16 +716,14 @@ class IntegrityCheckpoint:
         for d in reporte.detalles:
             if d.fue_degradada:
                 detalles.append(
-                    f"[{d.agente}] {d.descripcion[:80]} → "
-                    f"Falta: {', '.join(d.campos_faltantes)}"
+                    f"[{d.agente}] {d.descripcion[:80]} → Falta: {', '.join(d.campos_faltantes)}"
                 )
 
         return SeccionDiagnostico(
             nombre="enforcement",
             status=status,
             mensaje=(
-                f"{reporte.total_degradadas}/{reporte.total_procesadas} "
-                f"observaciones degradadas"
+                f"{reporte.total_degradadas}/{reporte.total_procesadas} observaciones degradadas"
             ),
             detalles=detalles,
             metricas=reporte.to_dict(),
@@ -841,6 +850,7 @@ class IntegrityCheckpoint:
 # RESULTADO DEL ROUTER
 # ==============================================================================
 
+
 @dataclass
 class ResultadoRouter:
     """
@@ -855,6 +865,7 @@ class ResultadoRouter:
     El campo debe_detener es una SEÑAL, no una acción directa.
     La detención real del pipeline la ejecuta el orquestador.
     """
+
     # --- Decisión core ---
     expediente: Optional[ExpedienteJSON] = None
     status: IntegridadStatus = IntegridadStatus.OK
@@ -925,19 +936,13 @@ class ResultadoRouter:
         ]
 
         if self.observaciones_degradadas:
-            lineas.append(
-                f"Observaciones degradadas: {len(self.observaciones_degradadas)}"
-            )
+            lineas.append(f"Observaciones degradadas: {len(self.observaciones_degradadas)}")
 
         if self.errores_aritmeticos:
-            lineas.append(
-                f"Errores aritméticos: {len(self.errores_aritmeticos)}"
-            )
+            lineas.append(f"Errores aritméticos: {len(self.errores_aritmeticos)}")
 
         if self.problemas_completitud:
-            lineas.append(
-                f"Problemas completitud: {len(self.problemas_completitud)}"
-            )
+            lineas.append(f"Problemas completitud: {len(self.problemas_completitud)}")
 
         if self.debe_detener:
             lineas.append(f"⚠ SEÑAL CRITICAL: {self.razon_detencion}")
@@ -952,6 +957,7 @@ class ResultadoRouter:
 # DECISIÓN DEL CHECKPOINT (Hito 2)
 # ==============================================================================
 
+
 @dataclass
 class DecisionCheckpoint:
     """
@@ -964,6 +970,7 @@ class DecisionCheckpoint:
     El orquestador LangGraph consume esta clase para decidir
     si continuar o detener el pipeline.
     """
+
     accion: str = "CONTINUAR"
     resultado: Optional[ResultadoRouter] = None
     reporte_enforcement: Optional[ReporteEnforcement] = None
@@ -976,13 +983,9 @@ class DecisionCheckpoint:
             "accion": self.accion,
             "resultado": self.resultado.to_dict() if self.resultado else None,
             "reporte_enforcement": (
-                self.reporte_enforcement.to_dict()
-                if self.reporte_enforcement else None
+                self.reporte_enforcement.to_dict() if self.reporte_enforcement else None
             ),
-            "diagnostico": (
-                self.diagnostico.to_dict()
-                if self.diagnostico else None
-            ),
+            "diagnostico": (self.diagnostico.to_dict() if self.diagnostico else None),
             "timestamp": self.timestamp,
         }
 
@@ -999,6 +1002,7 @@ class DecisionCheckpoint:
 # ==============================================================================
 # CONFIDENCE ROUTER — Clase principal
 # ==============================================================================
+
 
 class ConfidenceRouter:
     """
@@ -1087,11 +1091,13 @@ class ConfidenceRouter:
         errores_arit = self._paso5_recoger_errores_aritmeticos(expediente)
 
         # --- Paso 6: Computar status agregado ---
-        status, confianza, debe_detener, razon, alertas = (
-            self._paso6_computar_status(
-                stats, degradadas, problemas, duplicados,
-                errores_arit, expediente,
-            )
+        status, confianza, debe_detener, razon, alertas = self._paso6_computar_status(
+            stats,
+            degradadas,
+            problemas,
+            duplicados,
+            errores_arit,
+            expediente,
         )
 
         # --- Paso 7: Actualizar expediente ---
@@ -1108,10 +1114,7 @@ class ConfidenceRouter:
             campos_abstenidos=stats["abstenidos"],
             campos_incompletos=stats["incompletos"],
             campos_legibles=stats["legibles"],
-            tasa_abstencion=(
-                stats["abstenidos"] / stats["total"]
-                if stats["total"] > 0 else 0.0
-            ),
+            tasa_abstencion=(stats["abstenidos"] / stats["total"] if stats["total"] > 0 else 0.0),
             observaciones_validas=validas,
             observaciones_degradadas=degradadas,
             resultados_abstencion=resultados_abs,
@@ -1132,7 +1135,8 @@ class ConfidenceRouter:
     # ------------------------------------------------------------------
 
     def _paso1_evaluar_campos(
-        self, expediente: ExpedienteJSON,
+        self,
+        expediente: ExpedienteJSON,
     ) -> Tuple[List[ResultadoAbstencion], Dict[str, int]]:
         """
         Recolecta todos los campos y evalúa con AbstencionPolicy.
@@ -1163,25 +1167,29 @@ class ConfidenceRouter:
         return resultados, stats
 
     def _paso2_enforce_evidencia(
-        self, observaciones: List[Observacion],
+        self,
+        observaciones: List[Observacion],
     ) -> Tuple[List[Observacion], List[Observacion]]:
         """Aplica EvidenceEnforcer. Delega a Observacion.validar_y_degradar()."""
         return EvidenceEnforcer.enforce_all(observaciones)
 
     def _paso3_verificar_completitud(
-        self, expediente: ExpedienteJSON,
+        self,
+        expediente: ExpedienteJSON,
     ) -> List[str]:
         """Delega a ExpedienteJSON.validar_completitud()."""
         return expediente.validar_completitud()
 
     def _paso4_verificar_unicidad(
-        self, expediente: ExpedienteJSON,
+        self,
+        expediente: ExpedienteJSON,
     ) -> List[str]:
         """Delega a ExpedienteJSON.verificar_unicidad_comprobantes()."""
         return expediente.verificar_unicidad_comprobantes()
 
     def _paso5_recoger_errores_aritmeticos(
-        self, expediente: ExpedienteJSON,
+        self,
+        expediente: ExpedienteJSON,
     ) -> List[str]:
         """Recolecta errores aritméticos de Grupo J de cada comprobante."""
         errores: List[str] = []
@@ -1191,17 +1199,11 @@ class ConfidenceRouter:
                 for err in comp.grupo_j.errores_detalle:
                     errores.append(f"Comprobante {serie_num}: {err}")
                 if comp.grupo_j.suma_items_ok is False:
-                    errores.append(
-                        f"Comprobante {serie_num}: suma de items no cuadra"
-                    )
+                    errores.append(f"Comprobante {serie_num}: suma de items no cuadra")
                 if comp.grupo_j.igv_ok is False:
-                    errores.append(
-                        f"Comprobante {serie_num}: IGV no cuadra"
-                    )
+                    errores.append(f"Comprobante {serie_num}: IGV no cuadra")
                 if comp.grupo_j.total_ok is False:
-                    errores.append(
-                        f"Comprobante {serie_num}: total no cuadra"
-                    )
+                    errores.append(f"Comprobante {serie_num}: total no cuadra")
         return errores
 
     def _paso6_computar_status(
@@ -1249,7 +1251,8 @@ class ConfidenceRouter:
 
         # --- Check 2: Datos mínimos ---
         n_comp_con_datos = sum(
-            1 for c in expediente.comprobantes
+            1
+            for c in expediente.comprobantes
             if len(c.todos_los_campos()) >= self.umbrales.min_campos_por_comprobante
         )
         if n_comp_con_datos < self.umbrales.min_comprobantes_con_datos:
@@ -1295,8 +1298,7 @@ class ConfidenceRouter:
         if duplicados:
             status = self._max_status(status, IntegridadStatus.WARNING)
             alertas.append(
-                f"{len(duplicados)} comprobantes posiblemente duplicados "
-                f"(requiere revisión humana)"
+                f"{len(duplicados)} comprobantes posiblemente duplicados (requiere revisión humana)"
             )
 
         # --- Check 6: Errores aritméticos ---
@@ -1318,9 +1320,11 @@ class ConfidenceRouter:
             )
 
         # --- Determinar ConfianzaGlobal ---
-        debe_detener = (status == IntegridadStatus.CRITICAL)
+        debe_detener = status == IntegridadStatus.CRITICAL
         confianza = self._computar_confianza_global(
-            status, stats_campos, n_degradadas,
+            status,
+            stats_campos,
+            n_degradadas,
         )
 
         return status, confianza, debe_detener, razon_detencion, alertas
@@ -1376,11 +1380,7 @@ class ConfidenceRouter:
         if status == IntegridadStatus.CRITICAL:
             return ConfianzaGlobal.BAJA
 
-        if (
-            status == IntegridadStatus.OK
-            and tasa < 0.10
-            and n_degradadas == 0
-        ):
+        if status == IntegridadStatus.OK and tasa < 0.10 and n_degradadas == 0:
             return ConfianzaGlobal.ALTA
 
         if tasa < 0.30 and n_degradadas <= 2:

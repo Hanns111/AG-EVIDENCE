@@ -2,6 +2,3 @@
 """Configuración del Sistema de Control Previo"""
 
 from .settings import *
-
-
-

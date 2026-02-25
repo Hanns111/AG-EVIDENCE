@@ -20,7 +20,6 @@ NO modifica ningun modulo existente. Solo mide.
 
 import json
 import re
-import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -38,9 +37,15 @@ from src.ocr.core import ejecutar_ocr, renderizar_pagina
 # CONFIGURACION
 # ============================================================
 
-PDF_PATH = ROOT / "data" / "expedientes" / "pruebas" / "caja_chica_2026" / \
-    "OT2026-INT-0179550_CAJA_CHICA_JAQUELINE" / \
-    "20260212174439SUSTENTOLIQUIDACION03.pdf"
+PDF_PATH = (
+    ROOT
+    / "data"
+    / "expedientes"
+    / "pruebas"
+    / "caja_chica_2026"
+    / "OT2026-INT-0179550_CAJA_CHICA_JAQUELINE"
+    / "20260212174439SUSTENTOLIQUIDACION03.pdf"
+)
 
 OUTPUT_DIR = ROOT / "data" / "evaluacion"
 OUTPUT_JSON = OUTPUT_DIR / "prueba_empirica_cc003.json"
@@ -236,10 +241,11 @@ GROUND_TRUTH = [
 # FUNCIONES DE EXTRACCION DESDE TEXTO OCR
 # ============================================================
 
+
 def buscar_ruc(texto):
     """Busca un RUC (11 digitos empezando con 10 o 20) en el texto."""
     # Patron: 10 o 20 seguido de 9 digitos
-    matches = re.findall(r'\b((?:10|20)\d{9})\b', texto)
+    matches = re.findall(r"\b((?:10|20)\d{9})\b", texto)
     if matches:
         # Filtrar RUCs conocidos del MINEDU/pagador
         rucs_pagador = {"20304634781", "20131370998"}
@@ -255,8 +261,8 @@ def buscar_serie_numero(texto):
     """Busca serie-numero de comprobante en el texto."""
     # Patrones comunes: F001-1488, E001-530, FQ01-569, FD15-502949, EB01-6
     patrones = [
-        r'([A-Z]{1,4}\d{1,4}[-]\d{1,10})',  # F001-1488, FQ01-569
-        r'([A-Z]\d{3}[-]\d+)',  # F001-1488
+        r"([A-Z]{1,4}\d{1,4}[-]\d{1,10})",  # F001-1488, FQ01-569
+        r"([A-Z]\d{3}[-]\d+)",  # F001-1488
     ]
     for patron in patrones:
         matches = re.findall(patron, texto)
@@ -269,15 +275,15 @@ def buscar_total(texto):
     """Busca monto total en el texto OCR."""
     # Buscar "TOTAL" o "IMPORTE TOTAL" seguido de monto
     patrones = [
-        r'TOTAL\s*S/?\.?\s*(\d+[.,]\d{2})',
-        r'IMPORTE\s+TOTAL\s*:?\s*S/?\.?\s*(\d+[.,]\d{2})',
-        r'TOTAL\s*:?\s*(\d+[.,]\d{2})',
-        r'SON\s*:.*?(\d+[.,]\d{2})',
+        r"TOTAL\s*S/?\.?\s*(\d+[.,]\d{2})",
+        r"IMPORTE\s+TOTAL\s*:?\s*S/?\.?\s*(\d+[.,]\d{2})",
+        r"TOTAL\s*:?\s*(\d+[.,]\d{2})",
+        r"SON\s*:.*?(\d+[.,]\d{2})",
     ]
     for patron in patrones:
         match = re.search(patron, texto, re.IGNORECASE)
         if match:
-            valor = match.group(1).replace(',', '.')
+            valor = match.group(1).replace(",", ".")
             try:
                 return float(valor)
             except ValueError:
@@ -288,14 +294,14 @@ def buscar_total(texto):
 def buscar_igv(texto):
     """Busca monto IGV en el texto OCR."""
     patrones = [
-        r'I\.?G\.?V\.?\s*(?:\(?18%?\)?)?\s*:?\s*S/?\.?\s*(\d+[.,]\d{2})',
-        r'IGV\s*:?\s*(\d+[.,]\d{2})',
-        r'I\.G\.V\.\s*(\d+[.,]\d{2})',
+        r"I\.?G\.?V\.?\s*(?:\(?18%?\)?)?\s*:?\s*S/?\.?\s*(\d+[.,]\d{2})",
+        r"IGV\s*:?\s*(\d+[.,]\d{2})",
+        r"I\.G\.V\.\s*(\d+[.,]\d{2})",
     ]
     for patron in patrones:
         match = re.search(patron, texto, re.IGNORECASE)
         if match:
-            valor = match.group(1).replace(',', '.')
+            valor = match.group(1).replace(",", ".")
             try:
                 return float(valor)
             except ValueError:
@@ -306,24 +312,21 @@ def buscar_igv(texto):
 def buscar_fecha(texto):
     """Busca fecha de emision en el texto OCR."""
     patrones = [
-        r'(\d{2}/\d{2}/\d{4})',
-        r'(\d{2}-\d{2}-\d{4})',
-        r'(\d{2}\.\d{2}\.\d{4})',
+        r"(\d{2}/\d{2}/\d{4})",
+        r"(\d{2}-\d{2}-\d{4})",
+        r"(\d{2}\.\d{2}\.\d{4})",
     ]
     for patron in patrones:
         matches = re.findall(patron, texto)
         if matches:
-            return matches[0].replace('-', '/').replace('.', '/')
+            return matches[0].replace("-", "/").replace(".", "/")
     return None
 
 
 def buscar_razon_social(texto):
     """Busca razon social despues de RUC o en las primeras lineas."""
     # Buscar despues de "RAZON SOCIAL" o "DENOMINACION"
-    match = re.search(
-        r'(?:RAZ[OÓ]N\s+SOCIAL|DENOMINACI[OÓ]N)\s*:?\s*(.+)',
-        texto, re.IGNORECASE
-    )
+    match = re.search(r"(?:RAZ[OÓ]N\s+SOCIAL|DENOMINACI[OÓ]N)\s*:?\s*(.+)", texto, re.IGNORECASE)
     if match:
         return match.group(1).strip()[:60]
     return None
@@ -334,7 +337,7 @@ def normalizar_serie(serie):
     if serie is None:
         return None
     # Quitar ceros de relleno: F002-00008351 -> F002-8351
-    match = re.match(r'([A-Z]+\d*)-0*(\d+)', serie)
+    match = re.match(r"([A-Z]+\d*)-0*(\d+)", serie)
     if match:
         return f"{match.group(1)}-{match.group(2)}"
     return serie
@@ -380,8 +383,8 @@ def comparar_campo(extraido, esperado, tipo="texto"):
 
     elif tipo == "fecha":
         # Comparar fechas normalizadas
-        ext_str = str(extraido).replace('-', '/').replace('.', '/')
-        esp_str = str(esperado).replace('-', '/').replace('.', '/')
+        ext_str = str(extraido).replace("-", "/").replace(".", "/")
+        esp_str = str(esperado).replace("-", "/").replace(".", "/")
         if ext_str == esp_str:
             return "MATCH"
         return "ERROR"
@@ -399,6 +402,7 @@ def comparar_campo(extraido, esperado, tipo="texto"):
 # ============================================================
 # MOTOR PRINCIPAL
 # ============================================================
+
 
 def procesar_pagina(doc, pagina_num):
     """Renderiza una pagina y ejecuta OCR usando el pipeline formal.
@@ -445,7 +449,7 @@ def ejecutar_prueba():
     print("PRUEBA EMPIRICA DE EXTRACCION OCR")
     print("Expediente: Caja Chica N.0000003 (OT2026-INT-0179550)")
     print(f"PDF: {PDF_PATH.name}")
-    print(f"Ground Truth: 16 comprobantes de generar_excel_caja_chica_003.py")
+    print("Ground Truth: 16 comprobantes de generar_excel_caja_chica_003.py")
     print(f"DPI: {DPI}")
     print("=" * 80)
 
@@ -471,12 +475,14 @@ def ejecutar_prueba():
 
         if "error" in ocr_result:
             print(f"  ERROR: {ocr_result['error']}")
-            resultados.append({
-                "gasto": gasto_num,
-                "pagina": pagina,
-                "error": ocr_result["error"],
-                "campos": {},
-            })
+            resultados.append(
+                {
+                    "gasto": gasto_num,
+                    "pagina": pagina,
+                    "error": ocr_result["error"],
+                    "campos": {},
+                }
+            )
             continue
 
         texto = ocr_result["texto"]
@@ -525,23 +531,32 @@ def ejecutar_prueba():
         # Imprimir resultado por campo
         for campo_nombre, campo_data in campos.items():
             status = campo_data["resultado"]
-            icon = {"MATCH": "OK", "MATCH_PARCIAL": "~", "ERROR": "X",
-                    "NO_EXTRAIDO": "-", "SKIP_GT_NULL": "?"}
+            icon = {
+                "MATCH": "OK",
+                "MATCH_PARCIAL": "~",
+                "ERROR": "X",
+                "NO_EXTRAIDO": "-",
+                "SKIP_GT_NULL": "?",
+            }
             icon_str = icon.get(status, "?")
-            print(f"  [{icon_str}] {campo_nombre:15s}: "
-                  f"extraido={campo_data['extraido']!s:25s} "
-                  f"esperado={campo_data['esperado']!s:25s} "
-                  f"-> {status}")
+            print(
+                f"  [{icon_str}] {campo_nombre:15s}: "
+                f"extraido={campo_data['extraido']!s:25s} "
+                f"esperado={campo_data['esperado']!s:25s} "
+                f"-> {status}"
+            )
 
-        resultados.append({
-            "gasto": gasto_num,
-            "pagina": pagina,
-            "motor": motor,
-            "confianza": confianza,
-            "chars": ocr_result["chars"],
-            "campos": campos,
-            "texto_ocr_primeras_200": texto[:200],
-        })
+        resultados.append(
+            {
+                "gasto": gasto_num,
+                "pagina": pagina,
+                "motor": motor,
+                "confianza": confianza,
+                "chars": ocr_result["chars"],
+                "campos": campos,
+                "texto_ocr_primeras_200": texto[:200],
+            }
+        )
 
     doc.close()
 
@@ -575,12 +590,14 @@ def ejecutar_prueba():
                 campos_match_parcial += 1
             elif status == "ERROR":
                 campos_error += 1
-                errores_detalle.append({
-                    "gasto": res["gasto"],
-                    "campo": campo_nombre,
-                    "extraido": campo_data["extraido"],
-                    "esperado": campo_data["esperado"],
-                })
+                errores_detalle.append(
+                    {
+                        "gasto": res["gasto"],
+                        "campo": campo_nombre,
+                        "extraido": campo_data["extraido"],
+                        "esperado": campo_data["esperado"],
+                    }
+                )
             elif status == "NO_EXTRAIDO":
                 campos_no_extraido += 1
 
@@ -599,9 +616,11 @@ def ejecutar_prueba():
     if errores_detalle:
         print(f"\nDETALLE DE ERRORES ({len(errores_detalle)}):")
         for err in errores_detalle:
-            print(f"  Gasto #{err['gasto']:2d} | {err['campo']:15s} | "
-                  f"extraido: {err['extraido']!s:25s} | "
-                  f"esperado: {err['esperado']!s:25s}")
+            print(
+                f"  Gasto #{err['gasto']:2d} | {err['campo']:15s} | "
+                f"extraido: {err['extraido']!s:25s} | "
+                f"esperado: {err['esperado']!s:25s}"
+            )
 
     # ============================================================
     # GUARDAR JSON
@@ -639,8 +658,10 @@ def ejecutar_prueba():
         json.dump(output, f, ensure_ascii=False, indent=2)
 
     print(f"\nResultados guardados en: {OUTPUT_JSON}")
-    print(f"\nVERDICTO: {'PASS' if precision >= 85 else 'FAIL'} "
-          f"(meta: >=85% para escaneados, obtenido: {precision:.1f}%)")
+    print(
+        f"\nVERDICTO: {'PASS' if precision >= 85 else 'FAIL'} "
+        f"(meta: >=85% para escaneados, obtenido: {precision:.1f}%)"
+    )
 
     return output
 

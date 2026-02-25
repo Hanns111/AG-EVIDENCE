@@ -33,28 +33,22 @@ Versión: 1.0.0
 Fecha: 2026-02-19
 """
 
-import json
 import hashlib
-import sys
+import json
 import os
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
+import sys
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Any, Dict, List, Optional
 
 # Asegurar que el directorio raíz del proyecto esté en el path
-_PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
-from config.settings import NaturalezaExpediente, MetodoExtraccion
 from src.extraction.abstencion import (
     CampoExtraido,
     EvidenceStatus,
-    AbstencionPolicy,
-    FUENTE_ABSTENCION,
 )
 
 # ==============================================================================
@@ -69,8 +63,10 @@ TOLERANCIA_ARITMETICA = 0.02  # ±0.02 soles
 # ENUMERACIONES ESPECÍFICAS DEL CONTRATO
 # ==============================================================================
 
+
 class TipoComprobante(Enum):
     """Tipos de comprobante de pago SUNAT."""
+
     FACTURA = "FACTURA"
     BOLETA = "BOLETA"
     NOTA_CREDITO = "NOTA_CREDITO"
@@ -83,6 +79,7 @@ class TipoComprobante(Enum):
 
 class CategoriaGasto(Enum):
     """Categorías de gasto para rendición de viáticos."""
+
     ALIMENTACION = "ALIMENTACION"
     HOSPEDAJE = "HOSPEDAJE"
     TRANSPORTE = "TRANSPORTE"
@@ -92,6 +89,7 @@ class CategoriaGasto(Enum):
 
 class MetodoExtraccionContrato(Enum):
     """Método de extracción en el contexto del contrato."""
+
     PYMUPDF = "pymupdf"
     PADDLEOCR_GPU = "paddleocr_gpu"
     PADDLEOCR_CPU = "paddleocr_cpu"
@@ -102,6 +100,7 @@ class MetodoExtraccionContrato(Enum):
 
 class TipoBoleto(Enum):
     """Tipos de boleto de transporte."""
+
     AEREO = "AEREO"
     TERRESTRE = "TERRESTRE"
     BOARDING_PASS = "BOARDING_PASS"
@@ -109,6 +108,7 @@ class TipoBoleto(Enum):
 
 class ConfianzaGlobal(Enum):
     """Nivel de confianza global de extracción."""
+
     ALTA = "alta"
     MEDIA = "media"
     BAJA = "baja"
@@ -116,6 +116,7 @@ class ConfianzaGlobal(Enum):
 
 class IntegridadStatus(Enum):
     """Estado de integridad del expediente."""
+
     OK = "OK"
     WARNING = "WARNING"
     CRITICAL = "CRITICAL"
@@ -125,12 +126,14 @@ class IntegridadStatus(Enum):
 # GRUPO A — Datos del Emisor
 # ==============================================================================
 
+
 @dataclass
 class DatosEmisor:
     """
     Grupo A — Datos del emisor del comprobante.
     Cada campo es Optional[CampoExtraido] para soportar abstención.
     """
+
     ruc_emisor: Optional[CampoExtraido] = None
     razon_social: Optional[CampoExtraido] = None
     nombre_comercial: Optional[CampoExtraido] = None
@@ -154,28 +157,47 @@ class DatosEmisor:
         if not data:
             return cls()
         return cls(
-            ruc_emisor=CampoExtraido.from_dict(data["ruc_emisor"]) if data.get("ruc_emisor") else None,
-            razon_social=CampoExtraido.from_dict(data["razon_social"]) if data.get("razon_social") else None,
-            nombre_comercial=CampoExtraido.from_dict(data["nombre_comercial"]) if data.get("nombre_comercial") else None,
-            direccion_emisor=CampoExtraido.from_dict(data["direccion_emisor"]) if data.get("direccion_emisor") else None,
-            ubigeo_emisor=CampoExtraido.from_dict(data["ubigeo_emisor"]) if data.get("ubigeo_emisor") else None,
+            ruc_emisor=CampoExtraido.from_dict(data["ruc_emisor"])
+            if data.get("ruc_emisor")
+            else None,
+            razon_social=CampoExtraido.from_dict(data["razon_social"])
+            if data.get("razon_social")
+            else None,
+            nombre_comercial=CampoExtraido.from_dict(data["nombre_comercial"])
+            if data.get("nombre_comercial")
+            else None,
+            direccion_emisor=CampoExtraido.from_dict(data["direccion_emisor"])
+            if data.get("direccion_emisor")
+            else None,
+            ubigeo_emisor=CampoExtraido.from_dict(data["ubigeo_emisor"])
+            if data.get("ubigeo_emisor")
+            else None,
         )
 
     def campos_list(self) -> List[CampoExtraido]:
         """Retorna lista de campos no-None para evaluación."""
-        return [v for v in [
-            self.ruc_emisor, self.razon_social, self.nombre_comercial,
-            self.direccion_emisor, self.ubigeo_emisor
-        ] if v is not None]
+        return [
+            v
+            for v in [
+                self.ruc_emisor,
+                self.razon_social,
+                self.nombre_comercial,
+                self.direccion_emisor,
+                self.ubigeo_emisor,
+            ]
+            if v is not None
+        ]
 
 
 # ==============================================================================
 # GRUPO B — Datos del Comprobante
 # ==============================================================================
 
+
 @dataclass
 class DatosComprobante:
     """Grupo B — Datos identificadores del comprobante."""
+
     tipo_comprobante: Optional[CampoExtraido] = None
     serie: Optional[CampoExtraido] = None
     numero: Optional[CampoExtraido] = None
@@ -186,20 +208,19 @@ class DatosComprobante:
     es_electronico: Optional[CampoExtraido] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            k: v.to_dict() if v is not None else None
-            for k, v in self.__dict__.items()
-        }
+        return {k: v.to_dict() if v is not None else None for k, v in self.__dict__.items()}
 
     @classmethod
     def from_dict(cls, data: Optional[Dict]) -> "DatosComprobante":
         if not data:
             return cls()
-        return cls(**{
-            k: CampoExtraido.from_dict(v) if v else None
-            for k, v in data.items()
-            if k in cls.__dataclass_fields__
-        })
+        return cls(
+            **{
+                k: CampoExtraido.from_dict(v) if v else None
+                for k, v in data.items()
+                if k in cls.__dataclass_fields__
+            }
+        )
 
     def campos_list(self) -> List[CampoExtraido]:
         return [v for v in self.__dict__.values() if v is not None]
@@ -209,28 +230,29 @@ class DatosComprobante:
 # GRUPO C — Datos del Adquirente
 # ==============================================================================
 
+
 @dataclass
 class DatosAdquirente:
     """Grupo C — Datos del comprador/adquirente."""
+
     ruc_adquirente: Optional[CampoExtraido] = None
     razon_social_adquirente: Optional[CampoExtraido] = None
     direccion_adquirente: Optional[CampoExtraido] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            k: v.to_dict() if v is not None else None
-            for k, v in self.__dict__.items()
-        }
+        return {k: v.to_dict() if v is not None else None for k, v in self.__dict__.items()}
 
     @classmethod
     def from_dict(cls, data: Optional[Dict]) -> "DatosAdquirente":
         if not data:
             return cls()
-        return cls(**{
-            k: CampoExtraido.from_dict(v) if v else None
-            for k, v in data.items()
-            if k in cls.__dataclass_fields__
-        })
+        return cls(
+            **{
+                k: CampoExtraido.from_dict(v) if v else None
+                for k, v in data.items()
+                if k in cls.__dataclass_fields__
+            }
+        )
 
     def campos_list(self) -> List[CampoExtraido]:
         return [v for v in self.__dict__.values() if v is not None]
@@ -240,29 +262,30 @@ class DatosAdquirente:
 # GRUPO D — Condiciones Comerciales
 # ==============================================================================
 
+
 @dataclass
 class CondicionesComerciales:
     """Grupo D — Condiciones comerciales del comprobante."""
+
     condicion_pago: Optional[CampoExtraido] = None
     guia_remision: Optional[CampoExtraido] = None
     orden_compra: Optional[CampoExtraido] = None
     observaciones: Optional[CampoExtraido] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            k: v.to_dict() if v is not None else None
-            for k, v in self.__dict__.items()
-        }
+        return {k: v.to_dict() if v is not None else None for k, v in self.__dict__.items()}
 
     @classmethod
     def from_dict(cls, data: Optional[Dict]) -> "CondicionesComerciales":
         if not data:
             return cls()
-        return cls(**{
-            k: CampoExtraido.from_dict(v) if v else None
-            for k, v in data.items()
-            if k in cls.__dataclass_fields__
-        })
+        return cls(
+            **{
+                k: CampoExtraido.from_dict(v) if v else None
+                for k, v in data.items()
+                if k in cls.__dataclass_fields__
+            }
+        )
 
     def campos_list(self) -> List[CampoExtraido]:
         return [v for v in self.__dict__.values() if v is not None]
@@ -272,9 +295,11 @@ class CondicionesComerciales:
 # GRUPO E — Detalle de Ítems
 # ==============================================================================
 
+
 @dataclass
 class ItemDetalle:
     """Un ítem individual del comprobante (Grupo E)."""
+
     cantidad: Optional[CampoExtraido] = None
     unidad: Optional[CampoExtraido] = None
     descripcion: Optional[CampoExtraido] = None
@@ -282,20 +307,19 @@ class ItemDetalle:
     importe: Optional[CampoExtraido] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            k: v.to_dict() if v is not None else None
-            for k, v in self.__dict__.items()
-        }
+        return {k: v.to_dict() if v is not None else None for k, v in self.__dict__.items()}
 
     @classmethod
     def from_dict(cls, data: Optional[Dict]) -> "ItemDetalle":
         if not data:
             return cls()
-        return cls(**{
-            k: CampoExtraido.from_dict(v) if v else None
-            for k, v in data.items()
-            if k in cls.__dataclass_fields__
-        })
+        return cls(
+            **{
+                k: CampoExtraido.from_dict(v) if v else None
+                for k, v in data.items()
+                if k in cls.__dataclass_fields__
+            }
+        )
 
     def campos_list(self) -> List[CampoExtraido]:
         return [v for v in self.__dict__.values() if v is not None]
@@ -305,9 +329,11 @@ class ItemDetalle:
 # GRUPO F — Totales y Tributos
 # ==============================================================================
 
+
 @dataclass
 class TotalesTributos:
     """Grupo F — Totales y tributos del comprobante."""
+
     subtotal: Optional[CampoExtraido] = None
     igv_tasa: Optional[CampoExtraido] = None
     igv_monto: Optional[CampoExtraido] = None
@@ -321,20 +347,19 @@ class TotalesTributos:
     monto_letras: Optional[CampoExtraido] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            k: v.to_dict() if v is not None else None
-            for k, v in self.__dict__.items()
-        }
+        return {k: v.to_dict() if v is not None else None for k, v in self.__dict__.items()}
 
     @classmethod
     def from_dict(cls, data: Optional[Dict]) -> "TotalesTributos":
         if not data:
             return cls()
-        return cls(**{
-            k: CampoExtraido.from_dict(v) if v else None
-            for k, v in data.items()
-            if k in cls.__dataclass_fields__
-        })
+        return cls(
+            **{
+                k: CampoExtraido.from_dict(v) if v else None
+                for k, v in data.items()
+                if k in cls.__dataclass_fields__
+            }
+        )
 
     def campos_list(self) -> List[CampoExtraido]:
         return [v for v in self.__dict__.values() if v is not None]
@@ -344,27 +369,28 @@ class TotalesTributos:
 # GRUPO G — Clasificación del Gasto
 # ==============================================================================
 
+
 @dataclass
 class ClasificacionGasto:
     """Grupo G — Clasificación del gasto."""
+
     categoria_gasto: Optional[CampoExtraido] = None
     subcategoria: Optional[CampoExtraido] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            k: v.to_dict() if v is not None else None
-            for k, v in self.__dict__.items()
-        }
+        return {k: v.to_dict() if v is not None else None for k, v in self.__dict__.items()}
 
     @classmethod
     def from_dict(cls, data: Optional[Dict]) -> "ClasificacionGasto":
         if not data:
             return cls()
-        return cls(**{
-            k: CampoExtraido.from_dict(v) if v else None
-            for k, v in data.items()
-            if k in cls.__dataclass_fields__
-        })
+        return cls(
+            **{
+                k: CampoExtraido.from_dict(v) if v else None
+                for k, v in data.items()
+                if k in cls.__dataclass_fields__
+            }
+        )
 
     def campos_list(self) -> List[CampoExtraido]:
         return [v for v in self.__dict__.values() if v is not None]
@@ -374,9 +400,11 @@ class ClasificacionGasto:
 # GRUPO H — Datos Específicos de Hospedaje
 # ==============================================================================
 
+
 @dataclass
 class DatosHospedaje:
     """Grupo H — Datos específicos cuando el gasto es hospedaje."""
+
     fecha_checkin: Optional[CampoExtraido] = None
     fecha_checkout: Optional[CampoExtraido] = None
     numero_noches: Optional[CampoExtraido] = None
@@ -385,20 +413,19 @@ class DatosHospedaje:
     numero_reserva: Optional[CampoExtraido] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            k: v.to_dict() if v is not None else None
-            for k, v in self.__dict__.items()
-        }
+        return {k: v.to_dict() if v is not None else None for k, v in self.__dict__.items()}
 
     @classmethod
     def from_dict(cls, data: Optional[Dict]) -> "DatosHospedaje":
         if not data:
             return cls()
-        return cls(**{
-            k: CampoExtraido.from_dict(v) if v else None
-            for k, v in data.items()
-            if k in cls.__dataclass_fields__
-        })
+        return cls(
+            **{
+                k: CampoExtraido.from_dict(v) if v else None
+                for k, v in data.items()
+                if k in cls.__dataclass_fields__
+            }
+        )
 
     def campos_list(self) -> List[CampoExtraido]:
         return [v for v in self.__dict__.values() if v is not None]
@@ -408,9 +435,11 @@ class DatosHospedaje:
 # GRUPO I — Datos Específicos de Movilidad
 # ==============================================================================
 
+
 @dataclass
 class DatosMovilidad:
     """Grupo I — Datos específicos cuando el gasto es transporte/movilidad."""
+
     origen: Optional[CampoExtraido] = None
     destino: Optional[CampoExtraido] = None
     fecha_servicio: Optional[CampoExtraido] = None
@@ -418,20 +447,19 @@ class DatosMovilidad:
     nombre_pasajero: Optional[CampoExtraido] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            k: v.to_dict() if v is not None else None
-            for k, v in self.__dict__.items()
-        }
+        return {k: v.to_dict() if v is not None else None for k, v in self.__dict__.items()}
 
     @classmethod
     def from_dict(cls, data: Optional[Dict]) -> "DatosMovilidad":
         if not data:
             return cls()
-        return cls(**{
-            k: CampoExtraido.from_dict(v) if v else None
-            for k, v in data.items()
-            if k in cls.__dataclass_fields__
-        })
+        return cls(
+            **{
+                k: CampoExtraido.from_dict(v) if v else None
+                for k, v in data.items()
+                if k in cls.__dataclass_fields__
+            }
+        )
 
     def campos_list(self) -> List[CampoExtraido]:
         return [v for v in self.__dict__.values() if v is not None]
@@ -441,12 +469,14 @@ class DatosMovilidad:
 # GRUPO J — Validaciones Aritméticas
 # ==============================================================================
 
+
 @dataclass
 class ValidacionesAritmeticas:
     """
     Grupo J — Resultados de validaciones aritméticas.
     EJECUTA PYTHON, NO LA IA (Regla de Oro).
     """
+
     suma_items_ok: Optional[bool] = None
     igv_ok: Optional[bool] = None
     total_ok: Optional[bool] = None
@@ -479,9 +509,11 @@ class ValidacionesAritmeticas:
 
     def todas_ok(self) -> bool:
         """True si todas las validaciones ejecutadas pasaron."""
-        checks = [v for v in [
-            self.suma_items_ok, self.igv_ok, self.total_ok, self.noches_ok
-        ] if v is not None]
+        checks = [
+            v
+            for v in [self.suma_items_ok, self.igv_ok, self.total_ok, self.noches_ok]
+            if v is not None
+        ]
         return all(checks) if checks else True
 
 
@@ -489,9 +521,11 @@ class ValidacionesAritmeticas:
 # GRUPO K — Metadatos de Extracción
 # ==============================================================================
 
+
 @dataclass
 class MetadatosExtraccion:
     """Grupo K — Metadatos del proceso de extracción."""
+
     pagina_origen: int = 0
     metodo_extraccion: str = ""
     confianza_global: str = "baja"
@@ -524,12 +558,14 @@ class MetadatosExtraccion:
 # COMPROBANTE EXTRAÍDO — Estructura completa (Grupos A-K)
 # ==============================================================================
 
+
 @dataclass
 class ComprobanteExtraido:
     """
     Un comprobante de pago completo con todos los 11 Grupos (A-K)
     de PARSING_COMPROBANTES_SPEC.md.
     """
+
     grupo_a: DatosEmisor = field(default_factory=DatosEmisor)
     grupo_b: DatosComprobante = field(default_factory=DatosComprobante)
     grupo_c: DatosAdquirente = field(default_factory=DatosAdquirente)
@@ -605,9 +641,11 @@ class ComprobanteExtraido:
 # GASTO DECLARACIÓN JURADA (DJ movilidad)
 # ==============================================================================
 
+
 @dataclass
 class GastoDeclaracionJurada:
     """Un gasto sin comprobante (Declaración Jurada de movilidad)."""
+
     fecha: Optional[CampoExtraido] = None
     descripcion: Optional[CampoExtraido] = None
     monto: Optional[CampoExtraido] = None
@@ -631,7 +669,9 @@ class GastoDeclaracionJurada:
             return cls()
         return cls(
             fecha=CampoExtraido.from_dict(data["fecha"]) if data.get("fecha") else None,
-            descripcion=CampoExtraido.from_dict(data["descripcion"]) if data.get("descripcion") else None,
+            descripcion=CampoExtraido.from_dict(data["descripcion"])
+            if data.get("descripcion")
+            else None,
             monto=CampoExtraido.from_dict(data["monto"]) if data.get("monto") else None,
             origen=CampoExtraido.from_dict(data["origen"]) if data.get("origen") else None,
             destino=CampoExtraido.from_dict(data["destino"]) if data.get("destino") else None,
@@ -639,17 +679,22 @@ class GastoDeclaracionJurada:
         )
 
     def campos_list(self) -> List[CampoExtraido]:
-        return [v for v in [self.fecha, self.descripcion, self.monto,
-                            self.origen, self.destino] if v is not None]
+        return [
+            v
+            for v in [self.fecha, self.descripcion, self.monto, self.origen, self.destino]
+            if v is not None
+        ]
 
 
 # ==============================================================================
 # BOLETO DE TRANSPORTE
 # ==============================================================================
 
+
 @dataclass
 class BoletoTransporte:
     """Un boleto de transporte o boarding pass."""
+
     tipo: Optional[CampoExtraido] = None  # AEREO, TERRESTRE, BOARDING_PASS
     empresa: Optional[CampoExtraido] = None
     ruta: Optional[CampoExtraido] = None  # origen-destino
@@ -681,24 +726,38 @@ class BoletoTransporte:
             ruta=CampoExtraido.from_dict(data["ruta"]) if data.get("ruta") else None,
             fecha=CampoExtraido.from_dict(data["fecha"]) if data.get("fecha") else None,
             pasajero=CampoExtraido.from_dict(data["pasajero"]) if data.get("pasajero") else None,
-            numero_boleto=CampoExtraido.from_dict(data["numero_boleto"]) if data.get("numero_boleto") else None,
+            numero_boleto=CampoExtraido.from_dict(data["numero_boleto"])
+            if data.get("numero_boleto")
+            else None,
             monto=CampoExtraido.from_dict(data["monto"]) if data.get("monto") else None,
             metadatos=MetadatosExtraccion.from_dict(data.get("metadatos")),
         )
 
     def campos_list(self) -> List[CampoExtraido]:
-        return [v for v in [self.tipo, self.empresa, self.ruta, self.fecha,
-                            self.pasajero, self.numero_boleto, self.monto]
-                if v is not None]
+        return [
+            v
+            for v in [
+                self.tipo,
+                self.empresa,
+                self.ruta,
+                self.fecha,
+                self.pasajero,
+                self.numero_boleto,
+                self.monto,
+            ]
+            if v is not None
+        ]
 
 
 # ==============================================================================
 # DATOS DEL ANEXO 3 (Resumen de rendición)
 # ==============================================================================
 
+
 @dataclass
 class ItemAnexo3:
     """Una línea del Anexo 3 (resumen de gasto)."""
+
     nro: Optional[CampoExtraido] = None
     fecha: Optional[CampoExtraido] = None
     tipo_documento: Optional[CampoExtraido] = None
@@ -708,25 +767,25 @@ class ItemAnexo3:
     importe: Optional[CampoExtraido] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
-            k: v.to_dict() if v is not None else None
-            for k, v in self.__dict__.items()
-        }
+        return {k: v.to_dict() if v is not None else None for k, v in self.__dict__.items()}
 
     @classmethod
     def from_dict(cls, data: Optional[Dict]) -> "ItemAnexo3":
         if not data:
             return cls()
-        return cls(**{
-            k: CampoExtraido.from_dict(v) if v else None
-            for k, v in data.items()
-            if k in cls.__dataclass_fields__
-        })
+        return cls(
+            **{
+                k: CampoExtraido.from_dict(v) if v else None
+                for k, v in data.items()
+                if k in cls.__dataclass_fields__
+            }
+        )
 
 
 @dataclass
 class DatosAnexo3:
     """Datos completos del Anexo 3 de rendición."""
+
     sinad: Optional[CampoExtraido] = None
     comisionado: Optional[CampoExtraido] = None
     dni: Optional[CampoExtraido] = None
@@ -750,7 +809,7 @@ class DatosAnexo3:
             elif isinstance(v, CampoExtraido):
                 result[k] = v.to_dict()
             else:
-                result[k] = v.to_dict() if v is not None and hasattr(v, 'to_dict') else None
+                result[k] = v.to_dict() if v is not None and hasattr(v, "to_dict") else None
         return result
 
     @classmethod
@@ -758,9 +817,16 @@ class DatosAnexo3:
         if not data:
             return cls()
         campo_fields = [
-            "sinad", "comisionado", "dni", "unidad_ejecutora", "destino",
-            "fecha_salida", "fecha_regreso", "viatico_otorgado",
-            "total_gastado", "devolucion"
+            "sinad",
+            "comisionado",
+            "dni",
+            "unidad_ejecutora",
+            "destino",
+            "fecha_salida",
+            "fecha_regreso",
+            "viatico_otorgado",
+            "total_gastado",
+            "devolucion",
         ]
         kwargs = {}
         for f in campo_fields:
@@ -774,6 +840,7 @@ class DatosAnexo3:
 # DOCUMENTOS CONVENIO (expedientes Estado-Estado — Pautas 5.1.11)
 # ==============================================================================
 
+
 @dataclass
 class DocumentosConvenio:
     """
@@ -781,6 +848,7 @@ class DocumentosConvenio:
     Ref: docs/CONVENIOS_INTERINSTITUCIONALES.md
     Identificador: GOV_RULE_CONVENIOS_INTERINSTITUCIONALES_v1
     """
+
     convenio_vigente: Optional[CampoExtraido] = None
     documento_cobranza: Optional[CampoExtraido] = None
     detalle_consumo: Optional[CampoExtraido] = None
@@ -801,7 +869,7 @@ class DocumentosConvenio:
             elif isinstance(v, CampoExtraido):
                 result[k] = v.to_dict()
             else:
-                result[k] = v.to_dict() if v is not None and hasattr(v, 'to_dict') else None
+                result[k] = v.to_dict() if v is not None and hasattr(v, "to_dict") else None
         return result
 
     @classmethod
@@ -809,9 +877,14 @@ class DocumentosConvenio:
         if not data:
             return cls()
         campo_fields = [
-            "convenio_vigente", "documento_cobranza", "detalle_consumo",
-            "informe_tecnico", "certificacion_presupuestal",
-            "derivacion_sinad", "entidad_contraparte", "periodo_convenio",
+            "convenio_vigente",
+            "documento_cobranza",
+            "detalle_consumo",
+            "informe_tecnico",
+            "certificacion_presupuestal",
+            "derivacion_sinad",
+            "entidad_contraparte",
+            "periodo_convenio",
         ]
         kwargs = {}
         for f in campo_fields:
@@ -822,33 +895,34 @@ class DocumentosConvenio:
 
     def documentos_minimos_presentes(self) -> bool:
         """Verifica los 6 documentos mínimos exigibles (Sección IV)."""
-        return all([
-            self.convenio_vigente is not None,
-            self.documento_cobranza is not None,
-            self.detalle_consumo is not None,
-            self.informe_tecnico is not None,
-            self.certificacion_presupuestal is not None,
-            self.derivacion_sinad is not None,
-        ])
+        return all(
+            [
+                self.convenio_vigente is not None,
+                self.documento_cobranza is not None,
+                self.detalle_consumo is not None,
+                self.informe_tecnico is not None,
+                self.certificacion_presupuestal is not None,
+                self.derivacion_sinad is not None,
+            ]
+        )
 
     def apto_para_devengado(self) -> bool:
         """
         Determina si el expediente es apto para devengado.
         Requiere: 6 documentos mínimos + coherencia económica.
         """
-        return (
-            self.documentos_minimos_presentes()
-            and self.coherencia_economica
-        )
+        return self.documentos_minimos_presentes() and self.coherencia_economica
 
 
 # ==============================================================================
 # ARCHIVO FUENTE (con hash para cadena de custodia)
 # ==============================================================================
 
+
 @dataclass
 class ArchivoFuente:
     """Un PDF fuente procesado con su hash SHA-256."""
+
     nombre: str = ""
     ruta_relativa: str = ""
     hash_sha256: str = ""
@@ -877,9 +951,11 @@ class ArchivoFuente:
 # RESUMEN DE EXTRACCIÓN
 # ==============================================================================
 
+
 @dataclass
 class ResumenExtraccion:
     """Estadísticas de la extracción."""
+
     total_campos: int = 0
     campos_ok: int = 0
     campos_abstencion: int = 0
@@ -912,9 +988,11 @@ class ResumenExtraccion:
 # INTEGRIDAD DEL EXPEDIENTE
 # ==============================================================================
 
+
 @dataclass
 class IntegridadExpediente:
     """Estado de integridad del expediente procesado."""
+
     status: str = "OK"  # OK, WARNING, CRITICAL
     hash_expediente: str = ""  # SHA-256 del JSON serializado
     cadena_custodia_verificada: bool = False
@@ -944,6 +1022,7 @@ class IntegridadExpediente:
 # EXPEDIENTE JSON — Contrato completo
 # ==============================================================================
 
+
 @dataclass
 class ExpedienteJSON:
     """
@@ -955,10 +1034,11 @@ class ExpedienteJSON:
     Unicidad: Un ExpedienteJSON se identifica por su SINAD. No deben
     existir dos ExpedienteJSON con el mismo SINAD en el sistema.
     """
+
     # Identificadores
     sinad: str = ""
     naturaleza: str = ""  # NaturalezaExpediente.value
-    categoria: str = ""   # VIATICOS, CAJA_CHICA, CONVENIO_INTERINSTITUCIONAL, etc.
+    categoria: str = ""  # VIATICOS, CAJA_CHICA, CONVENIO_INTERINSTITUCIONAL, etc.
 
     # Versión del contrato
     version_contrato: str = VERSION_CONTRATO
@@ -997,7 +1077,9 @@ class ExpedienteJSON:
             "comprobantes": [c.to_dict() for c in self.comprobantes],
             "declaracion_jurada": [dj.to_dict() for dj in self.declaracion_jurada],
             "boletos": [b.to_dict() for b in self.boletos],
-            "documentos_convenio": self.documentos_convenio.to_dict() if self.documentos_convenio else None,
+            "documentos_convenio": self.documentos_convenio.to_dict()
+            if self.documentos_convenio
+            else None,
             "resumen_extraccion": self.resumen_extraccion.to_dict(),
             "integridad": self.integridad.to_dict(),
         }
@@ -1019,9 +1101,13 @@ class ExpedienteJSON:
             archivos_fuente=[ArchivoFuente.from_dict(a) for a in data.get("archivos_fuente", [])],
             anexo3=DatosAnexo3.from_dict(data.get("anexo3")) if data.get("anexo3") else None,
             comprobantes=[ComprobanteExtraido.from_dict(c) for c in data.get("comprobantes", [])],
-            declaracion_jurada=[GastoDeclaracionJurada.from_dict(dj) for dj in data.get("declaracion_jurada", [])],
+            declaracion_jurada=[
+                GastoDeclaracionJurada.from_dict(dj) for dj in data.get("declaracion_jurada", [])
+            ],
             boletos=[BoletoTransporte.from_dict(b) for b in data.get("boletos", [])],
-            documentos_convenio=DocumentosConvenio.from_dict(data.get("documentos_convenio")) if data.get("documentos_convenio") else None,
+            documentos_convenio=DocumentosConvenio.from_dict(data.get("documentos_convenio"))
+            if data.get("documentos_convenio")
+            else None,
             resumen_extraccion=ResumenExtraccion.from_dict(data.get("resumen_extraccion")),
             integridad=IntegridadExpediente.from_dict(data.get("integridad")),
         )
@@ -1041,12 +1127,11 @@ class ExpedienteJSON:
         todos_los_campos = self._recolectar_todos_campos()
 
         total = len(todos_los_campos)
-        ok = sum(1 for c in todos_los_campos
-                 if c.clasificar_status() == EvidenceStatus.LEGIBLE)
-        abstencion = sum(1 for c in todos_los_campos
-                         if c.es_abstencion())
-        incompletos = sum(1 for c in todos_los_campos
-                          if c.clasificar_status() == EvidenceStatus.INCOMPLETO)
+        ok = sum(1 for c in todos_los_campos if c.clasificar_status() == EvidenceStatus.LEGIBLE)
+        abstencion = sum(1 for c in todos_los_campos if c.es_abstencion())
+        incompletos = sum(
+            1 for c in todos_los_campos if c.clasificar_status() == EvidenceStatus.INCOMPLETO
+        )
 
         self.resumen_extraccion = ResumenExtraccion(
             total_campos=total,
@@ -1091,7 +1176,7 @@ class ExpedienteJSON:
         # Verificar cada comprobante tiene mínimo serie/número
         for i, comp in enumerate(self.comprobantes):
             if not comp.grupo_b.serie and not comp.grupo_b.numero:
-                problemas.append(f"Comprobante #{i+1}: sin serie ni número")
+                problemas.append(f"Comprobante #{i + 1}: sin serie ni número")
 
         return problemas
 
@@ -1101,8 +1186,11 @@ class ExpedienteJSON:
 
     def get_campos_por_confianza(self, umbral: float) -> List[CampoExtraido]:
         """Filtra campos cuya confianza está bajo un umbral."""
-        return [c for c in self._recolectar_todos_campos()
-                if c.confianza < umbral and not c.es_abstencion()]
+        return [
+            c
+            for c in self._recolectar_todos_campos()
+            if c.confianza < umbral and not c.es_abstencion()
+        ]
 
     def verificar_unicidad_comprobantes(self) -> List[str]:
         """
@@ -1116,8 +1204,7 @@ class ExpedienteJSON:
             clave = comp.get_serie_numero()
             if clave in vistos and clave != "SIN_IDENTIFICAR":
                 duplicados.append(
-                    f"Comprobante duplicado: {clave} "
-                    f"(posiciones {vistos[clave]+1} y {i+1})"
+                    f"Comprobante duplicado: {clave} (posiciones {vistos[clave] + 1} y {i + 1})"
                 )
             else:
                 vistos[clave] = i

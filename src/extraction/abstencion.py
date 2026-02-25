@@ -51,26 +51,22 @@ Uso:
         )
 """
 
-import sys
 import os
-from dataclasses import dataclass, field, asdict
+import sys
+from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # Asegurar que el directorio raíz del proyecto esté en el path
-_PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 from config.settings import (
     MetodoExtraccion,
     NivelObservacion,
-    EvidenciaProbatoria,
     Observacion,
 )
-
 
 # ==============================================================================
 # CONFIGURACIÓN
@@ -80,9 +76,7 @@ from config.settings import (
 FUENTE_ABSTENCION = "ABSTENCION"
 
 # Frase estándar de abstención según Artículo 12.1 de Gobernanza
-FRASE_ABSTENCION_ESTANDAR = (
-    "No consta información suficiente en los documentos revisados."
-)
+FRASE_ABSTENCION_ESTANDAR = "No consta información suficiente en los documentos revisados."
 
 
 # ==============================================================================
@@ -99,6 +93,7 @@ class EvidenceStatus(Enum):
     - INCOMPLETO: Valor parcial o confianza intermedia, requiere revision.
     - ILEGIBLE: No se pudo extraer (abstencion formal).
     """
+
     LEGIBLE = "LEGIBLE"
     INCOMPLETO = "INCOMPLETO"
     ILEGIBLE = "ILEGIBLE"
@@ -111,6 +106,7 @@ class RazonAbstencion(Enum):
     Cada razón tiene un código único que permite clasificar y
     analizar estadísticamente los patrones de abstención.
     """
+
     CONFIANZA_BAJA = "confianza_baja"
     VALOR_AUSENTE = "valor_ausente"
     SNIPPET_VACIO = "snippet_vacio"
@@ -146,6 +142,7 @@ class CampoExtraido:
         valor_normalizado: Valor procesado/limpio.
         tipo_campo: Categoría del campo ("ruc", "monto", "fecha", etc.).
     """
+
     # Identificación
     nombre_campo: str
     valor: Optional[str]
@@ -233,9 +230,7 @@ class CampoExtraido:
             "pagina": self.pagina,
             "confianza": self.confianza,
             "metodo": (
-                self.metodo.value
-                if isinstance(self.metodo, MetodoExtraccion)
-                else str(self.metodo)
+                self.metodo.value if isinstance(self.metodo, MetodoExtraccion) else str(self.metodo)
             ),
             "snippet": self.snippet[:200] if self.snippet else "",
             "regla_aplicada": self.regla_aplicada,
@@ -309,6 +304,7 @@ class UmbralesAbstencion:
         descripcion: Umbral para descripciones (0.70).
         default: Umbral por defecto para campos no especificados (0.75).
     """
+
     # Campos críticos (consecuencias legales directas)
     ruc: float = 0.90
     monto: float = 0.90
@@ -364,6 +360,7 @@ class ResultadoAbstencion:
         hallazgo: Observacion generada automáticamente (si abstención).
         umbral_aplicado: El umbral que se usó para la evaluación.
     """
+
     campo: CampoExtraido
     debe_abstenerse: bool
     razon_abstencion: str = ""
@@ -379,9 +376,7 @@ class ResultadoAbstencion:
             "confianza": self.campo.confianza,
             "umbral_aplicado": self.umbral_aplicado,
             "razon_abstencion": self.razon_abstencion,
-            "razon_codigo": (
-                self.razon_codigo.value if self.razon_codigo else None
-            ),
+            "razon_codigo": (self.razon_codigo.value if self.razon_codigo else None),
         }
         if self.hallazgo:
             d["hallazgo"] = {
@@ -515,9 +510,7 @@ class AbstencionPolicy:
             self._stats["total_abstenciones"] += 1
             if razon_codigo:
                 key = razon_codigo.value
-                self._stats["por_razon"][key] = (
-                    self._stats["por_razon"].get(key, 0) + 1
-                )
+                self._stats["por_razon"][key] = self._stats["por_razon"].get(key, 0) + 1
 
         # Generar descripción textual de la razón
         razon_texto = self._generar_razon_texto(campo, razon_codigo, umbral)
@@ -610,9 +603,7 @@ class AbstencionPolicy:
         return {
             **self._stats,
             "tasa_abstencion": (
-                round(self._stats["total_abstenciones"] / total, 4)
-                if total > 0
-                else 0.0
+                round(self._stats["total_abstenciones"] / total, 4) if total > 0 else 0.0
             ),
         }
 
@@ -684,8 +675,7 @@ class AbstencionPolicy:
 
         razones = {
             RazonAbstencion.VALOR_AUSENTE: (
-                f"Campo '{campo.nombre_campo}': "
-                f"{FRASE_ABSTENCION_ESTANDAR}"
+                f"Campo '{campo.nombre_campo}': {FRASE_ABSTENCION_ESTANDAR}"
             ),
             RazonAbstencion.CONFIANZA_BAJA: (
                 f"Campo '{campo.nombre_campo}': confianza "
@@ -736,8 +726,7 @@ class AbstencionPolicy:
             agente=self.agente_id,
             descripcion=razon,
             accion_requerida=(
-                f"Verificar manualmente el campo "
-                f"'{campo.nombre_campo}' en el documento fuente."
+                f"Verificar manualmente el campo '{campo.nombre_campo}' en el documento fuente."
             ),
             area_responsable="Usuario Analista",
             requiere_revision_humana=True,

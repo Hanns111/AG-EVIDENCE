@@ -17,10 +17,11 @@ Verifica:
 Requiere: openpyxl
 """
 
-import sys
 import os
-import pytest
+import sys
 from datetime import datetime, timezone
+
+import pytest
 
 # Asegurar que el directorio raíz del proyecto esté en el path
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,50 +30,46 @@ if _PROJECT_ROOT not in sys.path:
 
 try:
     from openpyxl import Workbook
+
     OPENPYXL_DISPONIBLE = True
 except ImportError:
     OPENPYXL_DISPONIBLE = False
 
-from config.settings import MetodoExtraccion, NivelObservacion, Observacion
+from config.settings import MetodoExtraccion
 from src.extraction.abstencion import (
     CampoExtraido,
     EvidenceStatus,
-    ResultadoAbstencion,
     RazonAbstencion,
+    ResultadoAbstencion,
 )
 from src.extraction.confidence_router import (
-    SeccionDiagnostico,
+    VERSION_ROUTER,
+    DecisionCheckpoint,
     DiagnosticoExpediente,
     ResultadoRouter,
-    DecisionCheckpoint,
-    ReporteEnforcement,
-    VERSION_ROUTER,
-)
-from src.extraction.expediente_contract import (
-    IntegridadStatus,
-    ConfianzaGlobal,
+    SeccionDiagnostico,
 )
 from src.extraction.excel_writer import (
-    VERSION_EXCEL_WRITER,
-    NOMBRE_HOJA,
-    ColorSemaforo,
-    VERDE,
     AMARILLO,
-    ROJO,
     GRIS,
-    BLANCO,
-    AZUL_HEADER,
-    AZUL_BANNER,
-    _color_por_status,
-    _color_por_confianza,
+    NOMBRE_HOJA,
+    ROJO,
+    VERDE,
+    VERSION_EXCEL_WRITER,
     EscritorDiagnostico,
+    _color_por_confianza,
+    _color_por_status,
     escribir_diagnostico,
 )
-
+from src.extraction.expediente_contract import (
+    ConfianzaGlobal,
+    IntegridadStatus,
+)
 
 # ==============================================================================
 # FIXTURES
 # ==============================================================================
+
 
 @pytest.fixture
 def campo_legible():
@@ -313,6 +310,7 @@ def decision_ok():
 # TESTS: COLORES Y UTILIDADES
 # ==============================================================================
 
+
 class TestColores:
     """Tests para funciones de mapeo de colores."""
 
@@ -387,6 +385,7 @@ class TestColorSemaforo:
 # ==============================================================================
 # TESTS: ESCRITOR DIAGNOSTICO (requiere openpyxl)
 # ==============================================================================
+
 
 @pytest.mark.skipif(not OPENPYXL_DISPONIBLE, reason="openpyxl no instalado")
 class TestEscritorDiagnostico:
@@ -920,10 +919,16 @@ class TestIntegracionConExistentes:
         assert spec["bg_color"] == "FF0000"  # Rojo
         assert spec["comment"] == "Confianza baja"
 
-    def test_campo_extraido_clasificar_status(self, campo_legible, campo_incompleto, campo_abstencion):
+    def test_campo_extraido_clasificar_status(
+        self, campo_legible, campo_incompleto, campo_abstencion
+    ):
         """clasificar_status() produce valores que el writer entiende."""
         assert campo_legible.clasificar_status() == EvidenceStatus.LEGIBLE
         assert campo_abstencion.clasificar_status() == EvidenceStatus.ILEGIBLE
         # Incompleto depende de umbrales, pero al menos no falla
         status = campo_incompleto.clasificar_status()
-        assert status in (EvidenceStatus.LEGIBLE, EvidenceStatus.INCOMPLETO, EvidenceStatus.ILEGIBLE)
+        assert status in (
+            EvidenceStatus.LEGIBLE,
+            EvidenceStatus.INCOMPLETO,
+            EvidenceStatus.ILEGIBLE,
+        )

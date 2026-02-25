@@ -18,13 +18,13 @@ Fecha: 2026-02-17
 """
 
 import io
-import time
-import subprocess
 import logging
-from dataclasses import dataclass
+import subprocess
+import time
 from collections import defaultdict
-from typing import Dict, Any, Optional, Tuple, List
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,7 @@ _ERRORES_DEPS = []
 # PaddleOCR (motor primario)
 try:
     from paddleocr import PaddleOCR as _PaddleOCRClass
+
     PADDLEOCR_DISPONIBLE = True
 except ImportError:
     _PaddleOCRClass = None
@@ -62,6 +63,7 @@ except ImportError:
 # Tesseract (motor fallback)
 try:
     import pytesseract
+
     TESSERACT_DISPONIBLE = True
 except ImportError:
     pytesseract = None
@@ -99,6 +101,7 @@ __version__ = "4.0.0"
 # DATACLASS — LINEA OCR CON BBOX Y CONFIANZA
 # =============================================================================
 
+
 @dataclass
 class LineaOCR:
     """
@@ -111,10 +114,11 @@ class LineaOCR:
         confianza: Score de confianza 0.0–1.0, o None si no disponible.
         motor: Motor que produjo esta linea ("paddleocr" o "tesseract").
     """
+
     texto: str
     bbox: Optional[Tuple[float, float, float, float]]  # (x_min, y_min, x_max, y_max) o None
-    confianza: Optional[float]                          # 0.0 - 1.0 o None
-    motor: str = ""                                     # "paddleocr" o "tesseract"
+    confianza: Optional[float]  # 0.0 - 1.0 o None
+    motor: str = ""  # "paddleocr" o "tesseract"
 
     def to_dict(self) -> Dict[str, Any]:
         """Serializa a dict JSON-compatible."""
@@ -137,6 +141,7 @@ class LineaOCR:
 # =============================================================================
 # HELPERS PRIVADOS — BBOX Y TRACELOGGER
 # =============================================================================
+
 
 def _polygon_to_bbox(polygon: List[List[float]]) -> Tuple[float, float, float, float]:
     """
@@ -214,12 +219,14 @@ def _agrupar_palabras_en_lineas(data: Dict[str, Any]) -> List[LineaOCR]:
         if confs:
             confianza = sum(confs) / len(confs)
 
-        resultado.append(LineaOCR(
-            texto=texto_linea,
-            bbox=bbox,
-            confianza=confianza,
-            motor="tesseract",
-        ))
+        resultado.append(
+            LineaOCR(
+                texto=texto_linea,
+                bbox=bbox,
+                confianza=confianza,
+                motor="tesseract",
+            )
+        )
 
     return resultado
 
@@ -271,10 +278,44 @@ _LANG_MAP_TO_PADDLE = {
 }
 
 _PADDLE_SUPPORTED_LANGS = {
-    "es", "en", "pt", "fr", "de", "it", "nl", "pl", "ro", "tr",
-    "ca", "eu", "gl", "latin", "ch", "japan", "korean", "chinese_cht",
-    "af", "bs", "cs", "cy", "da", "et", "ga", "hr", "hu", "id",
-    "is", "lt", "mi", "ms", "no", "sk", "sl", "sq", "sv", "sw",
+    "es",
+    "en",
+    "pt",
+    "fr",
+    "de",
+    "it",
+    "nl",
+    "pl",
+    "ro",
+    "tr",
+    "ca",
+    "eu",
+    "gl",
+    "latin",
+    "ch",
+    "japan",
+    "korean",
+    "chinese_cht",
+    "af",
+    "bs",
+    "cs",
+    "cy",
+    "da",
+    "et",
+    "ga",
+    "hr",
+    "hu",
+    "id",
+    "is",
+    "lt",
+    "mi",
+    "ms",
+    "no",
+    "sk",
+    "sl",
+    "sq",
+    "sv",
+    "sw",
     "tl",
 }
 
@@ -342,6 +383,7 @@ def _get_paddleocr_instance(paddle_lang: str) -> Any:
 # FUNCIONES DE VERIFICACION
 # =============================================================================
 
+
 def _run_cmd(cmd: List[str]) -> Tuple[int, str, str]:
     """Ejecuta un comando y retorna (returncode, stdout, stderr)"""
     try:
@@ -403,6 +445,7 @@ def verificar_ocr() -> Tuple[bool, str, str]:
 # IDIOMAS
 # =============================================================================
 
+
 def list_tesseract_langs() -> Dict[str, Any]:
     """Lista los idiomas disponibles en Tesseract."""
     rc, out, err = _run_cmd(["tesseract", "--list-langs"])
@@ -441,10 +484,11 @@ def ensure_lang_available(requested_lang: str) -> Tuple[bool, str, List[str]]:
 
         langs = info["langs"]
         if requested_lang not in langs:
-            return False, (
-                f"Idioma '{requested_lang}' NO esta disponible. "
-                f"Idiomas disponibles: {langs}."
-            ), langs
+            return (
+                False,
+                (f"Idioma '{requested_lang}' NO esta disponible. Idiomas disponibles: {langs}."),
+                langs,
+            )
 
         return True, "OK (Tesseract)", langs
 
@@ -454,6 +498,7 @@ def ensure_lang_available(requested_lang: str) -> Tuple[bool, str, List[str]]:
 # =============================================================================
 # RENDERIZADO PDF — con validacion obligatoria de dimensiones (Regla 2)
 # =============================================================================
+
 
 def _validar_dimensiones(img: "Image.Image", max_dim: Optional[int] = None) -> "Image.Image":
     """
@@ -490,7 +535,11 @@ def _validar_dimensiones(img: "Image.Image", max_dim: Optional[int] = None) -> "
 
     logger.info(
         "vision_check: redimensionando %dx%d -> %dx%d (max=%dpx)",
-        ancho, alto, nuevo_ancho, nuevo_alto, max_dim,
+        ancho,
+        alto,
+        nuevo_ancho,
+        nuevo_alto,
+        max_dim,
     )
 
     resample = Image.LANCZOS if hasattr(Image, "LANCZOS") else Image.BICUBIC
@@ -545,6 +594,7 @@ def renderizar_pagina(pdf_path: Path, page_num: int, dpi: int = 200) -> Optional
 # ROTACION Y DESKEW (Tesseract-only helpers, usados en fallback)
 # =============================================================================
 
+
 def _detectar_rotacion_osd(img: "Image.Image") -> Tuple[int, str]:
     """Detecta rotacion usando Tesseract OSD."""
     if not TESSERACT_DISPONIBLE:
@@ -574,16 +624,16 @@ def _detectar_rotacion_bruteforce(img: "Image.Image", lang: str = "eng") -> Tupl
 
         try:
             data = pytesseract.image_to_data(
-                img_rotada, lang=lang,
-                output_type=pytesseract.Output.DICT,
-                config='--psm 6'
+                img_rotada, lang=lang, output_type=pytesseract.Output.DICT, config="--psm 6"
             )
 
-            palabras = sum(1 for t in data['text'] if t.strip())
-            confianzas = [c for c in data['conf'] if c != -1 and c > 0]
+            palabras = sum(1 for t in data["text"] if t.strip())
+            confianzas = [c for c in data["conf"] if c != -1 and c > 0]
             confianza = sum(confianzas) / len(confianzas) / 100 if confianzas else 0
 
-            if palabras > mejor_palabras or (palabras == mejor_palabras and confianza > mejor_confianza):
+            if palabras > mejor_palabras or (
+                palabras == mejor_palabras and confianza > mejor_confianza
+            ):
                 mejor_angulo = angulo
                 mejor_palabras = palabras
                 mejor_confianza = confianza
@@ -603,13 +653,11 @@ def _detectar_deskew(img: "Image.Image") -> float:
         return 0.0
 
     try:
-        img_gray = img.convert('L')
+        img_gray = img.convert("L")
         img_array = np.array(img_gray)
 
         binary = cv2.adaptiveThreshold(
-            img_array, 255,
-            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY_INV, 11, 2
+            img_array, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2
         )
 
         coords = np.column_stack(np.where(binary > 0))
@@ -657,9 +705,7 @@ def _aplicar_deskew(img: "Image.Image", angulo: float) -> "Image.Image":
 
         M = cv2.getRotationMatrix2D(center, angulo, 1.0)
         rotated = cv2.warpAffine(
-            img_array, M, (w, h),
-            flags=cv2.INTER_CUBIC,
-            borderMode=cv2.BORDER_REPLICATE
+            img_array, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
         )
 
         return Image.fromarray(rotated)
@@ -667,7 +713,9 @@ def _aplicar_deskew(img: "Image.Image", angulo: float) -> "Image.Image":
         return img
 
 
-def preprocesar_rotacion(img: "Image.Image", lang: str = "eng") -> Tuple["Image.Image", Dict[str, Any]]:
+def preprocesar_rotacion(
+    img: "Image.Image", lang: str = "eng"
+) -> Tuple["Image.Image", Dict[str, Any]]:
     """
     Preprocesa la imagen detectando y corrigiendo rotacion.
 
@@ -684,7 +732,7 @@ def preprocesar_rotacion(img: "Image.Image", lang: str = "eng") -> Tuple["Image.
         "rotacion_grados": 0,
         "rotacion_metodo": "none",
         "deskew_grados": 0.0,
-        "rotacion_aplicada": False
+        "rotacion_aplicada": False,
     }
 
     # PaddleOCR maneja rotacion internamente
@@ -722,6 +770,7 @@ def preprocesar_rotacion(img: "Image.Image", lang: str = "eng") -> Tuple["Image.
 # METRICAS DE IMAGEN (SIN CAMBIOS — solo usa cv2)
 # =============================================================================
 
+
 def calcular_metricas_imagen(img: "Image.Image", dpi_render: int = 200) -> Dict[str, Any]:
     """Calcula metricas de calidad de imagen."""
     metricas = {
@@ -737,7 +786,7 @@ def calcular_metricas_imagen(img: "Image.Image", dpi_render: int = 200) -> Dict[
         return metricas
 
     try:
-        img_gray = img.convert('L')
+        img_gray = img.convert("L")
         img_array = np.array(img_gray)
 
         p5 = np.percentile(img_array, 5)
@@ -755,6 +804,7 @@ def calcular_metricas_imagen(img: "Image.Image", dpi_render: int = 200) -> Dict[
 # =============================================================================
 # OCR — IMPLEMENTACIONES POR MOTOR
 # =============================================================================
+
 
 def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, Any]:
     """
@@ -787,6 +837,7 @@ def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, 
     else:
         # Fallback: guardar a bytes y pasar
         import tempfile
+
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
             img.save(f, format="PNG")
             img_input = f.name
@@ -816,12 +867,14 @@ def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, 
         for i, texto in enumerate(rec_texts):
             bbox = _polygon_to_bbox(dt_polys[i]) if i < len(dt_polys) else None
             score = rec_scores[i] if i < len(rec_scores) else None
-            lineas_ocr.append(LineaOCR(
-                texto=texto,
-                bbox=bbox,
-                confianza=score,
-                motor="paddleocr",
-            ))
+            lineas_ocr.append(
+                LineaOCR(
+                    texto=texto,
+                    bbox=bbox,
+                    confianza=score,
+                    motor="paddleocr",
+                )
+            )
 
     # Filtrar textos vacios
     textos_filtrados = [t for t in textos if t.strip()]
@@ -834,9 +887,7 @@ def _ejecutar_ocr_paddleocr(img: "Image.Image", lang: str = "eng") -> Dict[str, 
 
     if confianzas:
         # PaddleOCR scores ya estan en rango 0-1
-        resultado["confianza_promedio"] = round(
-            sum(confianzas) / len(confianzas), 3
-        )
+        resultado["confianza_promedio"] = round(sum(confianzas) / len(confianzas), 3)
 
     return resultado
 
@@ -875,10 +926,10 @@ def _ejecutar_ocr_tesseract(img: "Image.Image", lang: str = "eng") -> Dict[str, 
         textos = []
         confianzas = []
 
-        for i, texto in enumerate(data['text']):
+        for i, texto in enumerate(data["text"]):
             if texto.strip():
                 textos.append(texto)
-                conf = data['conf'][i]
+                conf = data["conf"][i]
                 if conf != -1:
                     confianzas.append(conf)
 
@@ -904,6 +955,7 @@ def _ejecutar_ocr_tesseract(img: "Image.Image", lang: str = "eng") -> Dict[str, 
 # =============================================================================
 # FUNCION PUBLICA — DISPATCH CON FALLBACK
 # =============================================================================
+
 
 def ejecutar_ocr(
     img: "Image.Image",
@@ -938,41 +990,55 @@ def ejecutar_ocr(
         img_dims = {"width": img.size[0], "height": img.size[1]}
     except Exception:
         pass
-    _log_ocr(trace_logger, "info", "OCR iniciado", {
-        "lang": lang,
-        "imagen": img_dims,
-        "motor_activo": _ACTIVE_ENGINE,
-    })
+    _log_ocr(
+        trace_logger,
+        "info",
+        "OCR iniciado",
+        {
+            "lang": lang,
+            "imagen": img_dims,
+            "motor_activo": _ACTIVE_ENGINE,
+        },
+    )
 
     # Ruta 1: PaddleOCR primario
     if PADDLEOCR_DISPONIBLE:
         try:
             result = _ejecutar_ocr_paddleocr(img, lang)
-            _log_ocr(trace_logger, "info", "OCR completado", {
-                "motor": result.get("motor_ocr"),
-                "num_palabras": result.get("num_palabras"),
-                "confianza_promedio": result.get("confianza_promedio"),
-                "num_lineas": len(result.get("lineas", [])),
-                "tiempo_ms": result.get("tiempo_ms"),
-            })
-            return result
-        except Exception as e:
-            logger.warning(
-                "PaddleOCR fallo en runtime (%s), fallback a Tesseract...",
-                str(e)[:100]
-            )
-            _log_ocr(trace_logger, "warning", f"PaddleOCR fallo, fallback a Tesseract: {str(e)[:100]}")
-            # Auto-fallback a Tesseract
-            if TESSERACT_DISPONIBLE:
-                result = _ejecutar_ocr_tesseract(img, lang)
-                result["motor_ocr"] = "tesseract_fallback"
-                _log_ocr(trace_logger, "info", "OCR completado via fallback", {
-                    "motor": "tesseract_fallback",
+            _log_ocr(
+                trace_logger,
+                "info",
+                "OCR completado",
+                {
+                    "motor": result.get("motor_ocr"),
                     "num_palabras": result.get("num_palabras"),
                     "confianza_promedio": result.get("confianza_promedio"),
                     "num_lineas": len(result.get("lineas", [])),
                     "tiempo_ms": result.get("tiempo_ms"),
-                })
+                },
+            )
+            return result
+        except Exception as e:
+            logger.warning("PaddleOCR fallo en runtime (%s), fallback a Tesseract...", str(e)[:100])
+            _log_ocr(
+                trace_logger, "warning", f"PaddleOCR fallo, fallback a Tesseract: {str(e)[:100]}"
+            )
+            # Auto-fallback a Tesseract
+            if TESSERACT_DISPONIBLE:
+                result = _ejecutar_ocr_tesseract(img, lang)
+                result["motor_ocr"] = "tesseract_fallback"
+                _log_ocr(
+                    trace_logger,
+                    "info",
+                    "OCR completado via fallback",
+                    {
+                        "motor": "tesseract_fallback",
+                        "num_palabras": result.get("num_palabras"),
+                        "confianza_promedio": result.get("confianza_promedio"),
+                        "num_lineas": len(result.get("lineas", [])),
+                        "tiempo_ms": result.get("tiempo_ms"),
+                    },
+                )
                 return result
             else:
                 _log_ocr(trace_logger, "error", "PaddleOCR fallo y Tesseract no disponible")
@@ -991,13 +1057,18 @@ def ejecutar_ocr(
     # Ruta 2: Tesseract unico motor
     if TESSERACT_DISPONIBLE:
         result = _ejecutar_ocr_tesseract(img, lang)
-        _log_ocr(trace_logger, "info", "OCR completado", {
-            "motor": result.get("motor_ocr"),
-            "num_palabras": result.get("num_palabras"),
-            "confianza_promedio": result.get("confianza_promedio"),
-            "num_lineas": len(result.get("lineas", [])),
-            "tiempo_ms": result.get("tiempo_ms"),
-        })
+        _log_ocr(
+            trace_logger,
+            "info",
+            "OCR completado",
+            {
+                "motor": result.get("motor_ocr"),
+                "num_palabras": result.get("num_palabras"),
+                "confianza_promedio": result.get("confianza_promedio"),
+                "num_lineas": len(result.get("lineas", [])),
+                "tiempo_ms": result.get("tiempo_ms"),
+            },
+        )
         return result
 
     # Ruta 3: Ningun motor disponible

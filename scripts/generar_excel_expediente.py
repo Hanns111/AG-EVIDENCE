@@ -9,15 +9,19 @@ Hojas:
   4. BoardingPass — Datos de vuelos y tiquete aéreo
 """
 
-import openpyxl
-from openpyxl.styles import Font, Alignment, Border, Side, PatternFill, numbers
-from openpyxl.utils import get_column_letter
 import os
+
+import openpyxl
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 
 OUTPUT_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "expedientes", "pruebas", "viaticos_2026",
-    "ODI2026-INT-0139051_11_02_26"
+    "data",
+    "expedientes",
+    "pruebas",
+    "viaticos_2026",
+    "ODI2026-INT-0139051_11_02_26",
 )
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "RENDICION_ODI2026-INT-0139051.xlsx")
 
@@ -29,7 +33,7 @@ HEADER_FILL = PatternFill(start_color="2F5496", end_color="2F5496", fill_type="s
 TITLE_FONT = Font(name="Calibri", bold=True, size=14, color="2F5496")
 SUBTITLE_FONT = Font(name="Calibri", bold=True, size=11, color="2F5496")
 DATA_FONT = Font(name="Calibri", size=10)
-MONEY_FORMAT = '#,##0.00'
+MONEY_FORMAT = "#,##0.00"
 THIN_BORDER = Border(
     left=Side(style="thin"),
     right=Side(style="thin"),
@@ -91,7 +95,10 @@ def crear_hoja_anexo3(wb):
         ("N° Planilla", "00050"),
         ("N° Exp. SIAF", "00001705"),
         ("N° Comprobante", "2601710"),
-        ("Motivo", "Avanzada y acompañamiento social a visita técnica del SM a instituciones educativas de Piura"),
+        (
+            "Motivo",
+            "Avanzada y acompañamiento social a visita técnica del SM a instituciones educativas de Piura",
+        ),
         ("Dirección", "Conjunto residencial Iquique, Callao"),
         ("DNI", "41969732"),
         ("CEL", "997789672"),
@@ -124,7 +131,7 @@ def crear_hoja_anexo3(wb):
     gastos = [
         ("04/02/2026", "Factura", "E001-11614", "CONTADORES PUBLICOS EIRL", "ALIMENTACION", 70.00),
         ("04/02/2026", "Factura", "E001-11611", "CONTADORES PUBLICOS EIRL", "ALIMENTACION", 50.00),
-        ("04/02/2026", "Factura", "E001-1134",  "MANRIQUE RIOS JULIO NICANOR", "HOSPEDAJE", 300.00),
+        ("04/02/2026", "Factura", "E001-1134", "MANRIQUE RIOS JULIO NICANOR", "HOSPEDAJE", 300.00),
         ("05/02/2026", "Factura", "E001-11622", "CONTADORES PUBLICOS EIRL", "ALIMENTACION", 40.00),
         ("05/02/2026", "Factura", "E001-11629", "CONTADORES PUBLICOS EIRL", "ALIMENTACION", 60.00),
         ("05/02/2026", "Factura", "E001-11630", "CONTADORES PUBLICOS EIRL", "ALIMENTACION", 50.00),
@@ -238,32 +245,34 @@ def crear_hoja_comprobantes(wb):
 
     # Info general del expediente
     ws.merge_cells("A2:T2")
-    ws["A2"] = "Expediente: ODI2026-INT-0139051 | Comisionado: QUEREVALU MIÑAN JOSE FAUSTINO | DNI: 41969732"
+    ws["A2"] = (
+        "Expediente: ODI2026-INT-0139051 | Comisionado: QUEREVALU MIÑAN JOSE FAUSTINO | DNI: 41969732"
+    )
     ws["A2"].font = Font(italic=True, size=9, color="666666")
     ws["A2"].alignment = Alignment(horizontal="center")
 
     row = 4
     headers = [
-        "N°",                           # 1
-        "Fecha Emisión",                 # 2
-        "Tipo Comprobante",              # 3
-        "Comprobante Electrónico",       # 4
-        "Serie-Número",                  # 5
-        "RUC Proveedor",                 # 6
-        "Razón Social Proveedor",        # 7
-        "Dirección Proveedor",           # 8
-        "Cliente (Señor/es)",            # 9
-        "RUC Cliente",                   # 10
-        "Dirección Cliente",             # 11
-        "Concepto / Qué consumió",       # 12
-        "Detalle Ítems",                 # 13
-        "Forma de Pago",                 # 14
+        "N°",  # 1
+        "Fecha Emisión",  # 2
+        "Tipo Comprobante",  # 3
+        "Comprobante Electrónico",  # 4
+        "Serie-Número",  # 5
+        "RUC Proveedor",  # 6
+        "Razón Social Proveedor",  # 7
+        "Dirección Proveedor",  # 8
+        "Cliente (Señor/es)",  # 9
+        "RUC Cliente",  # 10
+        "Dirección Cliente",  # 11
+        "Concepto / Qué consumió",  # 12
+        "Detalle Ítems",  # 13
+        "Forma de Pago",  # 14
         "Valor Venta (Base Imponible)",  # 15
-        "IGV S/",                        # 16
-        "% IGV Aplicado",               # 17
-        "ICBPER S/",                     # 18
-        "Importe Total S/",             # 19
-        "Observaciones",                 # 20
+        "IGV S/",  # 16
+        "% IGV Aplicado",  # 17
+        "ICBPER S/",  # 18
+        "Importe Total S/",  # 19
+        "Observaciones",  # 20
     ]
 
     for i, h in enumerate(headers, 1):
@@ -416,12 +425,26 @@ def crear_hoja_comprobantes(wb):
 
     for cp in comprobantes:
         values = [
-            cp["n"], cp["fecha"], cp["tipo_cp"], cp["electronico"],
-            cp["serie_num"], cp["ruc_prov"], cp["razon_social_prov"],
-            cp["dir_prov"], cp["cliente"], cp["ruc_cliente"],
-            cp["dir_cliente"], cp["concepto"], cp["detalle_items"],
-            cp["forma_pago"], cp["valor_venta"], cp["igv"],
-            cp["pct_igv"], cp["icbper"], cp["importe_total"], cp["obs"],
+            cp["n"],
+            cp["fecha"],
+            cp["tipo_cp"],
+            cp["electronico"],
+            cp["serie_num"],
+            cp["ruc_prov"],
+            cp["razon_social_prov"],
+            cp["dir_prov"],
+            cp["cliente"],
+            cp["ruc_cliente"],
+            cp["dir_cliente"],
+            cp["concepto"],
+            cp["detalle_items"],
+            cp["forma_pago"],
+            cp["valor_venta"],
+            cp["igv"],
+            cp["pct_igv"],
+            cp["icbper"],
+            cp["importe_total"],
+            cp["obs"],
         ]
         for i, val in enumerate(values, 1):
             cell = ws.cell(row=row, column=i, value=val)
@@ -432,7 +455,9 @@ def crear_hoja_comprobantes(wb):
     # Fila de totales
     row += 1
     ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=14)
-    ws.cell(row=row, column=1, value="TOTALES COMPROBANTES CON SUSTENTO").font = Font(bold=True, size=10)
+    ws.cell(row=row, column=1, value="TOTALES COMPROBANTES CON SUSTENTO").font = Font(
+        bold=True, size=10
+    )
     ws.cell(row=row, column=1).border = THIN_BORDER
 
     total_vv = sum(c["valor_venta"] for c in comprobantes)
@@ -449,7 +474,17 @@ def crear_hoja_comprobantes(wb):
     row += 2
     ws.cell(row=row, column=1, value="VERIFICACIÓN ARITMÉTICA IGV").font = SUBTITLE_FONT
     row += 1
-    headers_v = ["Comprobante", "Base Imponible", "IGV Factura", "% Real", "Régimen Aplicable", "% Esperado", "IGV Esperado", "Diferencia", "ESTADO"]
+    headers_v = [
+        "Comprobante",
+        "Base Imponible",
+        "IGV Factura",
+        "% Real",
+        "Régimen Aplicable",
+        "% Esperado",
+        "IGV Esperado",
+        "Diferencia",
+        "ESTADO",
+    ]
     for i, h in enumerate(headers_v, 1):
         ws.cell(row=row, column=i, value=h)
     style_header_row(ws, row, len(headers_v))
@@ -464,7 +499,9 @@ def crear_hoja_comprobantes(wb):
         pct_real = round((cp["igv"] / cp["valor_venta"]) * 100, 2) if cp["valor_venta"] > 0 else 0
 
         # Determinar régimen esperado basado en tipo de proveedor
-        es_mype_restaurante_hotel = cp["concepto"].startswith("HOSPEDAJE") or cp["concepto"].startswith("ALIMENTACION")
+        es_mype_restaurante_hotel = cp["concepto"].startswith("HOSPEDAJE") or cp[
+            "concepto"
+        ].startswith("ALIMENTACION")
         # MYPE restaurantes/hoteles → 10% (Ley 31556 + 32219)
         if es_mype_restaurante_hotel and abs(pct_real - 10.0) < 1.0:
             regimen = "MYPE Rest/Hotel (Ley 31556+32219)"
@@ -485,8 +522,15 @@ def crear_hoja_comprobantes(wb):
             estado = f"REVISAR — {pct_real}% no coincide con {pct_esperado}%"
 
         vals = [
-            cp["serie_num"], cp["valor_venta"], cp["igv"],
-            f"{pct_real}%", regimen, f"{pct_esperado}%", igv_esperado, diff, estado
+            cp["serie_num"],
+            cp["valor_venta"],
+            cp["igv"],
+            f"{pct_real}%",
+            regimen,
+            f"{pct_esperado}%",
+            igv_esperado,
+            diff,
+            estado,
         ]
         for i, val in enumerate(vals, 1):
             cell = ws.cell(row=row, column=i, value=val)
@@ -543,9 +587,18 @@ def crear_hoja_boarding(wb):
     row += 1
 
     headers = [
-        "Tramo", "N° Vuelo", "Fecha", "Origen", "Destino",
-        "Hora Salida", "Hora Llegada", "Puerta", "Asiento",
-        "Cabina", "Tarifa", "Hora Presentarse"
+        "Tramo",
+        "N° Vuelo",
+        "Fecha",
+        "Origen",
+        "Destino",
+        "Hora Salida",
+        "Hora Llegada",
+        "Puerta",
+        "Asiento",
+        "Cabina",
+        "Tarifa",
+        "Hora Presentarse",
     ]
     for i, h in enumerate(headers, 1):
         ws.cell(row=row, column=i, value=h)
@@ -553,10 +606,34 @@ def crear_hoja_boarding(wb):
     row += 1
 
     vuelos = [
-        ("IDA", "LA 2302", "04/02/2026", "LIMA (J. Chavez Intl.)", "PIURA (G. Concha Ibérico)",
-         "05:35", "07:15", "C17", "8C (LIM)", "Economy", "Basic", "04:35"),
-        ("RETORNO", "LA 2126", "05/02/2026", "PIURA (G. Concha Ibérico)", "LIMA (J. Chavez Intl.)",
-         "19:35", "21:00", "1", "8C (PIU)", "Economy", "Basic", "18:35"),
+        (
+            "IDA",
+            "LA 2302",
+            "04/02/2026",
+            "LIMA (J. Chavez Intl.)",
+            "PIURA (G. Concha Ibérico)",
+            "05:35",
+            "07:15",
+            "C17",
+            "8C (LIM)",
+            "Economy",
+            "Basic",
+            "04:35",
+        ),
+        (
+            "RETORNO",
+            "LA 2126",
+            "05/02/2026",
+            "PIURA (G. Concha Ibérico)",
+            "LIMA (J. Chavez Intl.)",
+            "19:35",
+            "21:00",
+            "1",
+            "8C (PIU)",
+            "Economy",
+            "Basic",
+            "18:35",
+        ),
     ]
 
     for v in vuelos:
@@ -587,7 +664,7 @@ def crear_hoja_boarding(wb):
     for p in pagos:
         for i, val in enumerate(p, 1):
             cell = ws.cell(row=row, column=i, value=val)
-            is_money = (i == 3 and isinstance(val, (int, float)))
+            is_money = i == 3 and isinstance(val, (int, float))
             style_data_cell(cell, is_money=is_money)
             if p[0] == "TOTAL TIQUETE":
                 cell.font = Font(bold=True, size=10)

@@ -10,13 +10,13 @@ Estrategia:
 - pytest.mark.skipif para tests que requieren motores reales
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 # Importar modulo bajo test
 from src.ocr import core
-
 
 # =============================================================================
 # Helpers
@@ -24,6 +24,7 @@ from src.ocr import core
 
 try:
     from PIL import Image as _PILImage
+
     _PIL_DISPONIBLE = True
 except ImportError:
     _PILImage = None
@@ -59,6 +60,7 @@ def _get_image_or_mock():
 # 1. TestDependencyFlags
 # =============================================================================
 
+
 class TestDependencyFlags:
     """Verifica que los flags de dependencias sean booleanos."""
 
@@ -81,6 +83,7 @@ class TestDependencyFlags:
 # =============================================================================
 # 2. TestLanguageMapping
 # =============================================================================
+
 
 class TestLanguageMapping:
     """Verifica el mapeo de idiomas Tesseract -> PaddleOCR."""
@@ -110,6 +113,7 @@ class TestLanguageMapping:
 # =============================================================================
 # 3. TestVerificacion
 # =============================================================================
+
 
 class TestVerificacion:
     """Verifica funciones de verificacion de motores."""
@@ -152,6 +156,7 @@ class TestVerificacion:
 # 4. TestRenderizarPagina
 # =============================================================================
 
+
 class TestRenderizarPagina:
     """Tests para renderizar_pagina (solo usa PyMuPDF)."""
 
@@ -172,6 +177,7 @@ class TestRenderizarPagina:
 # =============================================================================
 # 5. TestPreprocesarRotacion
 # =============================================================================
+
 
 class TestPreprocesarRotacion:
     """Tests para preprocesar_rotacion."""
@@ -222,6 +228,7 @@ class TestPreprocesarRotacion:
 # 6. TestCalcularMetricas
 # =============================================================================
 
+
 class TestCalcularMetricas:
     """Tests para calcular_metricas_imagen."""
 
@@ -263,6 +270,7 @@ class TestCalcularMetricas:
 # 7. TestEjecutarOCR
 # =============================================================================
 
+
 class TestEjecutarOCR:
     """Tests para ejecutar_ocr (dispatch + fallback)."""
 
@@ -279,9 +287,14 @@ class TestEjecutarOCR:
             pytest.skip("PIL no disponible")
         result = core.ejecutar_ocr(img, "eng")
         claves_requeridas = [
-            "lang", "texto_completo", "snippet_200",
-            "confianza_promedio", "num_palabras",
-            "tiempo_ms", "error", "motor_ocr"
+            "lang",
+            "texto_completo",
+            "snippet_200",
+            "confianza_promedio",
+            "num_palabras",
+            "tiempo_ms",
+            "error",
+            "motor_ocr",
         ]
         for clave in claves_requeridas:
             assert clave in result, f"Falta clave '{clave}' en resultado OCR"
@@ -293,9 +306,7 @@ class TestEjecutarOCR:
             pytest.skip("PIL no disponible")
         result = core.ejecutar_ocr(img, "eng")
         assert "motor_ocr" in result
-        assert result["motor_ocr"] in (
-            "paddleocr", "tesseract", "tesseract_fallback", "none"
-        )
+        assert result["motor_ocr"] in ("paddleocr", "tesseract", "tesseract_fallback", "none")
 
     def test_confianza_en_rango_0_1(self):
         img = _create_white_image()
@@ -322,8 +333,9 @@ class TestEjecutarOCR:
         """Si no hay motores, debe retornar error."""
         img = _create_mock_image()
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ):
             result = core.ejecutar_ocr(img, "eng")
             assert result["error"] is not None
             assert result["motor_ocr"] == "none"
@@ -344,10 +356,11 @@ class TestEjecutarOCR:
             "lineas": [],
         }
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', True), \
-             patch.object(core, '_ejecutar_ocr_paddleocr', side_effect=RuntimeError("GPU OOM")), \
-             patch.object(core, '_ejecutar_ocr_tesseract', return_value=mock_tesseract_result):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", True), patch.object(
+            core, "TESSERACT_DISPONIBLE", True
+        ), patch.object(
+            core, "_ejecutar_ocr_paddleocr", side_effect=RuntimeError("GPU OOM")
+        ), patch.object(core, "_ejecutar_ocr_tesseract", return_value=mock_tesseract_result):
             result = core.ejecutar_ocr(img, "eng")
             assert result["motor_ocr"] == "tesseract_fallback"
             assert result["texto_completo"] == "mock text"
@@ -356,9 +369,9 @@ class TestEjecutarOCR:
         """Cuando PaddleOCR falla y Tesseract no existe."""
         img = _create_mock_image()
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False), \
-             patch.object(core, '_ejecutar_ocr_paddleocr', side_effect=RuntimeError("GPU fail")):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", True), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ), patch.object(core, "_ejecutar_ocr_paddleocr", side_effect=RuntimeError("GPU fail")):
             result = core.ejecutar_ocr(img, "eng")
             assert result["motor_ocr"] == "none"
             assert result["error"] is not None
@@ -379,9 +392,9 @@ class TestEjecutarOCR:
             "lineas": [],
         }
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', True), \
-             patch.object(core, '_ejecutar_ocr_tesseract', return_value=mock_result):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", True
+        ), patch.object(core, "_ejecutar_ocr_tesseract", return_value=mock_result):
             result = core.ejecutar_ocr(img, "eng")
             assert result["motor_ocr"] == "tesseract"
             assert result["texto_completo"] == "tesseract only"
@@ -390,6 +403,7 @@ class TestEjecutarOCR:
 # =============================================================================
 # 8. TestEnsureLangAvailable
 # =============================================================================
+
 
 class TestEnsureLangAvailable:
     """Tests para ensure_lang_available."""
@@ -412,8 +426,9 @@ class TestEnsureLangAvailable:
 
     def test_sin_motores_retorna_false(self):
         """Sin motores, ensure_lang debe retornar False."""
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ):
             ok, msg, langs = core.ensure_lang_available("spa")
             assert not ok
             assert langs == []
@@ -422,6 +437,7 @@ class TestEnsureLangAvailable:
 # =============================================================================
 # 9. TestListTesseractLangs
 # =============================================================================
+
 
 class TestListTesseractLangs:
     """Tests para list_tesseract_langs."""
@@ -437,6 +453,7 @@ class TestListTesseractLangs:
 # =============================================================================
 # 10. TestSingletonPaddleOCR
 # =============================================================================
+
 
 class TestSingletonPaddleOCR:
     """Tests para el patron singleton de PaddleOCR."""
@@ -456,19 +473,20 @@ class TestSingletonPaddleOCR:
 # 11. TestOCRTesseractInterno
 # =============================================================================
 
+
 class TestOCRTesseractInterno:
     """Tests para _ejecutar_ocr_tesseract."""
 
     def test_sin_tesseract_retorna_error(self):
         img = _create_mock_image()
-        with patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "TESSERACT_DISPONIBLE", False):
             result = core._ejecutar_ocr_tesseract(img, "eng")
             assert result["error"] is not None
             assert result["motor_ocr"] == "tesseract"
 
     def test_resultado_tiene_motor_ocr(self):
         img = _create_mock_image()
-        with patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "TESSERACT_DISPONIBLE", False):
             result = core._ejecutar_ocr_tesseract(img, "eng")
             assert result["motor_ocr"] == "tesseract"
 
@@ -477,23 +495,25 @@ class TestOCRTesseractInterno:
 # 12. TestImportsPublicos
 # =============================================================================
 
+
 class TestImportsPublicos:
     """Verifica que los imports publicos del modulo funcionen."""
 
     def test_import_from_ocr_init(self):
         from src.ocr import (
-            renderizar_pagina,
-            ejecutar_ocr,
-            preprocesar_rotacion,
-            calcular_metricas_imagen,
-            verificar_tesseract,
-            verificar_paddleocr,
-            verificar_ocr,
-            ensure_lang_available,
             CV2_DISPONIBLE,
-            TESSERACT_DISPONIBLE,
             PADDLEOCR_DISPONIBLE,
+            TESSERACT_DISPONIBLE,
+            calcular_metricas_imagen,
+            ejecutar_ocr,
+            ensure_lang_available,
+            preprocesar_rotacion,
+            renderizar_pagina,
+            verificar_ocr,
+            verificar_paddleocr,
+            verificar_tesseract,
         )
+
         # Verificar que son callable
         assert callable(renderizar_pagina)
         assert callable(ejecutar_ocr)
@@ -511,29 +531,40 @@ class TestImportsPublicos:
     def test_all_exports_match(self):
         """Verifica que __all__ en __init__.py contenga los exports correctos."""
         from src.ocr import __all__ as exports
+
         expected = {
-            "renderizar_pagina", "ejecutar_ocr", "preprocesar_rotacion",
-            "calcular_metricas_imagen", "verificar_tesseract",
-            "verificar_paddleocr", "verificar_ocr", "ensure_lang_available",
+            "renderizar_pagina",
+            "ejecutar_ocr",
+            "preprocesar_rotacion",
+            "calcular_metricas_imagen",
+            "verificar_tesseract",
+            "verificar_paddleocr",
+            "verificar_ocr",
+            "ensure_lang_available",
             "LineaOCR",
-            "CV2_DISPONIBLE", "TESSERACT_DISPONIBLE", "PADDLEOCR_DISPONIBLE",
+            "CV2_DISPONIBLE",
+            "TESSERACT_DISPONIBLE",
+            "PADDLEOCR_DISPONIBLE",
         }
         assert set(exports) == expected
 
     def test_linea_ocr_importable(self):
         """LineaOCR debe ser importable desde src.ocr."""
         from src.ocr import LineaOCR
+
         assert LineaOCR is not None
 
     def test_linea_ocr_in_all(self):
         """LineaOCR debe estar en __all__."""
         from src.ocr import __all__ as exports
+
         assert "LineaOCR" in exports
 
 
 # =============================================================================
 # 13. TestLineaOCR — Dataclass
 # =============================================================================
+
 
 class TestLineaOCR:
     """Tests para la dataclass LineaOCR."""
@@ -637,6 +668,7 @@ class TestLineaOCR:
     def test_to_dict_json_serializable(self):
         """to_dict debe ser serializable a JSON."""
         import json
+
         linea = core.LineaOCR(
             texto="json test",
             bbox=(1, 2, 3, 4),
@@ -652,6 +684,7 @@ class TestLineaOCR:
 # =============================================================================
 # 14. TestPolygonToBbox
 # =============================================================================
+
 
 class TestPolygonToBbox:
     """Tests para _polygon_to_bbox."""
@@ -684,6 +717,7 @@ class TestPolygonToBbox:
 # =============================================================================
 # 15. TestAgruparPalabrasEnLineas
 # =============================================================================
+
 
 class TestAgruparPalabrasEnLineas:
     """Tests para _agrupar_palabras_en_lineas."""
@@ -718,12 +752,14 @@ class TestAgruparPalabrasEnLineas:
 
     def test_dos_lineas(self):
         """Agrupa correctamente 2 lineas con 2 palabras cada una."""
-        data = self._make_tesseract_data([
-            ("Hello", 1, 1, 10, 10, 50, 20, 95),
-            ("World", 1, 1, 70, 10, 50, 20, 90),
-            ("Foo", 1, 2, 10, 40, 30, 20, 80),
-            ("Bar", 1, 2, 50, 40, 30, 20, 85),
-        ])
+        data = self._make_tesseract_data(
+            [
+                ("Hello", 1, 1, 10, 10, 50, 20, 95),
+                ("World", 1, 1, 70, 10, 50, 20, 90),
+                ("Foo", 1, 2, 10, 40, 30, 20, 80),
+                ("Bar", 1, 2, 50, 40, 30, 20, 85),
+            ]
+        )
         lineas = core._agrupar_palabras_en_lineas(data)
         assert len(lineas) == 2
         assert lineas[0].texto == "Hello World"
@@ -732,12 +768,14 @@ class TestAgruparPalabrasEnLineas:
 
     def test_filtra_vacios(self):
         """Palabras vacias son ignoradas."""
-        data = self._make_tesseract_data([
-            ("Hello", 1, 1, 10, 10, 50, 20, 90),
-            ("", 1, 1, 70, 10, 50, 20, -1),
-            ("  ", 1, 1, 130, 10, 50, 20, -1),
-            ("World", 1, 2, 10, 40, 50, 20, 85),
-        ])
+        data = self._make_tesseract_data(
+            [
+                ("Hello", 1, 1, 10, 10, 50, 20, 90),
+                ("", 1, 1, 70, 10, 50, 20, -1),
+                ("  ", 1, 1, 130, 10, 50, 20, -1),
+                ("World", 1, 2, 10, 40, 50, 20, 85),
+            ]
+        )
         lineas = core._agrupar_palabras_en_lineas(data)
         assert len(lineas) == 2
         assert lineas[0].texto == "Hello"
@@ -745,10 +783,12 @@ class TestAgruparPalabrasEnLineas:
 
     def test_union_bbox_correcta(self):
         """Union de bboxes calcula envolvente correcta."""
-        data = self._make_tesseract_data([
-            ("A", 1, 1, 10, 10, 30, 20, 90),
-            ("B", 1, 1, 50, 15, 40, 25, 80),
-        ])
+        data = self._make_tesseract_data(
+            [
+                ("A", 1, 1, 10, 10, 30, 20, 90),
+                ("B", 1, 1, 50, 15, 40, 25, 80),
+            ]
+        )
         lineas = core._agrupar_palabras_en_lineas(data)
         assert len(lineas) == 1
         bbox = lineas[0].bbox
@@ -764,10 +804,12 @@ class TestAgruparPalabrasEnLineas:
 
     def test_confianza_promedio(self):
         """Confianza por linea es el promedio normalizado 0-1."""
-        data = self._make_tesseract_data([
-            ("A", 1, 1, 0, 0, 10, 10, 90),
-            ("B", 1, 1, 20, 0, 10, 10, 80),
-        ])
+        data = self._make_tesseract_data(
+            [
+                ("A", 1, 1, 0, 0, 10, 10, 90),
+                ("B", 1, 1, 20, 0, 10, 10, 80),
+            ]
+        )
         lineas = core._agrupar_palabras_en_lineas(data)
         assert len(lineas) == 1
         # promedio = (90/100 + 80/100) / 2 = 0.85
@@ -776,19 +818,23 @@ class TestAgruparPalabrasEnLineas:
 
     def test_confianza_none_cuando_todos_minus_1(self):
         """Confianza es None si todas las confs son -1."""
-        data = self._make_tesseract_data([
-            ("X", 1, 1, 0, 0, 10, 10, -1),
-        ])
+        data = self._make_tesseract_data(
+            [
+                ("X", 1, 1, 0, 0, 10, 10, -1),
+            ]
+        )
         lineas = core._agrupar_palabras_en_lineas(data)
         assert len(lineas) == 1
         assert lineas[0].confianza is None
 
     def test_datos_vacios(self):
         """Sin palabras validas, retorna lista vacia."""
-        data = self._make_tesseract_data([
-            ("", 1, 1, 0, 0, 10, 10, -1),
-            ("  ", 1, 2, 0, 0, 10, 10, -1),
-        ])
+        data = self._make_tesseract_data(
+            [
+                ("", 1, 1, 0, 0, 10, 10, -1),
+                ("  ", 1, 2, 0, 0, 10, 10, -1),
+            ]
+        )
         lineas = core._agrupar_palabras_en_lineas(data)
         assert lineas == []
 
@@ -797,14 +843,16 @@ class TestAgruparPalabrasEnLineas:
 # 16. TestEjecutarOCR_Lineas — Integracion con lineas
 # =============================================================================
 
+
 class TestEjecutarOCR_Lineas:
     """Tests de integracion: ejecutar_ocr retorna lineas."""
 
     def test_sin_motores_lineas_vacia(self):
         """Sin motores disponibles, lineas debe ser lista vacia."""
         img = _create_mock_image()
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ):
             result = core.ejecutar_ocr(img, "eng")
             assert "lineas" in result
             assert result["lineas"] == []
@@ -823,13 +871,24 @@ class TestEjecutarOCR_Lineas:
             "error": None,
             "motor_ocr": "paddleocr",
             "lineas": [
-                {"texto": "Hello", "bbox": [10, 20, 100, 50], "confianza": 0.95, "motor": "paddleocr"},
-                {"texto": "World", "bbox": [10, 60, 100, 90], "confianza": 0.92, "motor": "paddleocr"},
+                {
+                    "texto": "Hello",
+                    "bbox": [10, 20, 100, 50],
+                    "confianza": 0.95,
+                    "motor": "paddleocr",
+                },
+                {
+                    "texto": "World",
+                    "bbox": [10, 60, 100, 90],
+                    "confianza": 0.92,
+                    "motor": "paddleocr",
+                },
             ],
         }
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
-             patch.object(core, '_ejecutar_ocr_paddleocr', return_value=mock_result):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", True), patch.object(
+            core, "_ejecutar_ocr_paddleocr", return_value=mock_result
+        ):
             result = core.ejecutar_ocr(img, "eng")
             assert "lineas" in result
             assert len(result["lineas"]) == 2
@@ -850,13 +909,18 @@ class TestEjecutarOCR_Lineas:
             "error": None,
             "motor_ocr": "tesseract",
             "lineas": [
-                {"texto": "Test text", "bbox": [10, 10, 90, 30], "confianza": 0.88, "motor": "tesseract"},
+                {
+                    "texto": "Test text",
+                    "bbox": [10, 10, 90, 30],
+                    "confianza": 0.88,
+                    "motor": "tesseract",
+                },
             ],
         }
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', True), \
-             patch.object(core, '_ejecutar_ocr_tesseract', return_value=mock_result):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", True
+        ), patch.object(core, "_ejecutar_ocr_tesseract", return_value=mock_result):
             result = core.ejecutar_ocr(img, "eng")
             assert "lineas" in result
             assert len(result["lineas"]) == 1
@@ -874,13 +938,21 @@ class TestEjecutarOCR_Lineas:
             "tiempo_ms": 40,
             "error": None,
             "motor_ocr": "tesseract",
-            "lineas": [{"texto": "fallback text", "bbox": [0, 0, 50, 20], "confianza": 0.80, "motor": "tesseract"}],
+            "lineas": [
+                {
+                    "texto": "fallback text",
+                    "bbox": [0, 0, 50, 20],
+                    "confianza": 0.80,
+                    "motor": "tesseract",
+                }
+            ],
         }
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', True), \
-             patch.object(core, '_ejecutar_ocr_paddleocr', side_effect=RuntimeError("GPU")), \
-             patch.object(core, '_ejecutar_ocr_tesseract', return_value=mock_result):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", True), patch.object(
+            core, "TESSERACT_DISPONIBLE", True
+        ), patch.object(
+            core, "_ejecutar_ocr_paddleocr", side_effect=RuntimeError("GPU")
+        ), patch.object(core, "_ejecutar_ocr_tesseract", return_value=mock_result):
             result = core.ejecutar_ocr(img, "eng")
             assert result["motor_ocr"] == "tesseract_fallback"
             assert "lineas" in result
@@ -890,9 +962,9 @@ class TestEjecutarOCR_Lineas:
         """PaddleOCR falla + sin Tesseract: lineas debe ser []."""
         img = _create_mock_image()
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False), \
-             patch.object(core, '_ejecutar_ocr_paddleocr', side_effect=RuntimeError("fail")):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", True), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ), patch.object(core, "_ejecutar_ocr_paddleocr", side_effect=RuntimeError("fail")):
             result = core.ejecutar_ocr(img, "eng")
             assert result["lineas"] == []
             assert result["motor_ocr"] == "none"
@@ -901,13 +973,19 @@ class TestEjecutarOCR_Lineas:
         """Las 8 claves originales siguen presentes."""
         img = _create_mock_image()
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ):
             result = core.ejecutar_ocr(img, "eng")
             claves_originales = [
-                "lang", "texto_completo", "snippet_200",
-                "confianza_promedio", "num_palabras",
-                "tiempo_ms", "error", "motor_ocr"
+                "lang",
+                "texto_completo",
+                "snippet_200",
+                "confianza_promedio",
+                "num_palabras",
+                "tiempo_ms",
+                "error",
+                "motor_ocr",
             ]
             for clave in claves_originales:
                 assert clave in result, f"Falta clave original '{clave}'"
@@ -915,6 +993,7 @@ class TestEjecutarOCR_Lineas:
     def test_lineas_son_json_serializable(self):
         """Las lineas retornadas deben ser serializables a JSON."""
         import json
+
         img = _create_mock_image()
 
         mock_result = {
@@ -927,12 +1006,18 @@ class TestEjecutarOCR_Lineas:
             "error": None,
             "motor_ocr": "paddleocr",
             "lineas": [
-                {"texto": "test", "bbox": [10, 20, 100, 50], "confianza": 0.9, "motor": "paddleocr"},
+                {
+                    "texto": "test",
+                    "bbox": [10, 20, 100, 50],
+                    "confianza": 0.9,
+                    "motor": "paddleocr",
+                },
             ],
         }
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
-             patch.object(core, '_ejecutar_ocr_paddleocr', return_value=mock_result):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", True), patch.object(
+            core, "_ejecutar_ocr_paddleocr", return_value=mock_result
+        ):
             result = core.ejecutar_ocr(img, "eng")
             serialized = json.dumps(result["lineas"])
             assert isinstance(serialized, str)
@@ -941,13 +1026,20 @@ class TestEjecutarOCR_Lineas:
         """El resultado debe tener exactamente 9 keys (8 originales + lineas)."""
         img = _create_mock_image()
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ):
             result = core.ejecutar_ocr(img, "eng")
             expected_keys = {
-                "lang", "texto_completo", "snippet_200",
-                "confianza_promedio", "num_palabras",
-                "tiempo_ms", "error", "motor_ocr", "lineas"
+                "lang",
+                "texto_completo",
+                "snippet_200",
+                "confianza_promedio",
+                "num_palabras",
+                "tiempo_ms",
+                "error",
+                "motor_ocr",
+                "lineas",
             }
             assert set(result.keys()) == expected_keys
 
@@ -971,6 +1063,7 @@ class TestEjecutarOCR_Lineas:
 # 17. TestTraceLoggerIntegration — TraceLogger en OCR
 # =============================================================================
 
+
 class TestTraceLoggerIntegration:
     """Tests para integracion de TraceLogger en ejecutar_ocr."""
 
@@ -978,8 +1071,9 @@ class TestTraceLoggerIntegration:
         """ejecutar_ocr sin trace_logger funciona normal."""
         img = _create_mock_image()
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ):
             result = core.ejecutar_ocr(img, "eng")
             assert result is not None
             assert "error" in result
@@ -988,8 +1082,9 @@ class TestTraceLoggerIntegration:
         """Llamada sin trace_logger (backward compat) funciona."""
         img = _create_mock_image()
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ):
             # Llamada sin tercer argumento (backward compat)
             result = core.ejecutar_ocr(img, "eng")
             assert isinstance(result, dict)
@@ -999,8 +1094,9 @@ class TestTraceLoggerIntegration:
         img = _create_mock_image()
         mock_logger = MagicMock()
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ):
             core.ejecutar_ocr(img, "eng", trace_logger=mock_logger)
             # Debe haber al menos 1 llamada (info inicio + error sin motores)
             assert mock_logger.info.called or mock_logger.error.called
@@ -1012,8 +1108,9 @@ class TestTraceLoggerIntegration:
         mock_logger.info.side_effect = Exception("logger roto")
         mock_logger.error.side_effect = Exception("logger roto")
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', False), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', False):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", False), patch.object(
+            core, "TESSERACT_DISPONIBLE", False
+        ):
             # No debe lanzar excepcion
             result = core.ejecutar_ocr(img, "eng", trace_logger=mock_logger)
             assert result is not None
@@ -1036,10 +1133,11 @@ class TestTraceLoggerIntegration:
             "lineas": [],
         }
 
-        with patch.object(core, 'PADDLEOCR_DISPONIBLE', True), \
-             patch.object(core, 'TESSERACT_DISPONIBLE', True), \
-             patch.object(core, '_ejecutar_ocr_paddleocr', side_effect=RuntimeError("GPU")), \
-             patch.object(core, '_ejecutar_ocr_tesseract', return_value=mock_result):
+        with patch.object(core, "PADDLEOCR_DISPONIBLE", True), patch.object(
+            core, "TESSERACT_DISPONIBLE", True
+        ), patch.object(
+            core, "_ejecutar_ocr_paddleocr", side_effect=RuntimeError("GPU")
+        ), patch.object(core, "_ejecutar_ocr_tesseract", return_value=mock_result):
             core.ejecutar_ocr(img, "eng", trace_logger=mock_logger)
             # Debe haber un warning por el fallback
             assert mock_logger.warning.called
@@ -1048,6 +1146,7 @@ class TestTraceLoggerIntegration:
 # =============================================================================
 # 18. TestLogOCR — Helper _log_ocr
 # =============================================================================
+
 
 class TestLogOCR:
     """Tests para el helper _log_ocr."""
@@ -1094,6 +1193,7 @@ class TestLogOCR:
 # =============================================================================
 # 19. TestValidarDimensiones — Regla 2
 # =============================================================================
+
 
 class TestValidarDimensiones:
     """Tests para _validar_dimensiones (Regla 2: robustez frente a limites externos)."""
@@ -1168,7 +1268,7 @@ class TestValidarDimensiones:
         if img is None:
             pytest.skip("PIL no disponible")
         # Patchear config para asegurar valor conocido
-        with patch.dict('config.settings.VISION_CONFIG', {"max_dimension_px": 2000}):
+        with patch.dict("config.settings.VISION_CONFIG", {"max_dimension_px": 2000}):
             result = core._validar_dimensiones(img, max_dim=None)
             assert result.size[0] == 2000
             assert result.size[1] == 1000
@@ -1196,6 +1296,7 @@ class TestValidarDimensiones:
 # 20. TestRenderizarPaginaValidaDimensiones — Integracion Regla 2
 # =============================================================================
 
+
 class TestRenderizarPaginaValidaDimensiones:
     """Verifica que renderizar_pagina integra _validar_dimensiones."""
 
@@ -1204,9 +1305,11 @@ class TestRenderizarPaginaValidaDimensiones:
         mock_img = _create_mock_image()
         mock_img.size = (3000, 2000)
 
-        with patch.object(core, 'fitz') as mock_fitz, \
-             patch.object(core, 'Image') as mock_pil, \
-             patch.object(core, '_validar_dimensiones', return_value=mock_img) as mock_val:
+        with patch.object(core, "fitz") as mock_fitz, patch.object(
+            core, "Image"
+        ) as mock_pil, patch.object(
+            core, "_validar_dimensiones", return_value=mock_img
+        ) as mock_val:
             # Setup mock fitz
             mock_doc = MagicMock()
             mock_doc.__len__ = MagicMock(return_value=5)
@@ -1234,9 +1337,9 @@ class TestRenderizarPaginaValidaDimensiones:
         mock_img_validada = MagicMock()
         mock_img_validada.size = (2000, 1500)
 
-        with patch.object(core, 'fitz') as mock_fitz, \
-             patch.object(core, 'Image') as mock_pil, \
-             patch.object(core, '_validar_dimensiones', return_value=mock_img_validada):
+        with patch.object(core, "fitz") as mock_fitz, patch.object(
+            core, "Image"
+        ) as mock_pil, patch.object(core, "_validar_dimensiones", return_value=mock_img_validada):
             mock_doc = MagicMock()
             mock_doc.__len__ = MagicMock(return_value=5)
             mock_page = MagicMock()

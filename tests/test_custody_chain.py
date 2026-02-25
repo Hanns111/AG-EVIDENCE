@@ -12,17 +12,18 @@ Verifica:
 
 import json
 import os
-import tempfile
 import shutil
-import pytest
+import tempfile
 from pathlib import Path
 
+import pytest
+
 from src.ingestion.custody_chain import (
+    HASH_ALGORITHM,
     CustodyChain,
     CustodyRecord,
     VerificationResult,
     compute_sha256,
-    HASH_ALGORITHM,
 )
 
 

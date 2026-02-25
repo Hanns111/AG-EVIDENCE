@@ -35,18 +35,16 @@ import json
 import os
 import time
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional, List, Dict, Any
-
+from typing import Any, Dict, List, Optional
 
 # ==============================================================================
 # CONFIGURACIÓN
 # ==============================================================================
 _DEFAULT_LOG_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "data", "traces"
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "traces"
 )
 
 # Niveles de log válidos (orden de severidad)
@@ -76,6 +74,7 @@ class TraceContext:
         operation: Operación en curso (classify, extract, verify, etc.).
         metadata: Datos adicionales libres del contexto.
     """
+
     trace_id: str
     sinad: str
     source: str = "manual"
@@ -116,6 +115,7 @@ class LogEntry:
         duration_ms: Duración en milisegundos (si aplica).
         error: Mensaje de error (si aplica).
     """
+
     timestamp: str
     trace_id: str
     level: str
@@ -305,9 +305,7 @@ class TraceLogger:
         # Calcular duración total
         duration_ms = None
         if self._trace_start_time is not None:
-            duration_ms = round(
-                (time.monotonic() - self._trace_start_time) * 1000, 2
-            )
+            duration_ms = round((time.monotonic() - self._trace_start_time) * 1000, 2)
 
         trace_id = self._active_context.trace_id
         sinad = self._active_context.sinad
@@ -371,10 +369,7 @@ class TraceLogger:
         """
         level = level.upper()
         if level not in LOG_LEVELS:
-            raise ValueError(
-                f"Nivel de log inválido: '{level}'. "
-                f"Valores válidos: {LOG_LEVELS}"
-            )
+            raise ValueError(f"Nivel de log inválido: '{level}'. Valores válidos: {LOG_LEVELS}")
 
         return self._write_entry(
             level=level,
@@ -490,8 +485,7 @@ class TraceLogger:
 
             if min_weight > 0:
                 file_entries = [
-                    e for e in file_entries
-                    if _LEVEL_WEIGHTS.get(e.level, 0) >= min_weight
+                    e for e in file_entries if _LEVEL_WEIGHTS.get(e.level, 0) >= min_weight
                 ]
 
             entries.extend(file_entries)
@@ -532,9 +526,7 @@ class TraceLogger:
             "level_counts": level_counts,
             "error_entries": error_count,
             "has_active_trace": self.has_active_trace,
-            "active_trace_id": (
-                self._active_context.trace_id if self._active_context else None
-            ),
+            "active_trace_id": (self._active_context.trace_id if self._active_context else None),
         }
 
     # ------------------------------------------------------------------

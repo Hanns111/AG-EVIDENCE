@@ -47,51 +47,37 @@ Versión: 1.0.0
 Fecha: 2026-02-23
 """
 
-import sys
 import os
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Tuple
+import sys
+from dataclasses import dataclass
+from typing import Dict, Optional
 
 # Asegurar que el directorio raíz del proyecto esté en el path
-_PROJECT_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _PROJECT_ROOT not in sys.path:
     sys.path.insert(0, _PROJECT_ROOT)
 
 try:
     from openpyxl import Workbook
-    from openpyxl.worksheet.worksheet import Worksheet
     from openpyxl.styles import (
-        Font,
-        PatternFill,
         Alignment,
         Border,
+        Font,
+        PatternFill,
         Side,
     )
     from openpyxl.utils import get_column_letter
+    from openpyxl.worksheet.worksheet import Worksheet
 
     OPENPYXL_DISPONIBLE = True
 except ImportError:
     OPENPYXL_DISPONIBLE = False
 
 from src.extraction.confidence_router import (
-    DiagnosticoExpediente,
-    SeccionDiagnostico,
-    ResultadoRouter,
     DecisionCheckpoint,
-    VERSION_ROUTER,
+    DiagnosticoExpediente,
+    ResultadoRouter,
 )
-from src.extraction.abstencion import (
-    CampoExtraido,
-    EvidenceStatus,
-    ResultadoAbstencion,
-)
-from src.extraction.expediente_contract import (
-    IntegridadStatus,
-    ConfianzaGlobal,
-)
-
 
 # ==============================================================================
 # CONSTANTES
@@ -108,9 +94,11 @@ NOMBRE_HOJA = "DIAGNOSTICO"
 # PALETA DE COLORES SEMÁFORO
 # ==============================================================================
 
+
 @dataclass(frozen=True)
 class ColorSemaforo:
     """Un color semáforo con fondo y texto."""
+
     fondo: str
     texto: str
     nombre: str
@@ -177,6 +165,7 @@ def _color_por_confianza(confianza: float) -> ColorSemaforo:
 # ESTILOS OPENPYXL
 # ==============================================================================
 
+
 def _crear_fill(color: ColorSemaforo) -> "PatternFill":
     """Crea PatternFill de openpyxl desde un ColorSemaforo."""
     if not OPENPYXL_DISPONIBLE:
@@ -202,6 +191,7 @@ def _borde_delgado() -> "Border":
 # ==============================================================================
 # CLASE PRINCIPAL: EscritorDiagnostico
 # ==============================================================================
+
 
 class EscritorDiagnostico:
     """
@@ -233,10 +223,7 @@ class EscritorDiagnostico:
             nombre_hoja: Nombre de la hoja a crear. Default: "DIAGNOSTICO".
         """
         if not OPENPYXL_DISPONIBLE:
-            raise ImportError(
-                "openpyxl no está instalado. "
-                "Instalar con: pip install openpyxl"
-            )
+            raise ImportError("openpyxl no está instalado. Instalar con: pip install openpyxl")
         self.nombre_hoja = nombre_hoja
 
     # ------------------------------------------------------------------
@@ -288,9 +275,7 @@ class EscritorDiagnostico:
 
         # Tabla de detalle por campo
         if decision.resultado:
-            fila = self._escribir_detalle_campos(
-                ws, decision.resultado, fila
-            )
+            fila = self._escribir_detalle_campos(ws, decision.resultado, fila)
             fila += 1
 
         # Pie de página con métricas
@@ -359,8 +344,10 @@ class EscritorDiagnostico:
 
         # --- Título ---
         ws.merge_cells(
-            start_row=fila, start_column=1,
-            end_row=fila, end_column=6,
+            start_row=fila,
+            start_column=1,
+            end_row=fila,
+            end_column=6,
         )
         celda_titulo = ws.cell(row=fila, column=1)
         celda_titulo.value = "DIAGNÓSTICO DE EXPEDIENTE"
@@ -385,11 +372,7 @@ class EscritorDiagnostico:
                 if resultado and resultado.campos_evaluados > 0
                 else "N/A"
             ),
-            (
-                f"{resultado.tasa_abstencion:.1%}"
-                if resultado
-                else "N/A"
-            ),
+            (f"{resultado.tasa_abstencion:.1%}" if resultado else "N/A"),
         ]
 
         # Labels
@@ -429,23 +412,13 @@ class EscritorDiagnostico:
 
         # --- Fila metadata ---
         ws.cell(row=fila, column=1).value = "Generado:"
-        ws.cell(row=fila, column=1).font = Font(
-            name="Calibri", size=9, italic=True, color="808080"
-        )
-        ws.cell(row=fila, column=2).value = (
-            diag.timestamp[:19] if diag and diag.timestamp else ""
-        )
-        ws.cell(row=fila, column=2).font = Font(
-            name="Calibri", size=9, color="808080"
-        )
+        ws.cell(row=fila, column=1).font = Font(name="Calibri", size=9, italic=True, color="808080")
+        ws.cell(row=fila, column=2).value = diag.timestamp[:19] if diag and diag.timestamp else ""
+        ws.cell(row=fila, column=2).font = Font(name="Calibri", size=9, color="808080")
         ws.cell(row=fila, column=3).value = f"Router v{diag.version_router}" if diag else ""
-        ws.cell(row=fila, column=3).font = Font(
-            name="Calibri", size=9, color="808080"
-        )
+        ws.cell(row=fila, column=3).font = Font(name="Calibri", size=9, color="808080")
         ws.cell(row=fila, column=4).value = f"Writer v{VERSION_EXCEL_WRITER}"
-        ws.cell(row=fila, column=4).font = Font(
-            name="Calibri", size=9, color="808080"
-        )
+        ws.cell(row=fila, column=4).font = Font(name="Calibri", size=9, color="808080")
         fila += 1
 
         return fila
@@ -480,8 +453,10 @@ class EscritorDiagnostico:
 
         # Subtítulo
         ws.merge_cells(
-            start_row=fila, start_column=1,
-            end_row=fila, end_column=6,
+            start_row=fila,
+            start_column=1,
+            end_row=fila,
+            end_column=6,
         )
         celda = ws.cell(row=fila, column=1)
         celda.value = "Secciones del Diagnóstico"
@@ -591,8 +566,10 @@ class EscritorDiagnostico:
 
         # Subtítulo
         ws.merge_cells(
-            start_row=fila, start_column=1,
-            end_row=fila, end_column=6,
+            start_row=fila,
+            start_column=1,
+            end_row=fila,
+            end_column=6,
         )
         celda = ws.cell(row=fila, column=1)
         celda.value = "Detalle por Campo"
@@ -634,9 +611,7 @@ class EscritorDiagnostico:
             celda.border = _borde_delgado()
             celda.alignment = Alignment(wrap_text=True)
             if campo.valor is None:
-                celda.font = Font(
-                    name="Calibri", size=10, italic=True, color="9C0006"
-                )
+                celda.font = Font(name="Calibri", size=10, italic=True, color="9C0006")
 
             # Col 3: Confianza con color
             celda = ws.cell(row=fila, column=3)
@@ -679,8 +654,10 @@ class EscritorDiagnostico:
             celda.value = "(Sin campos evaluados por AbstencionPolicy)"
             celda.font = Font(name="Calibri", size=10, italic=True, color="808080")
             ws.merge_cells(
-                start_row=fila, start_column=1,
-                end_row=fila, end_column=6,
+                start_row=fila,
+                start_column=1,
+                end_row=fila,
+                end_column=6,
             )
             fila += 1
 
@@ -723,8 +700,10 @@ class EscritorDiagnostico:
                 celda.value = f"  • {alerta}"
                 celda.font = Font(name="Calibri", size=10, color="9C5700")
                 ws.merge_cells(
-                    start_row=fila, start_column=1,
-                    end_row=fila, end_column=6,
+                    start_row=fila,
+                    start_column=1,
+                    end_row=fila,
+                    end_column=6,
                 )
                 fila += 1
 
@@ -782,12 +761,12 @@ class EscritorDiagnostico:
         Anchos fijos optimizados para la estructura de 6 columnas.
         """
         anchos = {
-            1: 28,   # Campo / Sección
-            2: 25,   # Valor / Status
-            3: 14,   # Confianza / Mensaje
-            4: 14,   # Status / Detalle 1
-            5: 16,   # Motor / Detalle 2
-            6: 20,   # Archivo:Pág / Detalle 3
+            1: 28,  # Campo / Sección
+            2: 25,  # Valor / Status
+            3: 14,  # Confianza / Mensaje
+            4: 14,  # Status / Detalle 1
+            5: 16,  # Motor / Detalle 2
+            6: 20,  # Archivo:Pág / Detalle 3
         }
         for col, ancho in anchos.items():
             ws.column_dimensions[get_column_letter(col)].width = ancho
@@ -814,7 +793,9 @@ class EscritorDiagnostico:
             metricas["Problemas completitud"] = str(len(r.problemas_completitud))
             metricas["Duplicados"] = str(len(r.comprobantes_duplicados))
 
-        metricas["Versión router"] = decision.diagnostico.version_router if decision.diagnostico else "N/A"
+        metricas["Versión router"] = (
+            decision.diagnostico.version_router if decision.diagnostico else "N/A"
+        )
         metricas["Versión writer"] = VERSION_EXCEL_WRITER
 
         return metricas
@@ -823,6 +804,7 @@ class EscritorDiagnostico:
 # ==============================================================================
 # FUNCIÓN DE CONVENIENCIA
 # ==============================================================================
+
 
 def escribir_diagnostico(
     wb: "Workbook",

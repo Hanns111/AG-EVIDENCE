@@ -75,5 +75,20 @@ addopts = "-v --tb=short"
 [tool.ruff]
 target-version = "py38"
 line-length = 100
+
+[tool.ruff.lint]
 select = ["E", "F", "W", "I"]
-ignore = ["E501"]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "E402",   # module level import not at top of file (legacy scripts)
+    "E712",   # comparison to True/False (legacy pattern, cosmetic)
+    "E722",   # bare except (legacy, to fix incrementally)
+    "E741",   # ambiguous variable name (legacy, cosmetic)
+    "F401",   # imported but unused (some __init__.py re-exports)
+    "F403",   # wildcard import (legacy, to fix incrementally)
+    "F841",   # local variable assigned but never used (legacy scripts)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["E402", "F841", "E712"]  # scripts have pragmatic patterns
+"tests/*" = ["E712", "F841"]             # test assertions use == True/False
