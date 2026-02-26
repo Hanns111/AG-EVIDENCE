@@ -44,6 +44,14 @@ from .confidence_router import (
     SeccionDiagnostico,
     UmbralesRouter,
 )
+from .escribano_fiel import (
+    VERSION_ESCRIBANO,
+    ConfigPipeline,
+    EscribanoFiel,
+    ResultadoPaso,
+    ResultadoPipeline,
+    procesar_expediente,
+)
 from .excel_writer import (
     NOMBRE_HOJA,
     VERSION_EXCEL_WRITER,
@@ -87,6 +95,13 @@ from .local_analyst import (
 )
 
 __all__ = [
+    # escribano_fiel.py (Tarea #21)
+    "VERSION_ESCRIBANO",
+    "ConfigPipeline",
+    "EscribanoFiel",
+    "ResultadoPaso",
+    "ResultadoPipeline",
+    "procesar_expediente",
     # abstencion.py (Tarea #12)
     "CampoExtraido",
     "EvidenceStatus",
