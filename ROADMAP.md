@@ -4,7 +4,7 @@
 > Sincronizado con el tablero Notion (DB: 6003e907-28f5-4757-ba93-88aa3efe03e1).
 
 **Ultima actualizacion:** 2026-02-25
-**Progreso global:** 19/41 completadas (46.3%), 1 en progreso (#16)
+**Progreso global:** 20/41 completadas (48.8%), 1 en progreso (#16)
 
 ---
 
@@ -38,7 +38,7 @@
 
 ---
 
-## Fase 2: Contrato + Router — EN PROGRESO (4/5)
+## Fase 2: Contrato + Router — COMPLETADA (5/5)
 
 | # | Tarea | Estado | Modulo |
 |---|-------|--------|--------|
@@ -46,7 +46,7 @@
 | 18 | Confidence Router + Integrity Checkpoint (nodo LangGraph) | ✅ | src/extraction/confidence_router.py |
 | 19 | Calibrar umbrales con distribucion real | ✅ | src/extraction/calibracion.py |
 | 20 | Hoja DIAGNOSTICO en Excel | ✅ | src/extraction/excel_writer.py |
-| 21 | Integrar router en escribano_fiel.py | ⬜ | src/extraction/escribano_fiel.py |
+| 21 | Integrar router en escribano_fiel.py | ✅ | src/extraction/escribano_fiel.py |
 
 > **Nota arquitectonica (Tarea #18):** El Integrity Checkpoint sera un nodo formal
 > dentro del Router LangGraph, NO un modulo monolitico separado (respeta ADR-005).
@@ -128,6 +128,7 @@
 | Contrato de datos | src/extraction/expediente_contract.py | ~1161 | 84 |
 | Confidence Router | src/extraction/confidence_router.py | ~1424 | 86 |
 | Calibracion Umbrales | src/extraction/calibracion.py | ~500 | 84 |
+| Escribano Fiel (Pipeline) | src/extraction/escribano_fiel.py | ~1027 | 44 |
 | Excel Writer DIAGNOSTICO | src/extraction/excel_writer.py | ~850 | 59 |
 | OCR Core (PaddleOCR PP-OCRv5 + Tesseract fallback) | src/ocr/core.py | ~880 | 75 |
 | OCR Preprocessor | src/tools/ocr_preprocessor.py | ~301 | 6 |
@@ -138,7 +139,7 @@
 | Audit Repo Integrity | scripts/audit_repo_integrity.py | ~400 | — |
 | Governance Guard | scripts/governance_guard.py | ~150 | — |
 
-**Total tests:** 835 passed, 8 skipped
+**Total tests:** 885 passed, 2 skipped
 
 ---
 
@@ -147,7 +148,7 @@
 ```
 Fase 0: Setup          [██████████] 9/9  — COMPLETADA
 Fase 1: Trazabilidad   [████████░░] 6/7  — EN PROGRESO (#16 en progreso)
-Fase 2: Contrato       [████████░░] 4/5  — EN PROGRESO (#17 ✅, #18 ✅, #19 ✅, #20 ✅, #21 pendiente)
+Fase 2: Contrato       [██████████] 5/5  — COMPLETADA (#17 ✅, #18 ✅, #19 ✅, #20 ✅, #21 ✅)
 Fase 3: Qwen           [░░░░░░░░░░] 0/5  — PENDIENTE
 Fase 4: Validaciones   [░░░░░░░░░░] 0/3  — PENDIENTE
 Fase 5: Evaluacion     [░░░░░░░░░░] 0/5  — PENDIENTE

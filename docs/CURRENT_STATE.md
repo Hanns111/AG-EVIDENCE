@@ -7,7 +7,7 @@
 
 ## 1. Estado General
 
-**v2.0 — Fase 2 en progreso (Contrato + Router) + Gobernanza Transversal**
+**v2.0 — Fase 2 completada (Contrato + Router) + Gobernanza Transversal**
 
 El proyecto completo su reestructuracion de v1.0 (prototipo con 9 agentes monoliticos)
 a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
@@ -31,6 +31,7 @@ estructural transversal.
 | `src/extraction/confidence_router.py` | Operativo | Router de confianza + IntegrityCheckpoint + DiagnosticoExpediente (v2.0.0) |
 | `src/extraction/excel_writer.py` | Operativo | Hoja DIAGNOSTICO en Excel (semaforo, 6 secciones, detalle campos) |
 | `src/extraction/expediente_contract.py` | Operativo | Contrato tipado ExpedienteJSON (11 Grupos A-K, 18+ dataclasses) |
+| `src/extraction/escribano_fiel.py` | Operativo | Pipeline orquestador: custodia→OCR→parseo→router→Excel (v1.0.0) |
 | `src/extraction/local_analyst.py` | Nuevo | Capa C: IA local confinada con bloqueo de campos probatorios |
 | `src/ocr/core.py` | Operativo | Motor OCR PP-OCRv5 server GPU + Tesseract fallback + bbox/confianza + Regla 2 (v4.0.0) |
 | `src/tools/vision.py` | Nuevo | Preprocesamiento de imagen (337 lineas) |
@@ -80,7 +81,7 @@ estructural transversal.
 | Calibrar umbrales con distribucion real | Fase 2 (#19) | ✅ Completado (500 lineas, 84 tests, 3 perfiles) |
 | Hoja DIAGNOSTICO en Excel | Fase 2 (#20) | ✅ Completado (850 lineas, 59 tests) |
 | Blindaje de Seguridad (4 capas) | Transversal (#41) | ✅ Completado (8 archivos, ACTA aprobada 2026-02-25) |
-| Integrar router en escribano_fiel.py | Fase 2 (#21) | ⬜ Pendiente — **SIGUIENTE** |
+| Integrar router en escribano_fiel.py | Fase 2 (#21) | ✅ Completado (1027 líneas, 44 tests) |
 | Qwen fallback LLM (motor para Capa C) | Fase 3 (#22-26) | Pendiente |
 | Validaciones cruzadas | Fase 4 (#27-29) | Pendiente |
 | Motor legal | Fase 6 (#35-40) | Pendiente |
@@ -89,8 +90,8 @@ estructural transversal.
 
 ## 5. Tests
 
-- **Total:** 835 passed, 8 skipped, 0 failures (2026-02-23)
-- 13 test suites cubriendo todos los modulos activos
+- **Total:** 885 passed, 2 skipped, 0 failures (2026-02-25)
+- 14 test suites cubriendo todos los modulos activos
 - Tests de seguridad: bloqueo de campos probatorios en Capa C
 - Tests de backward compatibility: CampoExtraido sin nuevos campos
 - Tests de calibracion: 84 tests (3 perfiles, benchmark cc003)
@@ -154,8 +155,7 @@ estructural transversal.
 
 ## 10. Proximos Pasos
 
-1. **Tarea #21** — Integrar router en `src/extraction/escribano_fiel.py` (pipeline formal completo, ultima de Fase 2)
-2. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes, solo tras #21)
+1. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes, con escribano_fiel.py)
 4. Investigar herramienta de lectura fina para errores VLM (crop+zoom, modelo mayor)
 5. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
 
