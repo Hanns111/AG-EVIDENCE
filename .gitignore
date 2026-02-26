@@ -120,6 +120,12 @@ CONTROL_PREVIO*/
 data/expedientes/
 
 # ------------------------------------------------------------------------------
+# Datos de runtime del pipeline (generados por escribano_fiel.py)
+# ------------------------------------------------------------------------------
+data/custody_registry/
+data/traces/
+
+# ------------------------------------------------------------------------------
 # Directivas y normativa (PDFs NO se versionan, documentacion .md SI)
 # Los PDFs originales se obtienen de fuentes oficiales del MINEDU.
 # Ver data/directivas/INVENTARIO_DIRECTIVAS.md para lista completa.

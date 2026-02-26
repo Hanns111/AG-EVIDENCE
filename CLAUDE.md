@@ -22,14 +22,35 @@
 
 ## Última Tarea Completada
 
-- **Tarea #41** — Blindaje de Seguridad (Transversal)
-- 4 capas defense-in-depth: GitHub platform → CI → pre-commit hooks → session protocol
-- 8 archivos nuevos: audit_repo_integrity.py, governance_guard.py, .pre-commit-config.yaml, ci-lint.yml, CODEOWNERS, pull_request_template.md, .gitattributes, integrity_manifest.json
-- ACTA DE CIERRE: APROBADO CONDICIONAL (branch protection pendiente Hans)
-- Commits: 1540fe4, 35425aa, 1f7fe62, fdc0b1a (ruff), ec308c5 (CI fix), 8e6e7f8
-- Notion: Tarea #41 ✅, Bitácora actualizada, ACTA como página permanente
+- **Tarea #21** — Integrar router en escribano_fiel.py (Fase 2, ÚLTIMA)
+- src/extraction/escribano_fiel.py: 1027 líneas, VERSION_ESCRIBANO = "1.0.0"
+- Pipeline 5 pasos: custodia → OCR → parseo → evaluación → Excel DIAGNOSTICO
+- EscribanoFiel con inyección de dependencias (CustodyChain, TraceLogger, IntegrityCheckpoint, AbstencionPolicy)
+- Modo re-evaluación: expediente_preconstruido salta custodia+OCR+parseo
+- Función de conveniencia: procesar_expediente() + evaluar_expediente()
+- Tests: 44 tests propios, 885 totales, 0 failures
+- Commits: f9eeb4a (código), 9887a43 (docs)
+- **Fase 2 COMPLETADA** (5/5 tareas: #17 ✅ #18 ✅ #19 ✅ #20 ✅ #21 ✅)
+
+### Validación End-to-End con Expediente Real (2026-02-26)
+
+- **Expediente:** DIGC2026-INT-0072851 (viáticos, Ronny Durand)
+- **PDF:** 45 páginas, procesado vía WSL2 + PaddleOCR PP-OCRv5 GPU
+- **Resultado:** Pipeline completó 5/5 pasos en 48.7 segundos
+  - Custodia: SHA-256 registrado (156ms)
+  - OCR: 1840 palabras extraídas de 45 páginas (48.5s GPU)
+  - Parseo: ExpedienteJSON esqueleto creado (14ms)
+  - Router: Status CRITICAL (esperado: parseo profundo es Fase 3)
+  - Excel: DIAGNOSTICO generado con semáforo correctamente
+- **Conclusión:** Orquestador funciona E2E. El CRITICAL es esperado porque el parseo profundo (regex comprobantes, grupos A-K) se implementa en Fase 3 (#22-26).
 
 ## Tarea Anterior Completada
+
+- **Tarea #41** — Blindaje de Seguridad (Transversal)
+- 4 capas defense-in-depth: GitHub platform → CI → pre-commit hooks → session protocol
+- Commits: 1540fe4, 35425aa, 1f7fe62, fdc0b1a (ruff), ec308c5 (CI fix), 8e6e7f8
+
+## Tareas Anteriores Completadas
 
 - **Tarea #20** — Hoja DIAGNOSTICO en Excel (Fase 2)
 - src/extraction/excel_writer.py: ~850 líneas, VERSION_EXCEL_WRITER = "1.0.0"
@@ -192,8 +213,8 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 
 ## Siguiente Sesión — Pendientes
 
-1. **Tarea #21** — Integrar router en escribano_fiel.py (última de Fase 2)
-2. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes, solo tras #21)
+1. **Tarea #16** — Re-generar Excel con pipeline formal (requiere parseo profundo o modo preconstruido)
+2. **Fase 3: Qwen Fallback** — Tareas #22-26 (parseo profundo de comprobantes, grupos A-K)
 3. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
 4. Reprocesar Caja Chica N.3 con pipeline formal
 5. **Investigar herramienta de lectura fina** — Qwen2.5-VL-7B confunde caracteres similares
@@ -422,7 +443,7 @@ pdftotext "archivo_ocr.pdf" "archivo.txt"
 |------|--------|--------|
 | 0: Setup | ✅ Completada | #1-9 |
 | 1: Trazabilidad + OCR | 🔵 En progreso | #10-15 ✅, #16 🔵 en progreso |
-| 2: Contrato + Router | 🔵 En progreso | #17 ✅, #18 ✅, #19 ✅, #20 ✅, #21 pendiente |
+| 2: Contrato + Router | ✅ Completada | #17 ✅, #18 ✅, #19 ✅, #20 ✅, #21 ✅ |
 | 3: Qwen Fallback | ⬜ Pendiente | #22-26 |
 | 4: Validaciones | ⬜ Pendiente | #27-29 |
 | 5: Evaluación + Legal prep | ⬜ Pendiente | #30-34 |
@@ -485,4 +506,4 @@ data/
 
 ---
 
-*Actualizado: 2026-02-25 por Claude Code*
+*Actualizado: 2026-02-26 por Claude Code*
