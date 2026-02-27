@@ -3,8 +3,112 @@
 > Fuente unica de verdad del panorama completo del proyecto.
 > Sincronizado con el tablero Notion (DB: 6003e907-28f5-4757-ba93-88aa3efe03e1).
 
-**Ultima actualizacion:** 2026-02-25
+**Ultima actualizacion:** 2026-02-26
 **Progreso global:** 20/41 completadas (48.8%), 1 en progreso (#16)
+
+---
+
+## ENFOQUE MAYO — Motor de Control Previo sobre Directiva de Viaticos
+
+> **Aprobado:** 2026-02-26 por Hans (propuesta estrategica validada por Claude Code)
+> **Objetivo:** Demo solida para primera quincena de mayo
+> **Principio:** Extension incremental, sin refactorizacion mayor
+
+### Vision
+
+Motor de control previo automatizado sobre la Directiva de Viaticos, con evidencia verificable.
+NO es un chatbot normativo general. Es un sistema que:
+
+1. Recibe expediente real (PDF)
+2. Procesa localmente (GPU, local-first)
+3. Detecta observaciones automaticamente
+4. Cada observacion incluye: numeral exacto + pagina + texto literal + calculo verificable
+5. Si no hay evidencia suficiente: abstencion obligatoria
+
+### Bloques prioritarios para Mayo
+
+| Bloque | Descripcion | Fases del roadmap | Estimacion |
+|--------|-------------|-------------------|------------|
+| A. Parseo profundo | Extraer datos reales de comprobantes (Grupos A-K) | Fase 3 (#22-26) | 2-3 semanas |
+| B. Motor determinista viaticos | Topes, plazos, docs obligatorios — con codigo, no con modelo | Fase 4 (#27-28) | 1 semana |
+| C. RAG minimo Directiva | Indexacion por numeral, busqueda por keyword. Sin embeddings. | Fase 6 simplificada | 1 semana |
+| D. Hoja HALLAZGOS | Observacion + numeral + pagina + evidencia en Excel | Fase 4 (#29) | 3-4 dias |
+| E. OCR multicapa formal | Encadenar: PaddleOCR → preprocesamiento → Tesseract → Qwen VL | Extension Fase 3 | 1 semana |
+| F. UI demo minima | Cargar PDF, ver reporte, ver evidencia | Nuevo | 1 semana |
+
+### Pilares intocables
+
+Estos modulos NO se modifican en su logica interna. Solo se consumen:
+
+- `AbstencionPolicy` — abstencion operativa (550 lineas, 66 tests)
+- `EvidenceEnforcer` — validacion probatoria (snippet + pagina + regla)
+- `IntegrityCheckpoint` — evaluacion de integridad (OK/WARNING/CRITICAL)
+- `CustodyChain` — cadena de custodia SHA-256
+- `TraceLogger` — trazabilidad JSONL con trace_id
+
+### Principio anti-alucinacion (no negociable)
+
+El modelo NO decide ni inventa. El motor funciona por capas:
+1. Evidencia y extraccion (OCR multicapa)
+2. Estructura estricta (ExpedienteJSON, dataclasses tipadas)
+3. Validacion determinista de reglas y calculos (Python puro, no modelo)
+4. Recuperacion de citas (keyword search sobre Directiva indexada)
+5. Si no hay evidencia legible: abstencion o devolucion por ilegibilidad
+
+### OCR multicapa (formalizacion)
+
+| Capa | Motor | Cuando se activa |
+|------|-------|-----------------|
+| 1 | PaddleOCR PP-OCRv5 GPU | Siempre (motor primario) |
+| 2 | Preprocesamiento (binarizacion, deskew, contraste) | Si confianza Capa 1 < umbral |
+| 3 | Tesseract fallback | Si PaddleOCR no disponible o resultado vacio |
+| 4 | Qwen2.5-VL-7B local via Ollama | Para imagenes escaneadas o calidad baja |
+| X | Abstencion + devolucion | Si documento es ilegible incluso para ojo humano |
+
+### Arquitectura de herramientas (construccion vs ejecucion)
+
+**Herramientas de construccion** (NO forman parte del motor):
+- Claude Code: implementador principal
+- Codex: auditor estricto (solo diffs reales)
+- Antigravity: acelerador de desarrollo (boilerplate, componentes)
+- v0.dev: componentes UI demo
+
+**Herramientas de ejecucion** (el motor real):
+- Python puro + dataclasses: contratos y logica
+- PaddleOCR + Tesseract + Qwen VL: extraccion
+- Ollama: servidor local de modelos
+- openpyxl: generacion Excel
+- Keyword search (BM25): RAG minimo sobre Directiva
+
+### Decisiones explicitas para Mayo
+
+| Decision | Razon |
+|----------|-------|
+| NO migrar a LangGraph | escribano_fiel.py funciona E2E, reescribir es riesgo |
+| NO migrar a Pydantic | dataclasses con __post_init__ son suficientes para Mayo |
+| NO usar Docker | GPU en WSL2 funciona, Docker agrega complejidad sin beneficio |
+| NO usar Vercel con datos reales | local-first obligatorio, datos del Estado |
+| NO usar embeddings para RAG | Un solo documento, keyword search basta |
+| SI usar Streamlit o Gradio para UI | Rapido, local, sin infraestructura adicional |
+
+### Timeline estimado
+
+```
+Semana 1-3 (Mar):  Parseo profundo (Fase 3, #22-26)
+Semana 4   (Mar):  OCR multicapa formal + reglas viaticos
+Semana 5   (Abr):  RAG minimo Directiva + hoja HALLAZGOS
+Semana 6   (Abr):  UI demo minima
+Semana 7   (Abr):  Integracion E2E + pruebas con expedientes reales
+Semana 8   (May):  Pulido final + preparacion demo
+```
+
+### Post-Mayo (no implementar ahora, solo preservar)
+
+La arquitectura actual NO bloquea evolucion posterior:
+- Multiples directivas → RAG con embeddings (Fase 6 completa)
+- Multiples dominios → modulos de reglas intercambiables
+- Plataforma general → UI desacoplada del core
+- Escalabilidad → Docker + serving con batching
 
 ---
 
