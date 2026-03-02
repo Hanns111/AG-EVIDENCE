@@ -1,31 +1,15 @@
 {
-  "version": "1.0.0",
-  "generated_by": "audit_repo_integrity.py --update-manifest",
-  "generated_at": "2026-02-26T04:27:08.797462+00:00",
-  "hash_algorithm": "sha256",
-  "files": {
-    "docs/AGENT_GOVERNANCE_RULES.md": "d9f6d40e68452143731837dfb3a0a0e53eb5ef0ebffcd11f6f9dc7a336a00c45",
-    "docs/GOVERNANCE_RULES.md": "b36a21ff8a965183d2365ee89b5eb93b3bbaf938a7cef9bd53b8be071ac75cfd",
-    "docs/PROJECT_SPEC.md": "21da60e30d508bd3918a89f39f63cf914cee7057923368097e023d777127f8f2",
-    "AGENTS.md": "c002de0e3fba7b552d9b1ff6d874951f3d15c079828068d37cc9bbd31e8cb8dd",
-    "CLAUDE.md": "286399a5660c3de8700a147105ac777aea781d13ecec60ffb7734956397a179b",
-    ".cursorrules": "a6ec7f6d99844192a2ac1309634f6006ad808cf2d8fc52971383808e1b8db0a2",
-    ".cursor/mcp.json": "dc47cbbbe5c9e41ba2301362b37558b2e898461eb9f2a67fc0757778eedc7cb4",
-    "governance/SESSION_PROTOCOL.md": "d48b6f7a41dd6a507ad626aa7703f382ca43eb2db0d4096e25334658640f122e",
-    "docs/security/SECURITY_GOVERNANCE_POLICY.md": "6ddfb51349d64ac5f79286d0f00100fb052b3968a5546b110e020fd1201cf139",
-    ".github/workflows/ci-lint.yml": "724cc685401f8687b0c68b4ca8350f57a6be2dfd303272d58ca6cda69dd61556",
-    ".github/CODEOWNERS": "61943f9c6314e22b56f04b4c3c202a96430d631ee808ace7bd6b7e8a0fdfae8a",
-    ".gitattributes": "f0498b1a9811fefc8c5731a4c0a4ddbf0726c79d2c39eb97f56651067b5e8de8",
-    ".pre-commit-config.yaml": "f4ddb8982e9bfdeb3b55e00b4f6c9eecb027c3a77a08bcf91461104bed7011b2"
-  },
-  "authorized_authors": [
-    "Hanns111",
-    "Hans",
-    "Claude Code",
-    "github-actions[bot]"
-  ],
-  "expected_remote_branches": [
-    "origin/main",
-    "origin/HEAD"
-  ]
+  "docs/AGENT_GOVERNANCE_RULES.md": "d9f6d40e68452143731837dfb3a0a0e53eb5ef0ebffcd11f6f9dc7a336a00c45",
+  "docs/GOVERNANCE_RULES.md": "b36a21ff8a965183d2365ee89b5eb93b3bbaf938a7cef9bd53b8be071ac75cfd",
+  "docs/PROJECT_SPEC.md": "21da60e30d508bd3918a89f39f63cf914cee7057923368097e023d777127f8f2",
+  "AGENTS.md": "c002de0e3fba7b552d9b1ff6d874951f3d15c079828068d37cc9bbd31e8cb8dd",
+  "CLAUDE.md": "a291c9c48a1882e34ecc35b3abf231bb9ba9d147053b4753a1bf69bfd8e6a175",
+  ".cursorrules": "a6ec7f6d99844192a2ac1309634f6006ad808cf2d8fc52971383808e1b8db0a2",
+  ".cursor/mcp.json": "dc47cbbbe5c9e41ba2301362b37558b2e898461eb9f2a67fc0757778eedc7cb4",
+  "governance/SESSION_PROTOCOL.md": "d48b6f7a41dd6a507ad626aa7703f382ca43eb2db0d4096e25334658640f122e",
+  "docs/security/SECURITY_GOVERNANCE_POLICY.md": "6ddfb51349d64ac5f79286d0f00100fb052b3968a5546b110e020fd1201cf139",
+  ".github/workflows/ci-lint.yml": "724cc685401f8687b0c68b4ca8350f57a6be2dfd303272d58ca6cda69dd61556",
+  ".github/CODEOWNERS": "61943f9c6314e22b56f04b4c3c202a96430d631ee808ace7bd6b7e8a0fdfae8a",
+  ".github/pull_request_template.md": "a621ed07e90edbf0fdbaf7879946f44d02ae57a7432eb6188fac4ac8e176fd93",
+  ".gitattributes": "f0498b1a9811fefc8c5731a4c0a4ddbf0726c79d2c39eb97f56651067b5e8de8"
 }
