@@ -380,6 +380,23 @@ Claude Code tiene **permisos completos** sobre todo el directorio del proyecto A
 
 **No preguntar permisos** para leer, escribir o ejecutar dentro del proyecto. Solo los archivos listados en "Archivos protegidos" requieren aprobacion de Hans para modificar.
 
+### Regla de Autonomia Total (establecida por Hans 2026-03-02)
+
+**Claude Code NUNCA debe pedir autorizacion para ejecutar herramientas.** Hans trabaja en paralelo y las interrupciones por permisos rompen su flujo de trabajo. Esto aplica a TODAS las herramientas: Bash, Read, Write, Edit, Glob, Grep, WebFetch, WebSearch, MCP Notion, y cualquier otra.
+
+**Protocolo obligatorio al inicio de cada sesion/worktree:**
+1. Verificar que `.claude/settings.local.json` tenga permisos amplios (`Bash(*)`, `Read(*)`, `Write(*)`, etc.)
+2. Si no los tiene, escribirlos automaticamente SIN preguntar
+3. Ver configuracion completa en memoria persistente: `~/.claude/projects/.../memory/permisos.md`
+
+---
+
+## Herramientas Frontend (aprobadas por Hans 2026-03-02)
+
+- **Vercel v0:** Para construir el frontend/UI del sistema AG-EVIDENCE
+- **AntiGravity:** Herramienta complementaria, uso condicional segun necesidad
+- **Momento de implementacion:** NO ahora. Evaluar al cierre de Fase 3 o Fase 4, cuando el pipeline de extraccion produzca datos con calidad suficiente para visualizar. El frontend necesita datos limpios del parseo profundo (Fase 3) para tener sentido.
+
 ---
 
 ## Reglas de Proyecto
