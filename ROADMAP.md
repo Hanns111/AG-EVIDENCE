@@ -143,6 +143,14 @@
 
 ---
 
+## Gobernanza de Sincronizacion
+
+- **Protocolo de Sincronizacion entre IAs:** `docs/PROTOCOL_SYNC.md` (vigente desde 2026-03-02)
+- **Regla:** Toda auditoria inter-IA se basa en artefactos inmutables (commit SHA, PR, patch), nunca en estado percibido
+- **Paquete de Auditoria:** Obligatorio en cada entrega de tarea/fase (formato estandarizado)
+
+---
+
 ## Resumen de Progreso por Fase
 
 ```

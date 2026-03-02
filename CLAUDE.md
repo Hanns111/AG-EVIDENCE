@@ -411,6 +411,7 @@ Claude Code tiene **permisos completos** sobre todo el directorio del proyecto A
 - **LLM texto:** Ollama + qwen3:32b
 - **VLM vision:** Ollama + qwen2.5vl:7b (extraccion de comprobantes)
 - **Session Protocol:** Ver governance/SESSION_PROTOCOL.md (commit incremental obligatorio)
+- **Sync Protocol:** Ver docs/PROTOCOL_SYNC.md — Paquete de Auditoria obligatorio en cada entrega (desde 2026-03-02)
 - **OCR/Pipeline SIEMPRE en WSL2:** PaddleOCR, Tesseract, ocrmypdf, pdftotext, y todo el pipeline de extraccion OCR se ejecuta EXCLUSIVAMENTE desde WSL2. Nunca desde Windows nativo (los motores no están instalados ahí). La GPU (RTX 5090) solo es accesible desde WSL2. Para ejecutar scripts Python que usen OCR: `wsl bash -c "cd /mnt/c/Users/Hans/Proyectos/AG-EVIDENCE && python script.py"`
 
 ### Directiva Vigente de Viáticos (FUENTE PRINCIPAL)
