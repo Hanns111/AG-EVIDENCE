@@ -321,16 +321,24 @@ recepcion, impresion) y `buscar_fecha()` toma la primera que encuentra.
 
 ---
 
-## Protocolo Cursor + Claude Code
+## Protocolo Multi-Agente (v2 — Swap de roles 2026-03-02)
 
-### Claude Code hace:
-- Arquitectura, módulos nuevos, pipelines multi-archivo
+### Claude Code (AUDITOR) hace:
+- Auditoría de calidad sobre trabajo de Codex CLI
+- Revisión de diffs, tests, coherencia arquitectónica
 - Cambios en docs/ de gobernanza
-- Merges y gestión de ramas
-- Actualización de Notion
-- Creación de tests complejos
+- Actualización de Notion (Bitácora, Dashboard)
+- Ejecución de `audit_repo_integrity.py` (8 checks)
+- Veredicto formal: CONFORME / NO CONFORME / INCIERTO
 
-### Cursor hace:
+### Codex CLI (IMPLEMENTADOR) hace:
+- Código nuevo, módulos, pipelines multi-archivo
+- Tests (pytest)
+- Ejecución de OCR/pipeline en WSL2
+- Commits + push
+- Documentación técnica
+
+### Cursor (EDITOR PUNTUAL) hace:
 - Ediciones puntuales dentro de archivos existentes
 - Refactors locales (renombrar variable, extraer función)
 - Revisión visual de código
@@ -355,15 +363,14 @@ recepcion, impresion) y `buscar_fecha()` toma la primera que encuentra.
 - docs/security/SECURITY_GOVERNANCE_POLICY.md
 
 ### Gobernanza Cursor — Cuándo y cómo usarlo:
-Claude Code es quien decide cuándo Cursor debe actuar.
-Cuando sea necesario, Claude Code le dará a Hans:
-1. El prompt EXACTO para pegar en Cursor
-2. Qué archivo(s) debe editar Cursor
-3. Qué resultado se espera
-4. Hans pega el prompt en Cursor, obtiene resultado, y se lo muestra a Claude Code
-5. Claude Code valida el resultado y lo registra en Notion (Ejecutado Por: Cursor)
-Si Cursor hace algo fuera de protocolo, Hans avisa a Claude Code para corregir.
+Hans o Claude Code deciden cuándo Cursor debe actuar (ediciones puntuales).
 Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-G12).
+
+### Flujo de trabajo principal:
+```
+Hans asigna tarea → Codex CLI implementa → commit + push
+    → Hans pide a Claude Code auditar → veredicto → Hans decide GO/NO-GO
+```
 
 ---
 
@@ -411,7 +418,7 @@ Claude Code tiene **permisos completos** sobre todo el directorio del proyecto A
 - **LLM texto:** Ollama + qwen3:32b
 - **VLM vision:** Ollama + qwen2.5vl:7b (extraccion de comprobantes)
 - **Session Protocol:** Ver governance/SESSION_PROTOCOL.md (commit incremental obligatorio)
-- **Sync Protocol:** Ver docs/PROTOCOL_SYNC.md — Paquete de Auditoria obligatorio en cada entrega (desde 2026-03-02)
+- **Sync Protocol:** Ver docs/PROTOCOL_SYNC.md v2 — Claude Code = Auditor, Codex CLI = Implementador (desde 2026-03-02)
 - **OCR/Pipeline SIEMPRE en WSL2:** PaddleOCR, Tesseract, ocrmypdf, pdftotext, y todo el pipeline de extraccion OCR se ejecuta EXCLUSIVAMENTE desde WSL2. Nunca desde Windows nativo (los motores no están instalados ahí). La GPU (RTX 5090) solo es accesible desde WSL2. Para ejecutar scripts Python que usen OCR: `wsl bash -c "cd /mnt/c/Users/Hans/Proyectos/AG-EVIDENCE && python script.py"`
 
 ### Directiva Vigente de Viáticos (FUENTE PRINCIPAL)

@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 """
-Generador automático de Paquete de Auditoría para Codex.
+Generador automatico de Paquete de Auditoria.
 
 Uso:
-    python scripts/generar_paquete_codex.py                     # auto-detect
-    python scripts/generar_paquete_codex.py --tarea 22           # especificar tarea
-    python scripts/generar_paquete_codex.py --fase 3             # especificar fase
-    python scripts/generar_paquete_codex.py --base origin/main   # comparar contra branch
-    python scripts/generar_paquete_codex.py --no-clipboard       # no copiar al clipboard
-    python scripts/generar_paquete_codex.py --include-patch      # incluir diff completo
-    python scripts/generar_paquete_codex.py --output paquete.txt # guardar en archivo
+    python scripts/generar_paquete_auditoria.py                     # auto-detect
+    python scripts/generar_paquete_auditoria.py --tarea 22           # especificar tarea
+    python scripts/generar_paquete_auditoria.py --fase 3             # especificar fase
+    python scripts/generar_paquete_auditoria.py --base origin/main   # comparar contra branch
+    python scripts/generar_paquete_auditoria.py --no-clipboard       # no copiar al clipboard
+    python scripts/generar_paquete_auditoria.py --include-patch      # incluir diff completo
+    python scripts/generar_paquete_auditoria.py --output paquete.txt # guardar en archivo
 
 Genera:
-    1. Preámbulo obligatorio para Codex (protocolo PROTOCOL_SYNC.md)
-    2. Paquete de Auditoría completo (8 secciones)
-    3. Copia al clipboard (Windows) automáticamente
+    1. Preambulo obligatorio (protocolo PROTOCOL_SYNC.md v2)
+    2. Paquete de Auditoria completo (8 secciones)
+    3. Copia al clipboard (Windows) automaticamente
 
-Referencia: docs/PROTOCOL_SYNC.md (GOV_PROTOCOL_SYNC_v1)
+Flujo v2: Codex CLI (implementador) genera paquete -> Claude Code (auditor) revisa.
+Claude Code tambien puede generar el paquete directamente desde el repo.
+
+Referencia: docs/PROTOCOL_SYNC.md (GOV_PROTOCOL_SYNC_v2)
 """
 
 import argparse
@@ -29,30 +32,26 @@ from pathlib import Path
 # ── Configuración ──────────────────────────────────────────────
 VERSION = "1.0.0"
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PROTOCOL_REF = "docs/PROTOCOL_SYNC.md (GOV_PROTOCOL_SYNC_v1)"
+PROTOCOL_REF = "docs/PROTOCOL_SYNC.md (GOV_PROTOCOL_SYNC_v2)"
 
 # Preámbulo que Codex DEBE leer antes de auditar
-PREAMBULO_CODEX = """╔══════════════════════════════════════════════════════════════════╗
-║         INSTRUCCIONES OBLIGATORIAS PARA EL AUDITOR (CODEX)       ║
-╠══════════════════════════════════════════════════════════════════╣
-║                                                                  ║
-║  Esta auditoría se rige por: docs/PROTOCOL_SYNC.md               ║
-║                                                                  ║
-║  REGLAS INQUEBRANTABLES:                                         ║
-║                                                                  ║
-║  1. Audita ÚNICAMENTE el Paquete de Auditoría que sigue abajo.   ║
-║  2. Cita SIEMPRE el Commit SHA en tus hallazgos.                 ║
-║  3. NO asumas estado del repositorio fuera del diff/patch.       ║
-║  4. Tu HEAD local es IRRELEVANTE — ignóralo completamente.       ║
-║  5. Si falta contexto, solicita un patch adicional a Hans.       ║
-║  6. NO inferencias: solo lo que está en el paquete existe.       ║
-║                                                                  ║
-║  ANTES DE INICIAR, confirma LITERALMENTE:                        ║
-║  "Auditaré solo el paquete y citaré el SHA."                     ║
-║                                                                  ║
-║  Si no confirmas, la auditoría NO es válida.                     ║
-║                                                                  ║
-╚══════════════════════════════════════════════════════════════════╝
+PREAMBULO_AUDITORIA = """╔═══════════════════════════════════════════════════════════════════════╗
+║         PAQUETE DE AUDITORIA — PROTOCOL_SYNC v2                       ║
+╠═══════════════════════════════════════════════════════════════════════╣
+║                                                                       ║
+║  Protocolo: docs/PROTOCOL_SYNC.md (GOV_PROTOCOL_SYNC_v2)             ║
+║  Implementador: Codex CLI                                             ║
+║  Auditor: Claude Code                                                 ║
+║                                                                       ║
+║  REGLAS DE AUDITORIA:                                                 ║
+║                                                                       ║
+║  1. Auditar UNICAMENTE el contenido de este paquete + repo local.     ║
+║  2. Citar SIEMPRE el Commit SHA en hallazgos.                         ║
+║  3. Verificar: tests pasan, ruff limpio, coherencia arquitectonica.   ║
+║  4. Si falta contexto, solicitar patch o revisar repo directamente.   ║
+║  5. Emitir veredicto: CONFORME / NO CONFORME / INCIERTO.             ║
+║                                                                       ║
+╚═══════════════════════════════════════════════════════════════════════╝
 """.strip()
 
 
@@ -245,7 +244,7 @@ def generar_paquete(
     lines = []
 
     # ─── Preámbulo obligatorio ───
-    lines.append(PREAMBULO_CODEX)
+    lines.append(PREAMBULO_AUDITORIA)
     lines.append("")
     lines.append("")
 
@@ -419,11 +418,9 @@ Ejemplos:
 
     print("", file=sys.stderr)
     print("✅ Paquete generado. Flujo:", file=sys.stderr)
-    print("   1. Pega en Codex (ya está en clipboard)", file=sys.stderr)
-    print(
-        "   2. Codex debe confirmar: 'Auditaré solo el paquete y citaré el SHA.'", file=sys.stderr
-    )
-    print("   3. Si NO confirma → la auditoría NO es válida", file=sys.stderr)
+    print("   1. Pega en Claude Code para auditoria (ya esta en clipboard)", file=sys.stderr)
+    print("   2. Claude Code revisa diff, tests y coherencia", file=sys.stderr)
+    print("   3. Claude Code emite veredicto: CONFORME / NO CONFORME / INCIERTO", file=sys.stderr)
 
 
 if __name__ == "__main__":

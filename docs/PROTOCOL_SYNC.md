@@ -1,46 +1,47 @@
 # Protocolo de Sincronizacion entre IAs — AG-EVIDENCE
 
-> **Identificador:** GOV_PROTOCOL_SYNC_v1
+> **Identificador:** GOV_PROTOCOL_SYNC_v2
 > **Fecha:** 2026-03-02
 > **Aprobado por:** Hans
 > **Estado:** VIGENTE
+> **Cambio v2:** Swap de roles — Codex = Implementador, Claude Code = Auditor
 
 ---
 
 ## 1. Problema que resuelve
 
 Multiples IAs participan en el desarrollo de AG-EVIDENCE:
-- **Claude Code:** Implementador (codigo, tests, docs, pipelines)
-- **Codex:** Auditor (verificacion de calidad y completitud)
+- **Codex CLI:** Implementador (codigo, tests, docs, pipelines)
+- **Claude Code:** Auditor (verificacion de calidad y completitud)
 - **ChatGPT:** Coordinacion y arquitectura de alto nivel (puntual)
 
-Codex opera en un **sandbox aislado** que no comparte el mismo arbol de trabajo
-ni el mismo commit SHA que Claude Code. Esto genera desalineaciones constantes
-cuando Codex audita "estado percibido" en vez de artefactos inmutables.
+**Razon del swap (v2):** Codex CLI es mas rapido ejecutando codigo. Claude Code
+es mas reflexivo y analitico, ideal para auditoria.
 
 **Regla fundamental:** La auditoria NUNCA se basa en estado percibido del repo.
-Se basa EXCLUSIVAMENTE en artefactos inmutables entregados explicitamente.
+Se basa EXCLUSIVAMENTE en artefactos inmutables (commits, diffs, tests).
 
 ---
 
 ## 2. Artefactos validos para auditoria
 
-Codex solo puede auditar UNO de los siguientes:
+Claude Code (auditor) puede verificar trabajo usando:
 
 | Artefacto | Descripcion | Cuando usarlo |
 |-----------|-------------|---------------|
 | **Commit SHA** | Hash completo de un commit especifico | Verificar un cambio puntual |
 | **Pull Request** | PR en GitHub con diff visible | Verificar un bloque de trabajo |
-| **Paquete de Auditoria** | Archivo estructurado generado por Claude Code | Verificacion formal de fase/tarea |
+| **Diff directo** | `git diff` sobre el repo local | Auditoria en tiempo real |
+| **Paquete de Auditoria** | Bloque estructurado de 8 secciones | Verificacion formal de fase/tarea |
 
-**Prohibido:** Codex NO debe asumir estado del repo, inferir cambios fuera
-del diff entregado, ni reportar HEADs de su sandbox como fuente de verdad.
+**Ventaja v2:** Claude Code tiene acceso directo al repo, puede inspeccionar
+archivos, ejecutar tests y revisar diffs sin necesidad de paquetes intermedios.
 
 ---
 
 ## 3. Paquete de Auditoria — Formato obligatorio
 
-Cada entrega de Claude Code incluye este bloque:
+Para entregas formales (cierre de tarea/fase), se genera este bloque:
 
 ```
 === PAQUETE DE AUDITORIA — [Tarea #XX / Fase Y] ===
@@ -78,30 +79,30 @@ Cada entrega de Claude Code incluye este bloque:
 === FIN PAQUETE ===
 ```
 
-### 3.1 Generacion del patch (opcional, para auditoria profunda)
+### 3.1 Generacion del paquete
 
 ```bash
-git diff origin/main...HEAD > audit.patch
+python scripts/generar_paquete_auditoria.py --tarea 22 --fase 3
 ```
-
-Este archivo se puede entregar a Codex como insumo unico de auditoria.
 
 ---
 
 ## 4. Responsabilidades
 
-### Claude Code (Implementador)
-- Genera el Paquete de Auditoria al cerrar cada tarea o fase
-- Garantiza que el SHA reportado corresponde a un commit pusheado a origin
-- No entrega "estados" — entrega artefactos concretos
-- Incluye salida real de tests (no narrativa)
+### Codex CLI (Implementador)
+- Escribe codigo, tests y documentacion
+- Ejecuta pipeline, OCR, procesamiento
+- Hace commit + push al terminar
+- Pasa ruff check + pytest antes de cada commit
+- Genera Paquete de Auditoria al cerrar tarea/fase (opcional: Claude Code puede generarlo)
 
-### Codex (Auditor)
-- Audita UNICAMENTE el contenido del paquete/patch/PR entregado
-- No asume estado adicional del repo
-- No infiere cambios fuera del diff entregado
-- Si detecta inconsistencia en el paquete, la reporta como hallazgo
-- Su HEAD local es IRRELEVANTE para la auditoria
+### Claude Code (Auditor)
+- Revisa diffs, tests, coherencia del trabajo de Codex
+- Puede inspeccionar el repo directamente (tiene acceso completo)
+- Ejecuta `python scripts/audit_repo_integrity.py` (8 checks)
+- Verifica alineacion con ROADMAP.md, CLAUDE.md, CURRENT_STATE.md
+- Emite veredicto: CONFORME / NO CONFORME / INCIERTO
+- Actualiza Notion (Bitacora, Dashboard)
 
 ### Hans (Aprobador)
 - Valida decision GO/NO-GO
@@ -113,22 +114,22 @@ Este archivo se puede entregar a Codex como insumo unico de auditoria.
 ## 5. Flujo operativo
 
 ```
-Claude Code termina bloque de trabajo
+Hans asigna tarea (Notion o chat)
     |
     v
-Commit + Push a origin/main (o branch)
+Codex CLI implementa: codigo + tests + docs
     |
     v
-Genera Paquete de Auditoria (formato seccion 3)
+Codex CLI: ruff check + pytest + commit + push
     |
     v
-Hans entrega paquete a Codex
+Hans pide a Claude Code: "audita el trabajo de Codex"
     |
     v
-Codex audita SOLO el paquete (no su estado local)
+Claude Code audita: revisa diff, tests, coherencia, integrity
     |
     v
-Codex entrega hallazgos (si los hay)
+Claude Code emite veredicto (CONFORME / NO CONFORME / INCIERTO)
     |
     v
 Hans decide: GO / NO-GO / corregir
@@ -136,16 +137,38 @@ Hans decide: GO / NO-GO / corregir
 
 ---
 
-## 6. Integracion con protocolos existentes
+## 6. Formato de Auditoria de Claude Code
+
+```
+=== AUDITORIA CLAUDE CODE — [Tarea #XX] ===
+SHA auditado: <hash>
+Fecha: <fecha>
+
+VEREDICTO: CONFORME / NO CONFORME / INCIERTO
+
+HALLAZGOS:
+1. [TIPO] Descripcion — SHA: <hash>, evidencia: <cita>
+2. ...
+
+RECOMENDACION:
+<accion sugerida si aplica>
+
+=== FIN AUDITORIA ===
+```
+
+---
+
+## 7. Integracion con protocolos existentes
 
 - **SESSION_PROTOCOL.md:** El Paquete de Auditoria es una extension del
   bloque `=== EVIDENCIA DE CIERRE ===` ya existente. Ambos son obligatorios.
 - **CLAUDE.md:** Referencia a este protocolo en seccion de reglas.
+- **CODEX.md:** Instrucciones de implementador para Codex CLI.
 - **ROADMAP.md:** Referencia a este protocolo en notas de gobernanza.
 
 ---
 
-## 7. Vigencia
+## 8. Vigencia
 
 Este protocolo es **obligatorio desde 2026-03-02** para toda entrega
 de codigo, documentacion o cambio en el proyecto AG-EVIDENCE.
@@ -155,3 +178,4 @@ No requiere herramientas nuevas. Requiere disciplina de entrega.
 ---
 
 *Documento creado por Claude Code, aprobado por Hans — 2026-03-02*
+*v2: Swap de roles (Codex = Implementador, Claude Code = Auditor) — 2026-03-02*
