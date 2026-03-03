@@ -3,7 +3,7 @@
 
 **Documento normativo interno — Sistema de Análisis Probatorio de Expedientes**  
 **Ministerio de Educación del Perú**  
-**Versión:** 1.0.0  
+**Versión:** 1.1.0  
 **Fecha de vigencia:** 2025-12-18  
 **Clasificación:** Obligatorio para todos los componentes del sistema
 
@@ -382,25 +382,91 @@ de expedientes administrativos."
 
 ---
 
-## CAPÍTULO VII: DISPOSICIONES FINALES
+## CAPÍTULO VII: GOVERNANCE LOCK — REGLAS ANTI-DESINCRONÍA MULTI-AGENTE
 
-### Artículo 15. Vigencia
+> **Adoptado:** 2026-03-02 por instrucción de Hans.
+> **Origen:** Protocolo anti-desincronía propuesto por Codex (auditor) y aprobado por Claude Code (implementador).
 
-15.1. El presente documento entra en vigencia a partir de su fecha de publicación.
+### Artículo 15. Bloqueo Arquitectónico por Tarea Activa
 
-15.2. Toda modificación a estas reglas debe documentarse con fecha y justificación.
+15.1. **Ningún agente (Claude Code, Codex, Cursor, Antigravity, u otro)** puede modificar la arquitectura del sistema mientras exista una tarea marcada como "En Progreso" en el tablero de Notion.
 
-### Artículo 16. Prevalencia
+15.2. Se entiende por "modificar arquitectura": crear módulos nuevos en `src/`, cambiar flujo de pipeline, agregar dependencias externas, o alterar contratos de datos (`expediente_contract.py`).
 
-16.1. En caso de conflicto entre el comportamiento del código y estas reglas, prevalecen las reglas.
+15.3. La tarea activa debe cerrarse (commit + push + tests + Notion) **antes** de iniciar cambios arquitectónicos.
 
-16.2. Todo comportamiento del sistema que contradiga estas reglas debe considerarse un bug a corregir.
+### Artículo 16. Prioridad de Gobernanza sobre Feature Dev
 
-### Artículo 17. Auditoría
+16.1. **La gobernanza siempre tiene prioridad sobre desarrollo de features.** Si se detecta una brecha de sincronía (archivos faltantes, estado inconsistente, HEAD divergente), la resolución de la brecha es obligatoria antes de escribir cualquier línea de código funcional.
 
-17.1. Los logs del sistema deben permitir verificar el cumplimiento de estas reglas.
+16.2. Brechas que activan este bloqueo:
+   - Archivos de protocolo faltantes (CODEX.md, PROTOCOL_SYNC.md, CODEX_CUSTOM_INSTRUCTIONS.md)
+   - Divergencia entre ROADMAP.md, CLAUDE.md y CURRENT_STATE.md
+   - Audit de integridad con resultado FAIL
+   - Tareas marcadas como completadas sin evidencia (commit, tests, Notion)
 
-17.2. Toda respuesta del sistema debe ser trazable a sus evidencias documentales.
+### Artículo 17. Protección de Roles — Anti-Sobrescritura
+
+17.1. **Ningún agente puede sobrescribir el rol de otro agente** sin un ADR (Architecture Decision Record) aprobado por Hans.
+
+17.2. Roles vigentes:
+
+| Agente | Rol | Alcance |
+|--------|-----|---------|
+| **Claude Code** | Implementador | Código, tests, docs, pipelines, Notion |
+| **Codex** | Auditor | Verificación de calidad sobre artefactos inmutables |
+| **Cursor** | Editor puntual | Ediciones locales dentro de archivos existentes |
+| **ChatGPT** | Coordinación | Arquitectura de alto nivel, diseño de protocolos |
+| **Antigravity/v0** | Frontend | UI/UX (diferido a Fase 3/4) |
+
+17.3. Acciones prohibidas sin ADR:
+   - Codex no puede implementar código en producción
+   - Cursor no puede crear módulos nuevos ni hacer merge
+   - Claude Code no puede ignorar hallazgos de Codex sin justificación
+   - Ningún agente puede modificar archivos protegidos de otro sin aprobación
+
+### Artículo 18. Gate de Sincronía Pre-Tarea
+
+18.1. **Todo agente** debe ejecutar al inicio de sesión:
+
+```bash
+git status -sb
+git rev-parse --abbrev-ref HEAD
+git log --oneline -n 3
+```
+
+18.2. Debe confirmar:
+   - Rama correcta (main o branch asignado)
+   - HEAD actualizado con origin
+   - Working tree limpio
+
+18.3. Si alguna condición no se cumple → **detener ejecución** y reportar a Hans.
+
+18.4. Para Claude Code, el gate incluye adicionalmente:
+   - `python scripts/audit_repo_integrity.py` (8 checks)
+   - Verificación de 5 fuentes (ROADMAP, CLAUDE.md, CURRENT_STATE, código, Notion)
+
+---
+
+## CAPÍTULO VIII: DISPOSICIONES FINALES
+
+### Artículo 19. Vigencia
+
+19.1. El presente documento entra en vigencia a partir de su fecha de publicación.
+
+19.2. Toda modificación a estas reglas debe documentarse con fecha y justificación.
+
+### Artículo 20. Prevalencia
+
+20.1. En caso de conflicto entre el comportamiento del código y estas reglas, prevalecen las reglas.
+
+20.2. Todo comportamiento del sistema que contradiga estas reglas debe considerarse un bug a corregir.
+
+### Artículo 21. Auditoría
+
+21.1. Los logs del sistema deben permitir verificar el cumplimiento de estas reglas.
+
+21.2. Toda respuesta del sistema debe ser trazable a sus evidencias documentales.
 
 ---
 
@@ -460,3 +526,4 @@ Esta observación requiere verificación humana antes de considerarse válida."
 | Versión | Fecha | Autor | Cambios |
 |---------|-------|-------|---------|
 | 1.0.0 | 2025-12-18 | Sistema | Versión inicial |
+| 1.1.0 | 2026-03-02 | Claude Code | Cap. VII: Governance Lock (Arts. 15-18). Anti-desincronía multi-agente, bloqueo arquitectónico, protección de roles, gate de sincronía. Propuesto por Codex, aprobado por Hans. |

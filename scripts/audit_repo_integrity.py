@@ -5,7 +5,7 @@ audit_repo_integrity.py — Auditoria de integridad del repositorio AG-EVIDENCE.
 Disenado para ejecutarse por Claude Code al inicio de cada sesion
 (Gate de Arranque, SESSION_PROTOCOL.md seccion 3.5).
 
-Realiza 7 checks independientes:
+Realiza 8 checks independientes:
   1. Integridad SHA-256 de archivos de gobernanza vs manifiesto
   2. Ramas remotas no esperadas
   3. Autores desconocidos en commits recientes de main
@@ -13,6 +13,7 @@ Realiza 7 checks independientes:
   5. Worktrees activos (exceso = riesgo)
   6. Existencia de archivos CI/proteccion
   7. Cambios no commiteados en archivos protegidos
+  8. Archivos de protocolo inter-IA (CODEX.md, PROTOCOL_SYNC.md)
 
 Uso:
     python scripts/audit_repo_integrity.py
@@ -59,6 +60,13 @@ CI_FILES = [
     ".github/CODEOWNERS",
     ".gitattributes",
     ".pre-commit-config.yaml",
+]
+
+# Archivos de protocolo inter-IA que DEBEN existir (Regla Codex 2)
+PROTOCOL_SYNC_FILES = [
+    "CODEX.md",
+    "docs/PROTOCOL_SYNC.md",
+    "docs/CODEX_CUSTOM_INSTRUCTIONS.md",
 ]
 
 AUTHORIZED_AUTHORS = [
@@ -339,6 +347,29 @@ def check_uncommitted_protected():
 
 
 # ═══════════════════════════════════════════════════════════════════
+# CHECK 8: Archivos de protocolo inter-IA
+# ═══════════════════════════════════════════════════════════════════
+def check_protocol_sync_files():
+    """Verifica que los archivos de protocolo inter-IA existan.
+
+    Si falta alguno, la tarea se bloquea hasta resolver la brecha.
+    Ref: Regla 2 del protocolo anti-desincronía multi-agente.
+    """
+    results = []
+    status = "PASS"
+
+    for filepath in PROTOCOL_SYNC_FILES:
+        full_path = PROJECT_ROOT / filepath
+        if full_path.exists():
+            results.append((filepath, "EXISTE"))
+        else:
+            status = "FAIL"
+            results.append((filepath, "FALTANTE — bloquear tarea y registrar brecha de sincronía"))
+
+    return status, results
+
+
+# ═══════════════════════════════════════════════════════════════════
 # UPDATE MANIFEST
 # ═══════════════════════════════════════════════════════════════════
 def update_manifest():
@@ -391,6 +422,7 @@ def run_audit(as_json=False):
         ("Worktree Status", check_worktrees, ()),
         ("CI/Protection Files", check_ci_files, ()),
         ("Uncommitted Protected Files", check_uncommitted_protected, ()),
+        ("Protocol Sync Files (Inter-IA)", check_protocol_sync_files, ()),
     ]
 
     all_results = []
