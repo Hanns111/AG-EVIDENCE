@@ -83,9 +83,9 @@ lee `@docs/CURRENT_STATE.md` y resume lo relevante para la tarea.
 
 | Componente | Valor |
 |------------|-------|
-| GPU | RTX 5090 32GB VRAM |
+| GPU | RTX 5090 24GB VRAM (Laptop MSI Titan) |
 | Entorno de ejecucion | WSL2 (Ubuntu 22.04) |
-| Motor LLM | Ollama qwen3:32b + qwen3-vl:32b |
+| Motor LLM | Ollama 0.16.2: qwen3:32b (texto) + qwen2.5vl:7b (vision, ADR-009) |
 | OCR runtime | WSL2 only (PaddleOCR PP-OCRv5 primary + tesseract-ocr fallback) |
 | OCR en Windows | NO soportado — solo editor/host |
 
@@ -117,7 +117,13 @@ AG-EVIDENCE/
 ├── src/
 │   ├── agents/.gitkeep          # Placeholder Fase 2
 │   ├── extraction/
-│   │   └── abstencion.py        # Politica de abstencion
+│   │   ├── abstencion.py        # Politica de abstencion
+│   │   ├── calibracion.py       # Calibracion de umbrales
+│   │   ├── confidence_router.py # Confidence Router + Integrity Checkpoint
+│   │   ├── escribano_fiel.py    # Orquestador pipeline 5 pasos
+│   │   ├── excel_writer.py      # Hoja DIAGNOSTICO en Excel
+│   │   ├── expediente_contract.py # Contrato de datos ExpedienteJSON
+│   │   └── local_analyst.py     # Analista local
 │   ├── ingestion/
 │   │   ├── config.py            # GatingThresholds
 │   │   ├── custody_chain.py     # Cadena de custodia
@@ -131,7 +137,7 @@ AG-EVIDENCE/
 │   │   └── tdr_requirements.py
 │   └── tools/
 │       └── ocr_preprocessor.py
-├── tests/                       # 8 test suites (274 tests)
+├── tests/                       # 13+ test suites (885 tests)
 ├── docs/                        # Gobernanza y specs
 └── data/                        # Directivas y expedientes
 ```
@@ -161,4 +167,4 @@ Nota: Cursor NO hace commits ni push. Solo edita codigo.
 
 ---
 
-**Ultima actualizacion:** 2026-02-11
+**Ultima actualizacion:** 2026-03-05

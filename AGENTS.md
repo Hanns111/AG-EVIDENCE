@@ -94,7 +94,13 @@ AG-EVIDENCE/
 │   ├── agents/.gitkeep          # Placeholder Fase 2
 │   ├── extraction/
 │   │   ├── __init__.py
-│   │   └── abstencion.py        # Politica formal de abstencion
+│   │   ├── abstencion.py        # Politica formal de abstencion
+│   │   ├── calibracion.py       # Calibracion de umbrales
+│   │   ├── confidence_router.py # Confidence Router + Integrity Checkpoint
+│   │   ├── escribano_fiel.py    # Orquestador pipeline 5 pasos
+│   │   ├── excel_writer.py      # Hoja DIAGNOSTICO en Excel
+│   │   ├── expediente_contract.py # Contrato de datos ExpedienteJSON
+│   │   └── local_analyst.py     # Analista local
 │   ├── ingestion/
 │   │   ├── __init__.py
 │   │   ├── config.py            # GatingThresholds
@@ -103,7 +109,7 @@ AG-EVIDENCE/
 │   │   └── trace_logger.py      # Logger JSONL con trace_id
 │   ├── ocr/
 │   │   ├── __init__.py
-│   │   └── core.py              # Motor OCR
+│   │   └── core.py              # Motor OCR (PaddleOCR PP-OCRv5 GPU)
 │   ├── rules/
 │   │   ├── __init__.py
 │   │   ├── detraccion_spot.py   # Validacion SPOT/detracciones
@@ -112,7 +118,7 @@ AG-EVIDENCE/
 │   └── tools/
 │       ├── __init__.py
 │       └── ocr_preprocessor.py  # Preprocesamiento OCR
-├── tests/                       # 8 test suites
+├── tests/                       # 13+ test suites, 885 tests
 ├── docs/                        # Gobernanza y especificaciones
 ├── data/                        # Directivas y expedientes de prueba
 └── output/                      # Informes generados
@@ -124,14 +130,16 @@ AG-EVIDENCE/
 
 | Componente | Valor |
 |------------|-------|
-| Backend LLM local | Ollama en `http://localhost:11434` |
-| Modelo activo | `qwen3:32b` (texto), `qwen3-vl:32b` (vision) |
-| GPU | RTX 5090 32GB VRAM |
+| Backend LLM local | Ollama 0.16.2 en `http://localhost:11434` |
+| Modelo texto | `qwen3:32b` |
+| Modelo vision (VLM) | `qwen2.5vl:7b` (Q4_K_M, 6GB) — ADR-009 |
+| GPU | RTX 5090 24GB VRAM (Laptop MSI Titan) |
 | Entorno de ejecucion | WSL2 (Ubuntu 22.04) |
-| OCR runtime | WSL2 only (ocrmypdf + tesseract-ocr) |
+| OCR runtime | PaddleOCR 3.4.0 PP-OCRv5 GPU (WSL2) + Tesseract fallback |
 | Politica | Anti-alucinacion estricta + abstencion formal |
 | Estandar | Probatorio (archivo + pagina + snippet) |
+| Seguridad | Blindaje 4 capas defense-in-depth (2026-02-25) |
 
 ---
 
-**Ultima actualizacion:** 2026-02-11
+**Ultima actualizacion:** 2026-03-05

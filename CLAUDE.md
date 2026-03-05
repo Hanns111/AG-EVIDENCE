@@ -304,14 +304,20 @@ recepcion, impresion) y `buscar_fecha()` toma la primera que encuentra.
 
 ---
 
-## Tracking en Notion
+## Tracking en Notion (limpieza 2026-03-05)
 
-- **Tablero:** "Tablero de Tareas AG-EVIDENCE" (DB: 6003e907-28f5-4757-ba93-88aa3efe03e1)
-- **Data source:** collection://16c577cf-e572-45a0-8cad-5e64ebd56d9f
+Páginas activas (7 páginas + 2 databases + tareas del tablero):
+
+- **Plan de Desarrollo (ROOT):** 303b188d-be2e-8193-85f5-f6861c924539
+- **Tablero de Tareas:** DB 6003e907-28f5-4757-ba93-88aa3efe03e1 (data source: collection://16c577cf-e572-45a0-8cad-5e64ebd56d9f)
+- **Dashboard de Progreso:** 311b188d-be2e-81d5-a98f-d6959bacc8f8
 - **Bitácora:** 303b188d-be2e-8135-899b-d209caf42dc9
-- **Plan de Desarrollo:** 303b188d-be2e-8193-85f5-f6861c924539
-- **Glosario Técnico:** collection://bffe2c97-e824-459b-af01-febd94f54dec
 - **Árbol de Ramas:** 303b188d-be2e-81a7-b38a-d42b811a9832
+- **Seguridad:** 30cb188d-be2e-8103-8d68-e6dbb968394f (sub: ACTA DE CIERRE)
+- **Plan Estratégico:** 312b188d-be2e-8106-92c3-e206f873457a
+- **Glosario Técnico:** DB collection://bffe2c97-e824-459b-af01-febd94f54dec
+
+Eliminadas 2026-03-05: Dashboard v1 (archivado), Protocolo Cursor vs Claude Code (obsoleto)
 
 ### Protocolo Notion obligatorio:
 1. Antes de empezar una tarea → marcar 🔵 En Progreso
@@ -398,11 +404,26 @@ Claude Code tiene **permisos completos** sobre todo el directorio del proyecto A
 
 ---
 
-## Herramientas Frontend (aprobadas por Hans 2026-03-02)
+## Herramientas por Fase (decisión 2026-03-05)
 
-- **Vercel v0:** Para construir el frontend/UI del sistema AG-EVIDENCE
-- **AntiGravity:** Herramienta complementaria, uso condicional segun necesidad
-- **Momento de implementacion:** NO ahora. Evaluar al cierre de Fase 3 o Fase 4, cuando el pipeline de extraccion produzca datos con calidad suficiente para visualizar. El frontend necesita datos limpios del parseo profundo (Fase 3) para tener sentido.
+| Herramienta | Cuándo | Fase | Uso |
+|-------------|--------|------|-----|
+| **Cursor** | **Ya activo** | Desde Fase 3 | Ediciones puntuales, parseo regex, debug campo por campo |
+| **Obsidian** | Opcional | Fases 4-6 | Knowledge base normativa (graph view reglas) |
+| **v0.dev** | Cierre Fase 4 | Cuando haya datos reales | Frontend/UI del sistema AG-EVIDENCE |
+| **AntiGravity** | Condicional | Según necesidad | Herramienta complementaria UI |
+
+**Regla frontend:** NO construir UI hasta que Fase 3 (parseo profundo) y Fase 4 (validaciones) produzcan datos limpios. Un frontend sin datos reales es cáscara vacía.
+
+### Bóveda Obsidian — Mapa Visual del Proyecto (aprobada 2026-03-05)
+
+- **Ruta:** `C:\Users\Hans\ObsidianVaults\AG-EVIDENCE-MAPA\` (aislada del repo)
+- **Propósito:** Mapa visual para entender arquitectura, pipeline y normativa SIN código
+- **Contenido:** MOC, Pipeline 5 pasos (Mermaid), módulos, conceptos, fases, normativa viáticos
+- **Normativa:** Solo directiva vigente (RGS 023-2026-MINEDU) por ahora
+- **Creador:** Cursor (tiene acceso al repo como workspace)
+- **Actualización:** Cursor actualiza la bóveda al cierre de cada fase (NO manual)
+- **Aislamiento:** Sin git, sin relación con el repo, solo lectura conceptual
 
 ---
 
