@@ -336,37 +336,46 @@ Eliminadas 2026-03-05: Dashboard v1 (archivado), Protocolo Cursor vs Claude Code
 
 ---
 
-## Protocolo Multi-Agente (v2 — Swap de roles 2026-03-02)
+## Protocolo Multi-Agente (v3 — Actualizado 2026-03-05)
+
+### Principio fundamental:
+**Hans decide quién actúa.** Ningún agente es backup de otro. Hans intercala libremente entre Codex CLI y Cursor según los mejores resultados que encuentre, y lo comunica previamente. Claude Code audita TODO.
 
 ### Claude Code (AUDITOR) hace:
-- Auditoría de calidad sobre trabajo de Codex CLI
+- Auditoría de calidad sobre trabajo de Codex CLI y Cursor
 - Revisión de diffs, tests, coherencia arquitectónica
 - Cambios en docs/ de gobernanza
-- Actualización de Notion (Bitácora, Dashboard)
+- Actualización de Notion y Obsidian (sincronización absoluta)
 - Ejecución de `audit_repo_integrity.py` (8 checks)
 - Veredicto formal: CONFORME / NO CONFORME / INCIERTO
 
-### Codex CLI (IMPLEMENTADOR) hace:
+### Codex CLI (IMPLEMENTADOR — asignado por Hans) hace:
 - Código nuevo, módulos, pipelines multi-archivo
 - Tests (pytest)
 - Ejecución de OCR/pipeline en WSL2
 - Commits + push
 - Documentación técnica
 
-### Cursor (EDITOR PUNTUAL + IMPLEMENTADOR de respaldo) hace:
+### Cursor (IMPLEMENTADOR — asignado por Hans) hace:
+- Todo lo que Codex CLI puede hacer, cuando Hans lo asigna
 - Ediciones puntuales dentro de archivos existentes
 - Refactors locales (renombrar variable, extraer función)
 - Revisión visual de código
 - Completado de funciones individuales
 - Debug rápido con contexto de un solo archivo
-- **IMPLEMENTADOR de respaldo:** Cuando Hans se queda sin saldo de Codex, Cursor puede asumir el rol de implementador, pero SOLO con autorización explícita de Hans (Hans autoriza la gobernanza en ese momento, caso por caso)
 
 ### Gemini CLI (CONSULTA) hace:
 - Solo lectura y consultas
 - Nunca modifica código, archivos ni configuración
 - Nunca implementa, nunca hace commits
 
-### Cursor NO debe:
+### Regla de asignación:
+- **Hans dice previamente quién actúa** (Codex CLI o Cursor) antes de cada tarea
+- Hans intercala entre ambos indistintamente según resultados
+- Ninguno es backup ni subordinado del otro — son herramientas de igual jerarquía
+- Claude Code audita el trabajo de AMBOS sin distinción
+
+### Cursor NO debe (sin asignación de Hans):
 - Crear carpetas ni mover archivos entre módulos
 - Modificar docs/ de gobernanza
 - Crear worktrees, ramas ni hacer merge
@@ -389,8 +398,9 @@ Los guardrails de Cursor están en .cursorrules (sección GUARDRAILS, reglas G1-
 
 ### Flujo de trabajo principal:
 ```
-Hans asigna tarea → Codex CLI implementa → commit + push
-    → Hans pide a Claude Code auditar → veredicto → Hans decide GO/NO-GO
+Hans asigna tarea + dice quién actúa (Codex CLI o Cursor)
+    → Implementador asignado ejecuta → commit + push
+    → Claude Code audita → veredicto → Hans decide GO/NO-GO
 ```
 
 ---
