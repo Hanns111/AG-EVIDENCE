@@ -319,11 +319,20 @@ Páginas activas (7 páginas + 2 databases + tareas del tablero):
 
 Eliminadas 2026-03-05: Dashboard v1 (archivado), Protocolo Cursor vs Claude Code (obsoleto)
 
-### Protocolo Notion obligatorio:
-1. Antes de empezar una tarea → marcar 🔵 En Progreso
-2. Al terminar → marcar ✅ Completado + Fecha Real + Ejecutado Por + Bitácora
-3. Actualizar página Bitácora de Actividades con cada acción relevante
-4. Si cambia algo del plan → avisar a Hans
+### Protocolo Notion + Obsidian obligatorio (ALINEACION ABSOLUTA):
+1. Antes de empezar una tarea → marcar 🔵 En Progreso en Notion + actualizar Tablero de Tareas.md en Obsidian
+2. Al terminar → marcar ✅ Completado + Fecha Real + Ejecutado Por + Bitácora en Notion + actualizar Obsidian
+3. Actualizar Bitácora en AMBAS plataformas con cada acción relevante
+4. Si cambia algo del plan → avisar a Hans + actualizar AMBAS plataformas
+5. Notion y Obsidian son ayudas visuales para Hans — NO fuentes para codificar
+6. Si una tiene información que la otra no → es un DEFECTO a corregir inmediatamente
+
+### Momentos de sincronización automática (Claude Code lo hace SIN que Hans lo pida):
+1. Al cerrar o cambiar estado de una tarea
+2. Al cerrar o abrir una fase
+3. Al cerrar sesión (SESSION_PROTOCOL)
+4. Después de decisiones de gobernanza
+5. Después de push a GitHub
 
 ---
 
@@ -344,12 +353,18 @@ Eliminadas 2026-03-05: Dashboard v1 (archivado), Protocolo Cursor vs Claude Code
 - Commits + push
 - Documentación técnica
 
-### Cursor (EDITOR PUNTUAL) hace:
+### Cursor (EDITOR PUNTUAL + IMPLEMENTADOR de respaldo) hace:
 - Ediciones puntuales dentro de archivos existentes
 - Refactors locales (renombrar variable, extraer función)
 - Revisión visual de código
 - Completado de funciones individuales
 - Debug rápido con contexto de un solo archivo
+- **IMPLEMENTADOR de respaldo:** Cuando Hans se queda sin saldo de Codex, Cursor puede asumir el rol de implementador, pero SOLO con autorización explícita de Hans (Hans autoriza la gobernanza en ese momento, caso por caso)
+
+### Gemini CLI (CONSULTA) hace:
+- Solo lectura y consultas
+- Nunca modifica código, archivos ni configuración
+- Nunca implementa, nunca hace commits
 
 ### Cursor NO debe:
 - Crear carpetas ni mover archivos entre módulos
@@ -418,11 +433,10 @@ Claude Code tiene **permisos completos** sobre todo el directorio del proyecto A
 ### Bóveda Obsidian — Mapa Visual del Proyecto (aprobada 2026-03-05)
 
 - **Ruta:** `C:\Users\Hans\ObsidianVaults\AG-EVIDENCE-MAPA\` (aislada del repo)
-- **Propósito:** Mapa visual para entender arquitectura, pipeline y normativa SIN código
-- **Contenido:** MOC, Pipeline 5 pasos (Mermaid), módulos, conceptos, fases, normativa viáticos
-- **Normativa:** Solo directiva vigente (RGS 023-2026-MINEDU) por ahora
-- **Creador:** Cursor (tiene acceso al repo como workspace)
-- **Actualización:** Cursor actualiza la bóveda al cierre de cada fase (NO manual)
+- **Propósito:** Mapa visual para que Hans entienda el proyecto: arquitectura, pipeline, estado, fases, normativa
+- **Contenido (24 notas):** MOC, Pipeline, 7 fases, 7 módulos, 4 conceptos, 3 normativa, Tablero de Tareas, Bitácora, Gobernanza, Seguridad, Glosario, Plan Estratégico, Árbol de Ramas
+- **Alineación:** ABSOLUTAMENTE ALINEADA con Notion (mismos datos, mismos estados)
+- **Actualización:** Claude Code sincroniza automáticamente en los 5 momentos definidos (ver protocolo)
 - **Aislamiento:** Sin git, sin relación con el repo, solo lectura conceptual
 
 ---

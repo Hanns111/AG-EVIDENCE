@@ -317,6 +317,41 @@ Una vez por semana (o al inicio de sesión si pasó >3 días):
 
 ---
 
+## SINCRONIZACION NOTION-OBSIDIAN (OBLIGATORIO)
+
+> **Adoptado:** 2026-03-05 por instruccion directa de Hans.
+> **Regla:** Notion y Obsidian son ayudas visuales para Hans. Deben estar
+> ABSOLUTAMENTE ALINEADAS. Si una tiene informacion que la otra no, es un defecto.
+> Claude Code sincroniza AMBAS automaticamente sin que Hans lo invoque.
+
+### Momentos de sincronizacion automatica:
+
+1. **Al cerrar o cambiar estado de una tarea** — actualizar Tablero Notion + Tablero de Tareas.md en Obsidian
+2. **Al cerrar o abrir una fase** — actualizar Dashboard Notion + MOC Obsidian + Fase correspondiente en ambos
+3. **Al cerrar sesion** — parte del Definition of Done (punto 3 ampliado)
+4. **Despues de decisiones de gobernanza** — actualizar Gobernanza.md Obsidian + paginas Notion relevantes
+5. **Despues de push a GitHub** — actualizar Arbol de Ramas.md Obsidian + Bitacora Notion
+
+### Que debe estar alineado:
+
+| Dato | Notion | Obsidian |
+|------|--------|---------|
+| Progreso por fase | Dashboard | MOC (00 - AG-EVIDENCE.md) + Tablero de Tareas.md |
+| Estado de cada tarea | Tablero de Tareas (database) | Tablero de Tareas.md |
+| Bitacora de acciones | Bitacora de Actividades | Bitacora.md |
+| Roles y gobernanza | (implicito en Plan de Desarrollo) | Gobernanza.md |
+| Seguridad | Pagina Seguridad | Seguridad.md |
+| Plan Estrategico | Plan Estrategico | Plan Estrategico.md |
+| Glosario | Glosario Tecnico (database) | Glosario.md |
+| Arbol de ramas | Arbol de Ramas | Arbol de Ramas.md |
+
+### Regla:
+- Notion y Obsidian NO son fuentes para codificar
+- El repositorio git es la UNICA fuente de verdad para codigo
+- Pero entre Notion y Obsidian: ALINEACION ABSOLUTA
+
+---
+
 ## FUENTES DE VERDAD
 
 | Fuente | Contenido | Prioridad |
@@ -325,8 +360,10 @@ Una vez por semana (o al inicio de sesión si pasó >3 días):
 | **CLAUDE.md** | Contexto y estado documentado | 2 |
 | **Notion Tablero** | Tracking de tareas y progreso | 3 |
 | **Notion Bitacora** | Registro cronologico de acciones | 4 |
+| **Obsidian Vault** | Mapa visual del proyecto (alineado con Notion) | 3 (mismo nivel que Notion) |
 
 Si hay discrepancia, el codigo en main siempre tiene razon.
+Si hay discrepancia entre Notion y Obsidian, es un defecto a corregir inmediatamente.
 
 ---
 
