@@ -213,12 +213,27 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 
 ## Siguiente Sesión — Pendientes
 
-1. **Tarea #16** — Re-generar Excel con pipeline formal (requiere parseo profundo o modo preconstruido)
-2. **Fase 3: Qwen Fallback** — Tareas #22-26 (parseo profundo de comprobantes, grupos A-K)
-3. **Procesar expediente DIRI2026-INT-0068815 completo** — Script con estrategia mixta + Excel 4 hojas
-4. Reprocesar Caja Chica N.3 con pipeline formal
-5. **Investigar herramienta de lectura fina** — Qwen2.5-VL-7B confunde caracteres similares
-6. **Branch protection** — Hans configura en GitHub UI (pendiente del cierre de seguridad)
+### Inmediato (Cursor ejecuta):
+1. **PRE-FASE 3: Migración VLM** — qwen2.5vl:7b → qwen3-vl:8b (prompt entregado a Cursor)
+   - Actualizar Ollama a v0.17.7+
+   - Descargar qwen3-vl:8b, benchmark 3 facturas, commit si mejora
+
+### Después de migración VLM:
+2. **Fase 3: Parseo profundo** — Tareas #22-26 (comprobantes, grupos A-K)
+3. **Tarea #16** — Re-generar Excel con pipeline formal
+4. **Procesar expediente DIRI2026-INT-0068815 completo**
+5. Reprocesar Caja Chica N.3 con pipeline formal
+6. **Branch protection** — Hans configura en GitHub UI
+
+### Mejoras de pipeline aprobadas (implementar en Fases 3-4):
+7. **Cache OCR** — Si SHA-256 del PDF ya existe, saltar OCR y cargar resultado previo (→ ADR-010 ERL)
+8. **Separación OCR-CPU / VLM-GPU** — Mover PaddleOCR a CPU cuando se necesite VLM más grande (opción futura para qwen3-vl:32b)
+9. **Ampliar benchmark dataset** — Agregar 2 facturas adicionales: 1 compleja + 1 escaneo malo (total: 5 facturas de referencia)
+
+### Vigilancia tecnológica:
+10. **AI Stack Sentinel** — Ejecutar `python3 scripts/tech_monitor.py` semanalmente (lunes)
+11. **TRIAL:** MonkeyOCR-pro-1.2B — evaluar como reemplazo potencial PaddleOCR+VLM
+12. **WATCH:** Qwen3.5 multimodal — esperar fix GGUF en Ollama
 
 ### Investigacion Pendiente — TensorRT (pedido por Hans 2026-02-17)
 
