@@ -14,7 +14,7 @@
 - **Tag:** v2.2.0 (publicado en GitHub)
 - **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
 - **OCR Engine:** PaddleOCR 3.4.0 PP-OCRv5 server GPU (ADR-008) + Tesseract fallback
-- **VLM Engine:** Ollama 0.16.2 + Qwen2.5-VL-7B (Q4_K_M, 6GB) — ADR-009
+- **VLM Engine:** Migración aprobada: qwen2.5vl:7b → qwen3-vl:8b (Cursor ejecuta) — ADR-009 pendiente actualización
 - **DuckDB:** 1.4.4 instalado (base analitica)
 - **Seguridad:** Blindaje 4 capas completado 2026-02-25 (ACTA aprobada por Hans)
 
@@ -338,48 +338,38 @@ Eliminadas 2026-03-05: Dashboard v1 (archivado), Protocolo Cursor vs Claude Code
 
 ## Protocolo Multi-Agente (v3 — Actualizado 2026-03-05)
 
-### Principio fundamental:
-**Hans decide quién actúa.** Ningún agente es backup de otro. Hans intercala libremente entre Codex CLI y Cursor según los mejores resultados que encuentre, y lo comunica previamente. Claude Code audita TODO.
+### Principio fundamental (v4 — actualizado 2026-03-10):
+**Cursor es el implementador principal.** Claude Code audita TODO. Codex CLI apoya como consulta inteligente.
+
+### Cursor (IMPLEMENTADOR PRINCIPAL) hace:
+- Código nuevo, módulos, pipelines multi-archivo
+- Tests (pytest)
+- Ejecución de OCR/pipeline en WSL2
+- Commits + push (Conventional Commits)
+- Instalación de dependencias
+- Debug y refactors
 
 ### Claude Code (AUDITOR) hace:
-- Auditoría de calidad sobre trabajo de Codex CLI y Cursor
+- Auditoría de calidad sobre trabajo de Cursor
 - Revisión de diffs, tests, coherencia arquitectónica
-- Cambios en docs/ de gobernanza
+- Cambios en docs/ de gobernanza y archivos protegidos
 - Actualización de Notion y Obsidian (sincronización absoluta)
 - Ejecución de `audit_repo_integrity.py` (8 checks)
 - Veredicto formal: CONFORME / NO CONFORME / INCIERTO
 
-### Codex CLI (IMPLEMENTADOR — asignado por Hans) hace:
-- Código nuevo, módulos, pipelines multi-archivo
-- Tests (pytest)
-- Ejecución de OCR/pipeline en WSL2
-- Commits + push
-- Documentación técnica
-
-### Cursor (IMPLEMENTADOR — asignado por Hans) hace:
-- Todo lo que Codex CLI puede hacer, cuando Hans lo asigna
-- Ediciones puntuales dentro de archivos existentes
-- Refactors locales (renombrar variable, extraer función)
-- Revisión visual de código
-- Completado de funciones individuales
-- Debug rápido con contexto de un solo archivo
+### Codex CLI (CONSULTA INTELIGENTE) hace:
+- Apoyo técnico a Cursor: investigación, análisis, alternativas
+- Lectura y consultas sobre el codebase
+- Nunca modifica código ni hace commits
 
 ### Gemini CLI (CONSULTA) hace:
 - Solo lectura y consultas
 - Nunca modifica código, archivos ni configuración
-- Nunca implementa, nunca hace commits
 
-### Regla de asignación:
-- **Hans dice previamente quién actúa** (Codex CLI o Cursor) antes de cada tarea
-- Hans intercala entre ambos indistintamente según resultados
-- Ninguno es backup ni subordinado del otro — son herramientas de igual jerarquía
-- Claude Code audita el trabajo de AMBOS sin distinción
-
-### Cursor NO debe (sin asignación de Hans):
-- Crear carpetas ni mover archivos entre módulos
-- Modificar docs/ de gobernanza
-- Crear worktrees, ramas ni hacer merge
-- Tocar archivos protegidos sin aprobación
+### Cursor NO debe:
+- Modificar archivos PROTEGIDOS (docs/ de gobernanza, CLAUDE.md, etc.)
+- Crear worktrees ni ramas (trabaja directo en main)
+- Hacer merge de ramas
 
 ### Archivos protegidos (ambos necesitan aprobación):
 - docs/AGENT_GOVERNANCE_RULES.md

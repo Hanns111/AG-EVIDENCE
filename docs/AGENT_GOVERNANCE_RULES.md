@@ -3,7 +3,7 @@
 
 **Documento normativo interno — Sistema de Análisis Probatorio de Expedientes**  
 **Ministerio de Educación del Perú**  
-**Versión:** 1.2.0  
+**Versión:** 1.3.0  
 **Fecha de vigencia:** 2025-12-18  
 **Clasificación:** Obligatorio para todos los componentes del sistema
 
@@ -410,20 +410,21 @@ de expedientes administrativos."
 
 17.1. **Ningún agente puede sobrescribir el rol de otro agente** sin un ADR (Architecture Decision Record) aprobado por Hans.
 
-17.2. Roles vigentes:
+17.2. Roles vigentes (actualizado 2026-03-10 por instrucción de Hans):
 
 | Agente | Rol | Alcance |
 |--------|-----|---------|
-| **Codex CLI** | Implementador | Código, tests, docs, pipelines |
-| **Claude Code** | Auditor | Verificación de calidad, coherencia, Notion |
-| **Cursor** | Editor puntual | Ediciones locales dentro de archivos existentes |
-| **ChatGPT** | Coordinación | Arquitectura de alto nivel, diseño de protocolos |
-| **Antigravity/v0** | Frontend | UI/UX (diferido a Fase 3/4) |
+| **Cursor** | **Implementador Principal** | Código, tests, pipelines, commits, push, instalación deps |
+| **Claude Code** | Auditor | Verificación de calidad, coherencia, Notion, gobernanza |
+| **Codex CLI** | Consulta Inteligente | Apoyo técnico a Cursor, investigación, análisis |
+| **Gemini CLI** | Consulta | Solo lectura y consultas |
+| **Antigravity/v0** | Frontend | UI/UX (diferido a Fase 4+) |
 
 17.3. Acciones prohibidas sin ADR:
    - Claude Code (auditor) no puede implementar código en producción
-   - Cursor no puede crear módulos nuevos ni hacer merge
-   - Codex (implementador) no puede ignorar hallazgos de Claude Code sin justificación
+   - Cursor no puede modificar archivos protegidos ni crear worktrees/ramas
+   - Codex CLI (consulta) no puede modificar código ni hacer commits
+   - Gemini CLI no puede modificar nada
    - Ningún agente puede modificar archivos protegidos de otro sin aprobación
 
 ### Artículo 18. Gate de Sincronía Pre-Tarea
@@ -529,3 +530,4 @@ Esta observación requiere verificación humana antes de considerarse válida."
 | 1.0.0 | 2025-12-18 | Sistema | Versión inicial |
 | 1.1.0 | 2026-03-02 | Claude Code | Cap. VII: Governance Lock (Arts. 15-18). Anti-desincronía multi-agente, bloqueo arquitectónico, protección de roles, gate de sincronía. Propuesto por Codex, aprobado por Hans. |
 | 1.2.0 | 2026-03-02 | Claude Code | Swap de roles: Codex CLI = Implementador, Claude Code = Auditor. Art. 17.2 tabla actualizada, Art. 17.3 prohibiciones ajustadas. Decisión de Hans. |
+| 1.3.0 | 2026-03-10 | Claude Code | Cursor = Implementador Principal, Codex CLI = Consulta Inteligente. Art. 17.2 y 17.3 actualizados. Decisión de Hans. |

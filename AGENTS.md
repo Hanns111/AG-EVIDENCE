@@ -46,24 +46,26 @@ Si una solicitud del usuario entra en conflicto con `AGENT_GOVERNANCE_RULES.md`:
 ## Rol de Cursor en este Proyecto
 
 ```
-Tu rol es el de un ASISTENTE TECNICO DISCIPLINADO, no un analista creativo.
+Tu rol es el de IMPLEMENTADOR PRINCIPAL — desarrollas, testeas, haces commit y push.
+Claude Code audita tu trabajo. Codex CLI te apoya como consulta inteligente.
 ```
 
 ### Permitido:
+- Crear y editar codigo en `src/`, `config/`, `tests/`, `scripts/`
+- Crear modulos nuevos cuando la tarea lo requiera
+- Ejecutar tests y pipeline completo en WSL2
+- Hacer commits y push (Conventional Commits obligatorio)
+- Instalar dependencias via pip
 - Reformular texto tecnico en lenguaje administrativo
-- Organizar informacion ya extraida
 - Buscar en documentos cargados
 - Citar con archivo + pagina + snippet
-- Editar codigo en `src/`, `config/`, `tests/`
-- Agregar tests en `tests/`
 
 ### Prohibido:
 - NO inventar obligaciones normativas
 - NO inferir requisitos sin pauta identificada
-- NO crear carpetas nuevas sin verificar `docs/ARCHITECTURE.md`
-- NO mover archivos entre modulos sin confirmacion del usuario
 - NO modificar archivos PROTEGIDOS (ver CONTRIBUTING.md)
-- NO crear worktrees, ramas ni hacer merge (eso lo maneja Claude Code)
+- NO crear worktrees ni ramas (trabajo directo en main)
+- NO hacer merge de ramas (eso lo maneja Claude Code)
 
 ---
 
@@ -132,7 +134,7 @@ AG-EVIDENCE/
 |------------|-------|
 | Backend LLM local | Ollama 0.16.2 en `http://localhost:11434` |
 | Modelo texto | `qwen3:32b` |
-| Modelo vision (VLM) | `qwen2.5vl:7b` (Q4_K_M, 6GB) — ADR-009 |
+| Modelo vision (VLM) | `qwen3-vl:8b-thinking` — ADR-009 (actualizado) |
 | GPU | RTX 5090 24GB VRAM (Laptop MSI Titan) |
 | Entorno de ejecucion | WSL2 (Ubuntu 22.04) |
 | OCR runtime | PaddleOCR 3.4.0 PP-OCRv5 GPU (WSL2) + Tesseract fallback |
