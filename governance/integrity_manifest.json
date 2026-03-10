@@ -1,9 +1,14 @@
 {
+  "version": "1.0.0",
+  "generated_by": "audit_repo_integrity.py --update-manifest",
+  "generated_at": "2026-03-10T09:41:55.387934+00:00",
+  "hash_algorithm": "sha256",
+  "files": {
     "docs/AGENT_GOVERNANCE_RULES.md": "8d7a6026d390bb85e07defc3fc35088fd21996139e051e775e6721b7ea6fc376",
     "docs/GOVERNANCE_RULES.md": "b36a21ff8a965183d2365ee89b5eb93b3bbaf938a7cef9bd53b8be071ac75cfd",
     "docs/PROJECT_SPEC.md": "21da60e30d508bd3918a89f39f63cf914cee7057923368097e023d777127f8f2",
     "AGENTS.md": "9537299c6ae52946a67aa0b6c6d9dfdbeec18457ea5badf805892c4ecf54ac08",
-    "CLAUDE.md": "f8fc89ee218f89092a6d69748e6e0f4732077e43415e66ad2b25b30373526a3b",
+    "CLAUDE.md": "01105424774e8092a9114fd4e5bdf6ad4917e934f793892d7751145dd9f09407",
     ".cursorrules": "622f10bf8fdee65685fdbd75d276095b46dcabe2979a3c2260f458d914435ed6",
     ".cursor/mcp.json": "dc47cbbbe5c9e41ba2301362b37558b2e898461eb9f2a67fc0757778eedc7cb4",
     "governance/SESSION_PROTOCOL.md": "ddf8bb785c05b743bb4b4bc8620245306860952715ee539fe01e66b840f5f284",
@@ -12,4 +17,15 @@
     ".github/CODEOWNERS": "059f81511e8ef4a428aa59efe09a0dab1ee6f975fe1eac9b6112c9ad5e9e9acc",
     ".gitattributes": "5356f62428db06db3bdbb11e9624b549e06503188356bfe09b976ce5293e65ca",
     ".pre-commit-config.yaml": "f4ddb8982e9bfdeb3b55e00b4f6c9eecb027c3a77a08bcf91461104bed7011b2"
+  },
+  "authorized_authors": [
+    "Hanns111",
+    "Hans",
+    "Claude Code",
+    "github-actions[bot]"
+  ],
+  "expected_remote_branches": [
+    "origin/main",
+    "origin/HEAD"
+  ]
 }
