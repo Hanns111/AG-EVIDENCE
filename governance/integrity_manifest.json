@@ -1,15 +1,15 @@
 {
-  "docs/AGENT_GOVERNANCE_RULES.md": "e893dadf57360c2ebc3fdea752eb9a5a4e4425d4e5be2164775fd6e418f51496",
-  "docs/GOVERNANCE_RULES.md": "c4f907d0b97f30e5f03bbf6d72e6970faabd83108337064c8ee77491fdf08f52",
-  "docs/PROJECT_SPEC.md": "256e301b410bb41d12d7d6b4c0ecd2e90373ec07e2da70648a40454f8c5fdfbe",
-  "AGENTS.md": "cf0513cf5a09aecb0715720d6f36bceb4ccb9c3a48c823be4b982ac52bc551ad",
-  "CLAUDE.md": "bb9cb9ec2e3f604f4abe7696f57aeba232efe9d2c9f9ffe08e623029564b6877",
-  ".cursorrules": "127b5edec15eeaa62d233835896f5db8b08a1f265a3bd74c03f29d0ce4fcfea9",
-  ".cursor/mcp.json": "21124080a079c2faf3d6db370a2b1c07862aa4536b0811860fd13a1a4d065b18",
-  "governance/SESSION_PROTOCOL.md": "369fc31be4b3cbea94cb0acba30216cb01fc41902f211a8f84d4261dc510ea79",
-  "docs/security/SECURITY_GOVERNANCE_POLICY.md": "e411aaf18526a97338f86ebfc996d1304dabe0a2dc7bbcfbc23a5d706baee106",
-  ".github/workflows/ci-lint.yml": "724cc685401f8687b0c68b4ca8350f57a6be2dfd303272d58ca6cda69dd61556",
-  ".github/CODEOWNERS": "61943f9c6314e22b56f04b4c3c202a96430d631ee808ace7bd6b7e8a0fdfae8a",
-  ".gitattributes": "f0498b1a9811fefc8c5731a4c0a4ddbf0726c79d2c39eb97f56651067b5e8de8",
-  ".pre-commit-config.yaml": "5d1ebe754d9bcd7b4d025fcb65f76bce3a20cbac49dc05c31ad9df473c1df801"
+    "docs/AGENT_GOVERNANCE_RULES.md": "8d7a6026d390bb85e07defc3fc35088fd21996139e051e775e6721b7ea6fc376",
+    "docs/GOVERNANCE_RULES.md": "b36a21ff8a965183d2365ee89b5eb93b3bbaf938a7cef9bd53b8be071ac75cfd",
+    "docs/PROJECT_SPEC.md": "21da60e30d508bd3918a89f39f63cf914cee7057923368097e023d777127f8f2",
+    "AGENTS.md": "9537299c6ae52946a67aa0b6c6d9dfdbeec18457ea5badf805892c4ecf54ac08",
+    "CLAUDE.md": "f8fc89ee218f89092a6d69748e6e0f4732077e43415e66ad2b25b30373526a3b",
+    ".cursorrules": "622f10bf8fdee65685fdbd75d276095b46dcabe2979a3c2260f458d914435ed6",
+    ".cursor/mcp.json": "dc47cbbbe5c9e41ba2301362b37558b2e898461eb9f2a67fc0757778eedc7cb4",
+    "governance/SESSION_PROTOCOL.md": "ddf8bb785c05b743bb4b4bc8620245306860952715ee539fe01e66b840f5f284",
+    "docs/security/SECURITY_GOVERNANCE_POLICY.md": "6ddfb51349d64ac5f79286d0f00100fb052b3968a5546b110e020fd1201cf139",
+    ".github/workflows/ci-lint.yml": "724cc685401f8687b0c68b4ca8350f57a6be2dfd303272d58ca6cda69dd61556",
+    ".github/CODEOWNERS": "059f81511e8ef4a428aa59efe09a0dab1ee6f975fe1eac9b6112c9ad5e9e9acc",
+    ".gitattributes": "5356f62428db06db3bdbb11e9624b549e06503188356bfe09b976ce5293e65ca",
+    ".pre-commit-config.yaml": "f4ddb8982e9bfdeb3b55e00b4f6c9eecb027c3a77a08bcf91461104bed7011b2"
 }
