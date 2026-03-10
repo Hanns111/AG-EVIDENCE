@@ -1,0 +1,156 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "fuente": "Reglamento de Comprobantes de Pago RS 007-99/SUNAT + control-previo-ai experimental",
+    "alcance": "Tipos de comprobante válidos para rendición de viáticos MINEDU",
+    "actualizado": "2026-03-10",
+    "nota": "Solo comprobantes relevantes a viáticos. OS/OC se amplía en futuro."
+  },
+  "tipos_comprobante": {
+    "FACTURA": {
+      "codigo_sunat": "01",
+      "emitido_por": "persona_juridica",
+      "requiere_firma": false,
+      "requiere_al_credito": true,
+      "requiere_constancia_suspension": false,
+      "aplica_igv": true,
+      "aplica_retencion_4ta": false,
+      "aplica_detraccion": true,
+      "campos_obligatorios": [
+        "ruc_emisor",
+        "razon_social_emisor",
+        "fecha_emision",
+        "serie_numero",
+        "descripcion",
+        "valor_venta",
+        "igv",
+        "total"
+      ],
+      "variantes_nombre": ["Factura", "Factura Electronica", "Factura de Venta"]
+    },
+    "RECIBO_HONORARIOS": {
+      "codigo_sunat": "02",
+      "emitido_por": "persona_natural",
+      "requiere_firma": false,
+      "requiere_al_credito": true,
+      "requiere_constancia_suspension": "condicional",
+      "aplica_igv": false,
+      "aplica_retencion_4ta": true,
+      "aplica_detraccion": false,
+      "campos_obligatorios": [
+        "ruc_emisor",
+        "nombre_emisor",
+        "fecha_emision",
+        "serie_numero",
+        "concepto",
+        "monto_bruto",
+        "retencion",
+        "monto_neto"
+      ],
+      "variantes_nombre": ["Recibo por Honorarios", "RHE", "R.H.E.", "Recibo por Honorarios Electronico"],
+      "regla_constancia_suspension": {
+        "descripcion": "Solo si retención = 0%. Si retención = 8%, PROHIBIDO pedirla.",
+        "retencion_8_porciento": "constancia NO requerida",
+        "retencion_0_porciento": "constancia REQUERIDA (Form 1609)"
+      }
+    },
+    "BOLETA_VENTA": {
+      "codigo_sunat": "03",
+      "emitido_por": "persona_juridica_o_natural",
+      "requiere_firma": false,
+      "requiere_al_credito": false,
+      "requiere_constancia_suspension": false,
+      "aplica_igv": true,
+      "aplica_retencion_4ta": false,
+      "aplica_detraccion": false,
+      "campos_obligatorios": [
+        "ruc_emisor",
+        "razon_social_emisor",
+        "fecha_emision",
+        "serie_numero",
+        "descripcion",
+        "total"
+      ],
+      "variantes_nombre": ["Boleta de Venta", "Boleta", "BV"],
+      "regla_comprador_viaticos": {
+        "descripcion": "En viáticos, el comprador debe ser la institución (RUC), NO el comisionado (DNI).",
+        "ruc_institucion_valido": true,
+        "dni_comisionado_invalido": true
+      }
+    },
+    "BOLETO_VIAJE": {
+      "codigo_sunat": "04",
+      "emitido_por": "empresa_transporte",
+      "requiere_firma": false,
+      "requiere_al_credito": false,
+      "requiere_constancia_suspension": false,
+      "aplica_igv": true,
+      "aplica_retencion_4ta": false,
+      "aplica_detraccion": false,
+      "campos_obligatorios": [
+        "pasajero",
+        "ruta_origen",
+        "ruta_destino",
+        "fecha_vuelo",
+        "numero_ticket",
+        "monto"
+      ],
+      "variantes_nombre": ["Boleto de viaje", "Ticket", "E-ticket", "Boleto aereo", "Boarding pass", "Itinerario"]
+    },
+    "RECIBO_SERVICIOS_PUBLICOS": {
+      "codigo_sunat": "14",
+      "emitido_por": "empresa_servicios",
+      "requiere_firma": false,
+      "requiere_al_credito": false,
+      "requiere_constancia_suspension": false,
+      "aplica_igv": true,
+      "aplica_retencion_4ta": false,
+      "aplica_detraccion": false,
+      "campos_obligatorios": [
+        "empresa",
+        "periodo",
+        "direccion",
+        "monto"
+      ],
+      "variantes_nombre": ["Recibo de servicio publico", "Recibo de luz", "Recibo de agua"],
+      "relevancia_viaticos": "No aplica directamente a rendición de viáticos"
+    }
+  },
+  "reglas_viaticos_especificas": {
+    "comprobantes_tipicos_rendicion": [
+      "FACTURA",
+      "BOLETA_VENTA",
+      "BOLETO_VIAJE"
+    ],
+    "categorias_gasto_viaticos": {
+      "alimentacion": {
+        "comprobantes_esperados": ["FACTURA", "BOLETA_VENTA"],
+        "nota": "Restaurantes, cafeterías. IGV 18% general, 10% MYPE (Ley 31556+32219)"
+      },
+      "hospedaje": {
+        "comprobantes_esperados": ["FACTURA", "BOLETA_VENTA"],
+        "nota": "Hoteles, hostales. IGV 18% general, 10% MYPE. Múltiples noches en 1 factura es válido."
+      },
+      "transporte_local": {
+        "comprobantes_esperados": ["FACTURA", "BOLETA_VENTA"],
+        "nota": "Taxi, movilidad local. IGV puede ser 0 en persona natural; si hay IGV igual se acepta."
+      },
+      "transporte_aereo": {
+        "comprobantes_esperados": ["BOLETO_VIAJE"],
+        "nota": "Boleto aereo ES comprobante válido. NO pedir RHE ni factura por pasajes aéreos."
+      }
+    },
+    "regla_igv_mype": {
+      "descripcion": "IGV reducido para MYPE restaurantes/hoteles",
+      "tasa_general": 0.18,
+      "tasa_mype": 0.10,
+      "base_legal": "Ley 31556 + Ley 32219",
+      "vigencia": "2025-2026",
+      "escala_temporal": {
+        "2025-2026": 0.10,
+        "2027": 0.15,
+        "2028_en_adelante": 0.18
+      }
+    }
+  }
+}

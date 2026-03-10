@@ -1,0 +1,89 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "fuente": "RS 007-99/SUNAT, Ley 31556, Ley 32219, control-previo-ai experimental",
+    "alcance": "Reglas de validación tributaria y matemática para comprobantes de viáticos",
+    "actualizado": "2026-03-10",
+    "consumido_por": "Fase 4 — Validaciones (Tareas #27-29)"
+  },
+  "formulas_verificacion": {
+    "factura": {
+      "valor_venta": "total / (1 + tasa_igv)",
+      "igv": "valor_venta * tasa_igv",
+      "total": "valor_venta + igv",
+      "tasa_igv_general": 0.18,
+      "tasa_igv_mype": 0.10,
+      "tolerancia_centimos": 0.02,
+      "nota": "Verificar coherencia aritmética. Tolerancia de ±0.02 por redondeo."
+    },
+    "boleta_venta": {
+      "nota": "IGV incluido en el precio. Solo verificar total vs suma de ítems si hay detalle.",
+      "tasa_igv": "misma regla que factura"
+    },
+    "boleto_viaje": {
+      "suma_boletos": "suma de todos los boletos individuales = monto total rendición transporte aéreo",
+      "nota": "NO aplica retención ni constancia suspensión."
+    },
+    "recibo_honorarios": {
+      "retencion": "monto_bruto * 0.08",
+      "monto_neto": "monto_bruto - retencion",
+      "nota": "Solo aplica si rendición incluye servicios de persona natural (poco común en viáticos)."
+    },
+    "detraccion": {
+      "aplica_a": ["FACTURA"],
+      "tasa_servicios": 0.12,
+      "calculo": "total_factura * tasa",
+      "evidencia_requerida": "constancia depósito Banco de la Nación",
+      "nota": "Poco frecuente en viáticos. Aplica si factura supera umbral y servicio sujeto."
+    }
+  },
+  "validaciones_cruzadas_viaticos": {
+    "monto_rendicion_vs_asignacion": {
+      "descripcion": "Total rendido no debe exceder viáticos asignados según escala y días",
+      "severidad": "ALTA",
+      "nota": "Se valida contra Anexo 3 y la directiva RGS 023-2026-MINEDU"
+    },
+    "fechas_comprobante_vs_comision": {
+      "descripcion": "Fecha de emisión del comprobante debe estar dentro del periodo de comisión",
+      "severidad": "ALTA",
+      "tolerancia_dias": 1,
+      "nota": "1 día de tolerancia por huso horario / hora de llegada"
+    },
+    "localidad_comprobante_vs_destino": {
+      "descripcion": "Localidad del emisor debe ser coherente con destino de la comisión",
+      "severidad": "MEDIA",
+      "nota": "No siempre verificable. Solo si hay dirección del emisor."
+    },
+    "ruc_emisor_activo": {
+      "descripcion": "RUC del emisor debe estar activo y habido en SUNAT",
+      "severidad": "ALTA",
+      "verificacion": "Consulta SUNAT (DuckDB padrón o API)",
+      "nota": "Implementar en Fase 4 con padrón RUC en DuckDB"
+    },
+    "duplicidad_comprobantes": {
+      "descripcion": "Mismo serie-número no puede aparecer en dos rendiciones distintas",
+      "severidad": "CRITICA",
+      "nota": "Requiere base histórica de comprobantes rendidos"
+    }
+  },
+  "errores_conocidos_ocr": {
+    "descripcion": "Errores detectados empíricamente con Qwen2.5-VL-7B a 500 DPI",
+    "tipos": {
+      "confusion_digitos": {
+        "ejemplos": ["0↔9", "6↔0"],
+        "impacto": "serie/número incorrecto",
+        "mitigacion": "Validación con dígito verificador RUC (módulo 11)"
+      },
+      "confusion_letras": {
+        "ejemplos": ["I↔T", "a↔o"],
+        "impacto": "nombre de producto/dirección incorrecto",
+        "mitigacion": "No crítico para validación tributaria"
+      },
+      "truncamiento": {
+        "ejemplos": ["PARA TODOS → PAR. TODOS"],
+        "impacto": "razón social incompleta",
+        "mitigacion": "Comparar con padrón RUC"
+      }
+    }
+  }
+}
