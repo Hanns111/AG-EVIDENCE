@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fase A — Extracción de comprobantes con Qwen2.5-VL-7B via Ollama
+Fase A — Extracción de comprobantes con Qwen3-VL-8B via Ollama
 Basado en PARSING_COMPROBANTES_SPEC.md (11 grupos A-K)
 
 Regla de Oro: La IA extrae LITERALMENTE lo que ve. Python valida aritméticamente.
@@ -18,8 +18,8 @@ import requests
 
 # === CONFIGURACIÓN ===
 OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL = "qwen2.5vl:7b"
-TIMEOUT = 120  # seconds per image
+MODEL = "qwen3-vl:8b"
+TIMEOUT = 300  # seconds per image
 
 # === PROMPT DE EXTRACCIÓN ===
 EXTRACTION_PROMPT = """Eres un extractor forense de comprobantes de pago peruanos.
@@ -114,7 +114,8 @@ IMPORTANTE:
 - Si el comprobante NO es de transporte/movilidad, grupo_i debe tener todos null
 - El campo confianza_global refleja tu certeza general sobre la extracción
 
-Responde SOLO con el JSON. Nada más."""
+Responde SOLO con el JSON. Nada más. No pienses en voz alta, no razones, solo devuelve el JSON directamente.
+/no_think"""
 
 
 def encode_image(image_path: str) -> str:
@@ -124,7 +125,7 @@ def encode_image(image_path: str) -> str:
 
 
 def extract_invoice(image_path: str) -> dict:
-    """Send image to Qwen2.5-VL via Ollama and extract invoice data."""
+    """Send image to Qwen3-VL via Ollama and extract invoice data."""
     print(f"\n{'=' * 60}")
     print(f"Procesando: {os.path.basename(image_path)}")
     print(f"{'=' * 60}")
@@ -136,9 +137,9 @@ def extract_invoice(image_path: str) -> dict:
         "messages": [{"role": "user", "content": EXTRACTION_PROMPT, "images": [img_b64]}],
         "stream": False,
         "options": {
-            "temperature": 0.0,  # Deterministic
-            "num_predict": 4096,
-            "num_ctx": 8192,
+            "temperature": 0.1,
+            "num_predict": 16384,
+            "num_ctx": 16384,
         },
     }
 
@@ -157,15 +158,28 @@ def extract_invoice(image_path: str) -> dict:
         print(f"Tiempo de inferencia: {elapsed:.1f}s")
         print(f"Tokens eval: {data.get('eval_count', '?')}")
 
-        # Parse JSON from response - handle markdown code blocks
+        # Parse JSON from response - handle thinking blocks and markdown
         json_str = content.strip()
+
+        # Qwen3-VL thinking mode: strip <think>...</think> blocks
+        import re
+
+        json_str = re.sub(r"<think>.*?</think>", "", json_str, flags=re.DOTALL).strip()
+
+        # Remove markdown code blocks
         if json_str.startswith("```"):
-            # Remove markdown code block
             lines = json_str.split("\n")
             json_str = (
                 "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
             )
             json_str = json_str.strip()
+
+        # Last resort: find first { and last } to extract JSON object
+        if not json_str.startswith("{"):
+            brace_start = json_str.find("{")
+            brace_end = json_str.rfind("}")
+            if brace_start != -1 and brace_end != -1:
+                json_str = json_str[brace_start : brace_end + 1]
 
         try:
             result = json.loads(json_str)
