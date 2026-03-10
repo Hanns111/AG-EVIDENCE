@@ -14,7 +14,7 @@
 - **Tag:** v2.2.0 (publicado en GitHub)
 - **Limpieza legacy:** Completada 2026-02-11 — todo v1.0 eliminado, auditoría certificada
 - **OCR Engine:** PaddleOCR 3.4.0 PP-OCRv5 server GPU (ADR-008) + Tesseract fallback
-- **VLM Engine:** Migración aprobada: qwen2.5vl:7b → qwen3-vl:8b (Cursor ejecuta) — ADR-009 pendiente actualización
+- **VLM Engine:** Ollama 0.16.2 + Qwen3-VL-8B (Q4_K_M, 6.1GB, 8.7GB VRAM) — ADR-009 actualizado
 - **DuckDB:** 1.4.4 instalado (base analitica)
 - **Seguridad:** Blindaje 4 capas completado 2026-02-25 (ACTA aprobada por Hans)
 
@@ -213,12 +213,13 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 
 ## Siguiente Sesión — Pendientes
 
-### Inmediato (Cursor ejecuta):
-1. **PRE-FASE 3: Migración VLM** — qwen2.5vl:7b → qwen3-vl:8b (prompt entregado a Cursor)
-   - Actualizar Ollama a v0.17.7+
-   - Descargar qwen3-vl:8b, benchmark 3 facturas, commit si mejora
+### Completado esta sesión (2026-03-10):
+1. **PRE-FASE 3: Migración VLM** — qwen2.5vl:7b → qwen3-vl:8b ✅ (commit 148fb2e, Cursor)
+   - qwen3-vl:8b descargado, VRAM 8.7GB, benchmark 3/3 OK
+   - Virgen del Carmen: confianza baja → alta (mejora confirmada)
+   - Trade-off: latencia 3-5x mayor por thinking tokens
 
-### Después de migración VLM:
+### Siguiente sesión:
 2. **Fase 3: Parseo profundo** — Tareas #22-26 (comprobantes, grupos A-K)
 3. **Tarea #16** — Re-generar Excel con pipeline formal
 4. **Procesar expediente DIRI2026-INT-0068815 completo**
