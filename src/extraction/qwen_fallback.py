@@ -77,18 +77,8 @@ VERSION_QWEN_FALLBACK = "1.0.0"
 
 TOLERANCIA_ARITMETICA = 0.02  # ±0.02 soles
 
-# Prompt forense para extracción de comprobantes peruanos
-EXTRACTION_PROMPT = """Eres un extractor forense de comprobantes de pago peruanos.
-
-REGLA ABSOLUTA: Extrae SOLO lo que ves literalmente en la imagen.
-- NO calcules nada
-- NO inventes datos
-- NO autocompletes campos que no puedes leer
-- Si un campo no es visible, usa null
-- Si un valor es parcialmente legible, extrae lo que puedas y marca confianza "baja"
-
-Extrae los siguientes campos del comprobante de pago en la imagen y devuelve ÚNICAMENTE un JSON válido (sin texto adicional, sin markdown, sin explicaciones):
-
+# Esquema JSON común para extracción de comprobantes (Grupos A-K)
+_SCHEMA_JSON_COMPROBANTE = """
 {
   "grupo_a_emisor": {
     "ruc_emisor": "string o null",
@@ -171,6 +161,34 @@ IMPORTANTE:
 - El campo confianza_global refleja tu certeza general sobre la extracción
 
 Responde SOLO con el JSON. Nada más."""
+
+# Prompt forense para extracción de comprobantes peruanos (imagen)
+EXTRACTION_PROMPT = (
+    "Eres un extractor forense de comprobantes de pago peruanos.\n\n"
+    "REGLA ABSOLUTA: Extrae SOLO lo que ves literalmente en la imagen.\n"
+    "- NO calcules nada\n"
+    "- NO inventes datos\n"
+    "- NO autocompletes campos que no puedes leer\n"
+    "- Si un campo no es visible, usa null\n"
+    '- Si un valor es parcialmente legible, extrae lo que puedas y marca confianza "baja"\n\n'
+    "Extrae los siguientes campos del comprobante de pago en la imagen y devuelve "
+    "ÚNICAMENTE un JSON válido (sin texto adicional, sin markdown, sin explicaciones):"
+    + _SCHEMA_JSON_COMPROBANTE
+)
+
+# Prompt para texto digital (PyMuPDF) — misma estructura, sin referencia a "imagen"
+EXTRACTION_PROMPT_TEXTO = (
+    "Eres un extractor forense de comprobantes de pago peruanos.\n\n"
+    "REGLA ABSOLUTA: Extrae SOLO lo que aparece literalmente en el texto proporcionado.\n"
+    "- NO calcules nada\n"
+    "- NO inventes datos\n"
+    "- NO autocompletes campos que no están en el texto\n"
+    "- Si un campo no aparece en el texto, usa null\n"
+    '- Si un valor es parcialmente legible, extrae lo que puedas y marca confianza "baja"\n\n'
+    "A continuación recibirás el texto digital extraído de un comprobante de pago.\n"
+    "Extrae los siguientes campos y devuelve ÚNICAMENTE un JSON válido "
+    "(sin texto adicional, sin markdown, sin explicaciones):" + _SCHEMA_JSON_COMPROBANTE
+)
 
 
 # ==============================================================================
@@ -387,7 +405,134 @@ class QwenFallbackClient:
             return None
 
     # ------------------------------------------------------------------
-    # Extracción principal
+    # Invocación texto digital (sin imagen)
+    # ------------------------------------------------------------------
+
+    def _invocar_llm_texto(self, texto_pagina: str, modelo: str) -> ResultadoVLM:
+        """
+        Envía texto digital al LLM (sin imagen) para extracción estructurada.
+        Mucho más rápido que la invocación con imagen (~5-15s vs ~80s).
+        """
+        prompt_completo = (
+            EXTRACTION_PROMPT_TEXTO + "\n\n--- TEXTO DEL COMPROBANTE ---\n" + texto_pagina
+        )
+        payload = {
+            "model": modelo,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt_completo,
+                }
+            ],
+            "stream": False,
+            "options": {
+                "temperature": self.temperature,
+                "num_predict": self.max_tokens,
+                "num_ctx": self.num_ctx,
+            },
+        }
+        payload_bytes = json.dumps(payload).encode("utf-8")
+
+        for intento in range(1, self.max_retries + 1):
+            start = time.time()
+            try:
+                req = urllib.request.Request(
+                    f"{self.ollama_url}/api/chat",
+                    data=payload_bytes,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                    data = json.loads(resp.read())
+
+                elapsed = time.time() - start
+                content = data.get("message", {}).get("content", "")
+                tokens = data.get("eval_count", 0)
+
+                parsed = self._extraer_json(content)
+                if parsed is not None:
+                    self._log_info(
+                        f"LLM texto OK (intento {intento}, {elapsed:.1f}s, {tokens} tokens)"
+                    )
+                    return ResultadoVLM(
+                        exito=True,
+                        json_extraido=parsed,
+                        tiempo_inferencia_s=elapsed,
+                        tokens_evaluados=tokens,
+                        intentos=intento,
+                        modelo=modelo,
+                    )
+
+                self._log_warning(
+                    f"JSON corrupto texto intento {intento}/{self.max_retries}: {content[:100]}"
+                )
+
+            except urllib.error.URLError as e:
+                elapsed = time.time() - start
+                self._log_warning(f"Error de conexión texto intento {intento}: {e}")
+                return ResultadoVLM(
+                    exito=False,
+                    error=f"connection_error: {e}",
+                    tiempo_inferencia_s=elapsed,
+                    intentos=intento,
+                    modelo=modelo,
+                )
+            except Exception as e:
+                elapsed = time.time() - start
+                self._log_warning(f"Error inesperado texto intento {intento}: {e}")
+                if intento == self.max_retries:
+                    return ResultadoVLM(
+                        exito=False,
+                        error=f"unexpected: {e}",
+                        tiempo_inferencia_s=elapsed,
+                        intentos=intento,
+                        modelo=modelo,
+                    )
+
+        return ResultadoVLM(
+            exito=False,
+            error=f"JSON corrupto texto tras {self.max_retries} intentos",
+            intentos=self.max_retries,
+            modelo=modelo,
+        )
+
+    def extraer_comprobante_texto(
+        self,
+        texto_pagina: str,
+        archivo: str = "",
+        pagina: int = 0,
+    ) -> Optional[ComprobanteExtraido]:
+        """
+        Extrae un comprobante de texto digital (PyMuPDF).
+        No usa imagen — envía el texto directo al LLM.
+        """
+        resultado = self._invocar_llm_texto(texto_pagina, self.model)
+
+        if not resultado.exito and self.fallback_model:
+            self._log_warning(
+                f"Modelo principal {self.model} falló texto, intentando fallback {self.fallback_model}"
+            )
+            resultado = self._invocar_llm_texto(texto_pagina, self.fallback_model)
+
+        if not resultado.exito or resultado.json_extraido is None:
+            self._log_warning(
+                f"Extracción texto fallida para {archivo} pág {pagina}: {resultado.error}"
+            )
+            return None
+
+        comprobante = self._json_a_comprobante(
+            resultado.json_extraido,
+            archivo=archivo,
+            pagina=pagina,
+            modelo=resultado.modelo,
+            tiempo_s=resultado.tiempo_inferencia_s,
+        )
+        comprobante.grupo_j = self._validar_aritmetica(comprobante)
+        comprobante.grupo_k.metodo_extraccion = "pymupdf_llm_texto"
+        return comprobante
+
+    # ------------------------------------------------------------------
+    # Extracción principal (imagen)
     # ------------------------------------------------------------------
 
     def extraer_comprobante(

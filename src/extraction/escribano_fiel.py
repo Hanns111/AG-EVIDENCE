@@ -767,31 +767,29 @@ class EscribanoFiel:
         pdf_path: str,
     ) -> ResultadoPaso:
         """
-        Paso 4: Extracción profunda de comprobantes con VLM (Qwen3-VL).
+        Paso 4: Extracción profunda de comprobantes (estrategia mixta ADR-009).
 
-        Identifica páginas con comprobantes usando keywords del OCR,
-        las renderiza como imágenes, y envía al VLM para extracción
-        estructurada (Grupos A-K).
+        Clasifica cada página comprobante como digital o imagen:
+          - Digital (PyMuPDF extrae texto): envía texto al LLM (rápido, ~5-15s)
+          - Imagen (escaneado): renderiza y envía imagen al VLM (~60-100s)
         """
         inicio = time.perf_counter()
 
-        # Verificar si VLM está habilitado
         if not self._config.vlm_enabled:
             return ResultadoPaso(
                 paso="parseo_profundo",
                 exito=True,
                 duracion_ms=_elapsed_ms(inicio),
-                mensaje="VLM deshabilitado en configuración",
+                mensaje="Parseo profundo deshabilitado en configuración",
             )
 
         self._logger.info(
-            "Paso 4/6: Parseo profundo con VLM",
+            "Paso 4/6: Parseo profundo (estrategia mixta ADR-009)",
             agent_id=AGENTE_ID,
             operation="parseo_profundo",
         )
 
         try:
-            # Lazy imports — VLM modules may not be available in all environments
             from src.extraction.qwen_fallback import QwenFallbackClient
             from src.extraction.vlm_abstencion import VLMAbstencionHandler
 
@@ -802,11 +800,6 @@ class EscribanoFiel:
             )
 
             if not paginas_comprobante:
-                self._logger.info(
-                    "0 páginas comprobante detectadas en OCR",
-                    agent_id=AGENTE_ID,
-                    operation="parseo_profundo",
-                )
                 return ResultadoPaso(
                     paso="parseo_profundo",
                     exito=True,
@@ -815,20 +808,26 @@ class EscribanoFiel:
                     datos={"paginas_analizadas": 0, "comprobantes_extraidos": 0},
                 )
 
+            # Clasificar páginas: digital vs imagen
+            digitales, imagenes_pg = self._clasificar_paginas_digital_imagen(
+                pdf_path, paginas_comprobante
+            )
+
             self._logger.info(
-                f"{len(paginas_comprobante)} páginas comprobante detectadas: {paginas_comprobante}",
+                f"{len(paginas_comprobante)} páginas comprobante: "
+                f"{len(digitales)} digital, {len(imagenes_pg)} imagen",
                 agent_id=AGENTE_ID,
                 operation="parseo_profundo",
             )
 
-            # Inicializar VLM client y handler
+            # Inicializar cliente LLM/VLM
             vlm_client = QwenFallbackClient(
                 config=self._config.vlm_config,
                 trace_logger=self._logger,
             )
             vlm_handler = VLMAbstencionHandler(trace_logger=self._logger)
 
-            # Healthcheck del VLM
+            # Healthcheck solo si hay páginas que procesar
             if not vlm_client.healthcheck():
                 self._logger.warning(
                     "Ollama no disponible; parseo profundo omitido",
@@ -843,37 +842,54 @@ class EscribanoFiel:
                     datos={"paginas_analizadas": 0, "comprobantes_extraidos": 0},
                 )
 
-            # Renderizar páginas como imágenes base64
-            imagenes = self._renderizar_paginas_base64(
-                pdf_path=pdf_path,
-                paginas=paginas_comprobante,
-                dpi=self._config.dpi_vlm,
-            )
-
-            if not imagenes:
-                return ResultadoPaso(
-                    paso="parseo_profundo",
-                    exito=True,
-                    duracion_ms=_elapsed_ms(inicio),
-                    mensaje="No se pudieron renderizar páginas",
-                    datos={"paginas_analizadas": 0, "comprobantes_extraidos": 0},
-                )
-
-            # Extraer comprobantes con VLM (nunca None gracias a vlm_handler)
             comprobantes = []
-            for page_num, img_b64 in imagenes:
+            n_digital = 0
+            n_imagen = 0
+
+            # --- Ruta 1: Páginas digitales → PyMuPDF texto → LLM texto (rápido) ---
+            for page_num, texto in digitales:
                 self._logger.info(
-                    f"VLM procesando página {page_num}/{paginas_comprobante[-1]}",
+                    f"LLM texto pág {page_num} ({len(texto)} chars)",
                     agent_id=AGENTE_ID,
                     operation="parseo_profundo",
                 )
-                comp = vlm_handler.extraer_o_abstener(
-                    client=vlm_client,
-                    image_b64=img_b64,
+                comp = vlm_client.extraer_comprobante_texto(
+                    texto_pagina=texto,
                     archivo=Path(pdf_path).name,
                     pagina=page_num,
                 )
-                comprobantes.append(comp)
+                if comp is not None:
+                    comprobantes.append(comp)
+                    n_digital += 1
+                else:
+                    # LLM texto falló — generar abstención formal
+                    comp_abstencion = vlm_handler.generar_abstencion_vlm(
+                        archivo=Path(pdf_path).name,
+                        pagina=page_num,
+                    )
+                    comprobantes.append(comp_abstencion)
+
+            # --- Ruta 2: Páginas imagen → renderizar → VLM imagen (lento) ---
+            if imagenes_pg:
+                imagenes_b64 = self._renderizar_paginas_base64(
+                    pdf_path=pdf_path,
+                    paginas=imagenes_pg,
+                    dpi=self._config.dpi_vlm,
+                )
+                for page_num, img_b64 in imagenes_b64:
+                    self._logger.info(
+                        f"VLM imagen pág {page_num}",
+                        agent_id=AGENTE_ID,
+                        operation="parseo_profundo",
+                    )
+                    comp = vlm_handler.extraer_o_abstener(
+                        client=vlm_client,
+                        image_b64=img_b64,
+                        archivo=Path(pdf_path).name,
+                        pagina=page_num,
+                    )
+                    comprobantes.append(comp)
+                    n_imagen += 1
 
             # Deduplicar por serie_numero
             antes = len(comprobantes)
@@ -886,18 +902,15 @@ class EscribanoFiel:
 
             stats = vlm_handler.get_estadisticas()
             msg = (
-                f"{len(comprobantes)} comprobantes extraídos de {len(paginas_comprobante)} páginas"
+                f"{len(comprobantes)} comprobantes de {len(paginas_comprobante)} páginas "
+                f"({n_digital} digital, {n_imagen} imagen)"
             )
             if dedup > 0:
-                msg += f" ({dedup} deduplicados)"
+                msg += f" ({dedup} dedup)"
             if stats.total_abstenciones > 0:
-                msg += f" ({stats.total_abstenciones} abstenciones VLM)"
+                msg += f" ({stats.total_abstenciones} abstenciones)"
 
-            self._logger.info(
-                msg,
-                agent_id=AGENTE_ID,
-                operation="parseo_profundo",
-            )
+            self._logger.info(msg, agent_id=AGENTE_ID, operation="parseo_profundo")
 
             return ResultadoPaso(
                 paso="parseo_profundo",
@@ -907,6 +920,8 @@ class EscribanoFiel:
                 datos={
                     "paginas_analizadas": len(paginas_comprobante),
                     "comprobantes_extraidos": len(comprobantes),
+                    "paginas_digital": n_digital,
+                    "paginas_imagen": n_imagen,
                     "deduplicados": dedup,
                     "vlm_stats": stats.to_dict(),
                 },
@@ -954,6 +969,52 @@ class EscribanoFiel:
             if matches >= min_keywords:
                 paginas.append(pag.get("pagina", 0))
         return paginas
+
+    def _clasificar_paginas_digital_imagen(
+        self,
+        pdf_path: str,
+        paginas_comprobante: List[int],
+        min_chars_digital: int = 100,
+    ) -> tuple:
+        """
+        Clasifica páginas comprobante como digitales o imagen (ADR-009).
+
+        Digital: PyMuPDF get_text() extrae >= min_chars_digital caracteres.
+        Imagen: texto digital insuficiente → necesita VLM con imagen.
+
+        Returns:
+            (digitales, imagenes) donde:
+            - digitales: List[(page_num, texto)] — páginas con texto digital
+            - imagenes: List[int] — páginas que necesitan VLM imagen
+        """
+        digitales = []
+        imagenes = []
+        try:
+            import fitz
+
+            doc = fitz.open(pdf_path)
+            for page_num in paginas_comprobante:
+                if page_num < 1 or page_num > len(doc):
+                    continue
+                page = doc[page_num - 1]
+                texto = page.get_text("text").strip()
+                if len(texto) >= min_chars_digital:
+                    digitales.append((page_num, texto))
+                else:
+                    imagenes.append(page_num)
+            doc.close()
+        except ImportError:
+            # Sin PyMuPDF, asumir todo es imagen
+            imagenes = list(paginas_comprobante)
+        except Exception as e:
+            self._logger.warning(
+                f"Error clasificando páginas: {e}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
+            imagenes = list(paginas_comprobante)
+
+        return digitales, imagenes
 
     def _renderizar_paginas_base64(
         self,
