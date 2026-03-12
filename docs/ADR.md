@@ -244,8 +244,8 @@ Tesseract se mantiene como fallback automatico si PaddleOCR falla.
 
 ## ADR-009 — Motor de Extraccion Visual (VLM) via Ollama
 
-**Estado:** Aceptada (actualizada 2026-03-10)
-**Fecha:** 2026-02-18 (original), 2026-03-10 (migracion a qwen3-vl:8b)
+**Estado:** Aceptada (actualizada 2026-03-12 — Fase 3 completa)
+**Fecha:** 2026-02-18 (original), 2026-03-10 (migracion), 2026-03-12 (integracion completa)
 
 ### Contexto
 El benchmark OCR (ADR-008) demostro que PaddleOCR PP-OCRv5 GPU alcanza 42% de precision
@@ -302,7 +302,7 @@ Razon: mejor precision en documentos complejos, confianza Virgen Carmen baja→a
 - **GPU:** RTX 5090 Laptop 24GB, CUDA 12.9, sm_120
 - **VRAM:** ~8.7 GB (5.4 weights + 2.2 KV cache + 0.7 compute)
 - **API:** `POST http://localhost:11434/api/chat` con `images: [base64]`
-- **Prompt:** 11 grupos (A-K) de PARSING_COMPROBANTES_SPEC.md + `/no_think`
+- **Prompt:** 11 grupos (A-K) de PARSING_COMPROBANTES_SPEC.md (thinking activo, strip en parser)
 - **Parametros:** `temperature: 0.1, num_predict: 16384, num_ctx: 16384`
 - **Parser:** Strip `<think>` blocks + brute-force JSON extraction
 
@@ -312,6 +312,57 @@ Razon: mejor precision en documentos complejos, confianza Virgen Carmen baja→a
 Incorporada a docs/PARSING_COMPROBANTES_SPEC.md como principio rector.
 El modelo VLM NO calcula, NO autocompleta, NO deduce. Python valida.
 
+### Integracion Completa — Fase 3 (2026-03-12)
+
+La Fase 3 implementa el stack completo de extraccion VLM con 5 modulos:
+
+| Modulo | Lineas | Tests | Funcion |
+|--------|--------|-------|---------|
+| `src/extraction/qwen_fallback.py` | 830 | 71 | Cliente VLM: prompt forense, retry max 2, dedup |
+| `src/extraction/conflict_policy.py` | 398 | 108 | Resolucion conflictos OCR vs VLM por tipo campo |
+| `src/extraction/vlm_abstencion.py` | 350 | 44 | Abstencion formal cuando VLM falla |
+| `config/settings.py` (VLM_CONFIG) | — | 18 | Configuracion modelo, timeout, retries |
+| `tests/test_vlm_integration.py` | — | 18 | Tests integracion VLM |
+
+**Pipeline de extraccion VLM:**
+1. QwenFallbackClient envia imagen al VLM con prompt forense (11 grupos A-K)
+2. Retry max 2 para JSON corrupto (dato Viaticos AI: 10-30% corrupto)
+3. Si modelo principal falla → intento con fallback model (qwen2.5vl:7b)
+4. Si todo falla → VLMAbstencionHandler genera abstencion formal (NUNCA None)
+5. ConflictResolver resuelve discrepancias OCR vs VLM:
+   - Campos numericos (RUC, montos, serie) → prefiere OCR
+   - Campos texto (razon social, direccion) → prefiere VLM
+   - Campos no clasificados → mayor confianza, tiebreak OCR
+6. Grupo J (aritmetica) → siempre Python, NUNCA la IA
+
+**Hallazgo tecnico:** `/no_think` en qwen3-vl:8b API causa respuesta vacia.
+Solucion: dejar thinking activo, strip `<think>` blocks en parser.
+
+### Punto de Quiebre: Ollama → vLLM
+
+Ollama es adecuado para la fase actual (prototipo/MVP con 1 usuario).
+Migrar a vLLM cuando se cumpla CUALQUIERA de estas condiciones:
+
+| Condicion | Umbral | Accion |
+|-----------|--------|--------|
+| Latencia inaceptable | >120s por comprobante | vLLM con batching continuo |
+| Concurrencia | >1 usuario simultaneo | vLLM con multiples workers |
+| Modelo mayor | qwen3-vl:32b o qwen3.5 | vLLM maneja mejor VRAM con PagedAttention |
+| Throughput | >50 paginas/hora requerido | vLLM con GPU scheduling optimizado |
+| Produccion | Deploy institucional | vLLM como servicio (OpenAI-compatible API) |
+
+**Opcion B — Cloud como fallback de emergencia:**
+- Requiere aprobacion explicita de Hans (viola ADR-001 local-first)
+- Solo ante fallo catastrofico de hardware GPU
+- Candidatos: Mistral OCR API, GPT-4o mini vision
+- NUNCA como via principal, SIEMPRE como excepcion documentada
+
+**Prerequisitos para migracion vLLM:**
+1. Verificar soporte sm_120 (Blackwell) en vLLM
+2. Benchmark latencia: vLLM vs Ollama con 5 facturas de referencia
+3. Validar que la API OpenAI-compatible de vLLM acepta images (multimodal)
+4. Ajustar `src/extraction/qwen_fallback.py` para usar endpoint OpenAI en vez de Ollama
+
 ### Consecuencias
 - Qwen3-VL mejora precision sobre Qwen2.5-VL en documentos complejos
 - Estrategia mixta se mantiene: PyMuPDF para texto digital, VLM para imagenes
@@ -319,10 +370,13 @@ El modelo VLM NO calcula, NO autocompleta, NO deduce. Python valida.
 - Ollama server debe correr en el MISMO bash -c que los comandos
 - qwen3-vl:32b descartado: no cabe con PaddleOCR en 24GB laptop
 - Latencia mayor (3-5x) es trade-off aceptable por mejor precision
+- Toda pagina VLM tiene resultado garantizado (exito o abstencion formal)
 
-### Technology Radar (2026-03-10)
+### Technology Radar (2026-03-12)
+- **ADOPT:** qwen3-vl:8b via Ollama — motor VLM principal, Fase 3 completa
 - **TRIAL:** MonkeyOCR-pro-1.2B — supera modelos 72B en document parsing
 - **WATCH:** Qwen3.5 multimodal — 90.8% OmniDocBench, esperar fix GGUF en Ollama
+- **WATCH:** vLLM 0.8+ — migrar cuando latencia o concurrencia lo requieran
 
 ---
 
