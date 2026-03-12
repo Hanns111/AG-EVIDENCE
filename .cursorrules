@@ -170,4 +170,26 @@ Cursor hace commits (Conventional Commits) y push a main.
 
 ---
 
-**Ultima actualizacion:** 2026-03-05
+## HALLAZGOS ABSORBIDOS DE VIATICOS AI (2026-03-12)
+
+Informe tecnico: `docs/INFORME_TECNICO_VIATICOS_AI_PARA_AG_EVIDENCE.md`
+
+### Absorber en Fase 3 (#23 qwen_fallback.py):
+- Prompt forense para comprobantes peruanos (adaptar a qwen3-vl:8b vision)
+- Chunking con overlap 2 paginas + deduplicacion por serie_numero
+- Retry automatico (max 2) para JSON corrupto antes de abstencion
+- Regla: VLM extrae texto, Python parsea con regex. NUNCA pedir JSON final al LLM.
+
+### Absorber en Fase 4 (#27 validaciones):
+- Validacion RUC offline (digito verificador SUNAT)
+- Validacion IGV (Amazonia Ley 27037 + recargo consumo 10-13%)
+- Cache SHA-256 (no reprocesar PDFs sin cambios)
+
+### Arquitectura decidida:
+- **Opcion A (100% local)** = PRINCIPAL (alineada con regla local-first)
+- **Opcion B (hibrido cloud: Mistral OCR + GPT-4o mini)** = fallback documentado, requiere aprobacion Hans
+- APIs cloud NO son opcion principal (viola soberania de datos del Estado)
+
+---
+
+**Ultima actualizacion:** 2026-03-12

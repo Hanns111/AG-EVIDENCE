@@ -219,6 +219,20 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
    - Virgen del Carmen: confianza baja → alta (mejora confirmada)
    - Trade-off: latencia 3-5x mayor por thinking tokens
 
+### Completado esta sesión (2026-03-12):
+- Verificación alineación 5 fuentes: Git (107 commits), Notion, Obsidian, CURRENT_STATE, CLAUDE.md
+- 5 discrepancias detectadas y corregidas
+- Auditoría informe Viáticos AI (354 líneas, 8 iteraciones, 3 opciones)
+- Hallazgos absorbidos en Tareas #23, #24, #25 (Notion) con diseño detallado
+- Informe copiado a repo: `docs/INFORME_TECNICO_VIATICOS_AI_PARA_AG_EVIDENCE.md`
+
+### Hallazgos Viáticos AI absorbidos (2026-03-12):
+- **Opción A (100% local) = PRINCIPAL** — alineada con regla local-first
+- **Opción B (cloud) = fallback documentado** — requiere aprobación Hans
+- Absorber en #23: prompt forense, chunking overlap 2 pág, retry JSON (max 2), dedup por serie_numero
+- Absorber en #27: validación RUC (dígito verificador SUNAT), validación IGV (Amazonía + recargo)
+- Absorber en ADR-010: cache SHA-256
+
 ### Siguiente sesión:
 2. **Fase 3: Parseo profundo** — Tareas #22-26 (comprobantes, grupos A-K)
 3. **Tarea #16** — Re-generar Excel con pipeline formal
