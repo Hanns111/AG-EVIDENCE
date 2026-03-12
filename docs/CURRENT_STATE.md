@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO — AG-EVIDENCE
 
 ## Fecha de Corte
-2026-02-25
+2026-03-12
 
 ---
 
@@ -15,8 +15,9 @@ Se implemento el patron de 3 capas (Extraccion/Validacion/Analisis) como diseno
 estructural transversal.
 
 **OCR Engine:** PaddleOCR 3.4.0 PP-OCRv5 server (GPU RTX 5090 via CUDA 12.9)
-**VLM Engine:** Ollama 0.16.2 + qwen2.5vl:7b (Q4_K_M, 6GB) — ADR-009
-**Expedientes procesados:** ODI2026-INT-0139051, DEBEDSAR2026-INT-0146130 (2 completados)
+**VLM Engine:** Ollama 0.16.2 + qwen3-vl:8b (Q4_K_M, 6.1GB, 8.7GB VRAM) — ADR-009 actualizado
+**VLM Anterior:** qwen2.5vl:7b (mantenido como fallback)
+**Expedientes procesados E2E:** 5 (ODI-0139051, DEBEDSAR-0146130, DIGC-072851, OTIC-086866, DIGC-073285)
 
 ---
 
@@ -109,7 +110,7 @@ estructural transversal.
 
 ## 7. Decisiones Recientes
 
-- **ADR-009:** Qwen2.5-VL-7B via Ollama como motor VLM (estrategia mixta PyMuPDF + Qwen-VL)
+- **ADR-009 (actualizado 2026-03-10):** Migración qwen2.5vl:7b → qwen3-vl:8b. Benchmark: Virgen Carmen confianza baja→alta, latencia 3-5x mayor por thinking tokens. Estrategia mixta PyMuPDF + Qwen-VL se mantiene
 - **ADR-008:** PaddleOCR PP-OCRv5 GPU restaurado (RTX 5090 via CUDA 12.9 cu129)
 - **Benchmark OCR:** PP-OCRv5 GPU 42.0% vs PaddleOCR 2.9.1 CPU 36.2% vs Tesseract 20.3%
 - **Expediente DEBEDSAR2026 procesado:** 17 comprobantes, 500 DPI, estrategia mixta
@@ -145,7 +146,8 @@ estructural transversal.
 | PaddlePaddle | 3.3.0 GPU cu129 | Operativo | Backend PaddleOCR (CUDA 12.9, sm_120) |
 | Tesseract | 5.x | Operativo | Motor OCR fallback |
 | DuckDB | 1.4.4 | Instalado | Base analitica (padron RUC) |
-| Qwen2.5-VL-7B | Q4_K_M, 6GB | Operativo (Ollama 0.16.2) | Motor VLM primario (ADR-009) |
+| Qwen3-VL-8B | Q4_K_M, 6.1GB, 8.7GB VRAM | Operativo (Ollama 0.16.2) | Motor VLM primario (ADR-009 actualizado) |
+| Qwen2.5-VL-7B | Q4_K_M, 6GB | Fallback | Motor VLM anterior (mantenido) |
 | PyMuPDF | 1.x | Operativo | Renderizado PDF + extraccion texto digital |
 
 **RTX 5090 GPU:** Operativo con PaddlePaddle cu129. Requiere
@@ -155,10 +157,15 @@ estructural transversal.
 
 ## 10. Proximos Pasos
 
-1. **Tarea #16** — Re-generar Excel con pipeline formal (4 expedientes, con escribano_fiel.py)
-4. Investigar herramienta de lectura fina para errores VLM (crop+zoom, modelo mayor)
-5. Reprocesar Caja Chica N.3 con pipeline formal exclusivamente
+1. **Fase 3** — Tareas #22-26: parseo profundo comprobantes, grupos A-K (Qwen3-VL + regex)
+   - Hallazgos Viáticos AI absorbidos: prompt forense, chunking overlap, retry JSON, dedup, validaciones RUC/IGV
+   - Opción A (local) como principal, Opción B (cloud) como fallback documentado
+2. **Tarea #16** — Re-generar Excel con pipeline formal (5 expedientes procesados E2E)
+3. Procesar expediente DIRI2026-INT-0068815 completo
+4. Reprocesar Caja Chica N.3 con pipeline formal
+5. Investigar herramienta de lectura fina para errores VLM (crop+zoom, modelo mayor)
+6. **Fase 4** — Absorber validación RUC (dígito verificador SUNAT) + validación IGV (Amazonía + recargo) de Viáticos AI
 
 ---
 
-**Ultima actualizacion:** 2026-02-25 por Claude Code
+**Ultima actualizacion:** 2026-03-12 por Claude Code
