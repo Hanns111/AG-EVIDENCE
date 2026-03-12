@@ -384,11 +384,28 @@ VISION_CONFIG = {
 
 
 # ==============================================================================
+# CONFIGURACIÓN VLM — Qwen3-VL-8B via Ollama (ADR-009 actualizado)
+# ==============================================================================
+VLM_CONFIG = {
+    "enabled": True,
+    "model": "qwen3-vl:8b",  # Migrado de qwen2.5vl:7b (2026-03-10)
+    "fallback_model": "qwen2.5vl:7b",  # Mantenido como fallback
+    "ollama_url": "http://localhost:11434",
+    "timeout_seconds": 120,  # Ampliado: qwen3-vl tiene latencia 3-5x por thinking
+    "max_tokens": 16384,
+    "temperature": 0.1,
+    "num_ctx": 16384,
+    "no_think": False,  # NOTA: /no_think en content causa respuesta vacía. Dejar thinking activo, extraer de content.
+    "dpi_render": 200,  # DPI para renderizar PDF a imagen para VLM
+    "max_retries": 2,  # Retry en JSON corrupto (dato Viáticos AI: 10-30% fallan)
+}
+
+# ==============================================================================
 # CONFIGURACION DE IA LOCAL (Capa C — Analista opcional)
 # ==============================================================================
 LOCAL_ANALYST_CONFIG = {
     "enabled": False,  # Feature flag: True para activar Capa C
-    "model": "qwen3:32b",  # Modelo Ollama (Fase 3, no conectado aun)
+    "model": "qwen3:32b",  # Modelo texto (distinto de VLM)
     "ollama_url": "http://localhost:11434",
     "timeout_seconds": 60,
     "max_tokens": 2048,
