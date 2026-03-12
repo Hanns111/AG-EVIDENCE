@@ -4,7 +4,7 @@ Escribano Fiel — Orquestador del Pipeline de Extracción
 =========================================================
 Tarea #21 del Plan de Desarrollo (Fase 2: Contrato + Router)
 
-Pipeline completo: custodia → OCR → parseo → router → Excel con diagnóstico.
+Pipeline completo: custodia → OCR → parseo → parseo profundo VLM → router → Excel.
 
 Opera como punto de entrada único para procesar un expediente completo.
 Cada paso del pipeline se ejecuta secuencialmente con trazabilidad JSONL
@@ -13,9 +13,10 @@ y verificación de integridad en cada transición.
 Flujo:
   1. Custodia: registrar PDF en bóveda inmutable (CustodyChain)
   2. Extracción OCR: renderizar páginas + ejecutar OCR (core.py)
-  3. Parseo: construir ExpedienteJSON desde resultados OCR
-  4. Evaluación: ConfidenceRouter + IntegrityCheckpoint
-  5. Diagnóstico Excel: hoja DIAGNOSTICO con semáforo
+  3. Parseo: construir ExpedienteJSON esqueleto desde resultados OCR
+  4. Parseo profundo: VLM extrae comprobantes (Grupos A-K) de páginas imagen
+  5. Evaluación: ConfidenceRouter + IntegrityCheckpoint
+  6. Diagnóstico Excel: hoja DIAGNOSTICO con semáforo
 
 Principios:
   - Cada paso produce un resultado verificable antes de avanzar
@@ -49,10 +50,12 @@ Versión: 1.0.0
 Fecha: 2026-02-25
 """
 
+import base64
 import os
+import re
 import sys
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -90,11 +93,29 @@ from src.ingestion.trace_logger import TraceLogger
 # CONSTANTES
 # ==============================================================================
 
-VERSION_ESCRIBANO = "1.0.0"
-"""Versión del módulo escribano_fiel."""
+VERSION_ESCRIBANO = "2.0.0"
+"""Versión del módulo escribano_fiel (2.0: parseo profundo VLM)."""
 
 AGENTE_ID = "ESCRIBANO"
 """ID de agente para logging."""
+
+# Patrones para identificar páginas que contienen comprobantes de pago
+KEYWORDS_COMPROBANTE = [
+    r"factura\s*(electr[oó]nica)?",
+    r"boleta\s+de\s+venta",
+    r"recibo\s+por\s+honorarios",
+    r"nota\s+de\s+cr[eé]dito",
+    r"nota\s+de\s+d[eé]bito",
+    r"comprobante\s+de\s+pago",
+    r"liquidaci[oó]n\s+de\s+compra",
+    r"R\.?U\.?C\.?\s*[:.]?\s*\d{11}",
+    r"\bIGV\b",
+    r"\bSUBTOTAL\b",
+    r"IMPORTE\s+TOTAL",
+    r"OP\.?\s*GRAVADA",
+    r"SERIE\s*[-:]?\s*[A-Z]\d{3}",
+    r"TOTAL\s+VENTA",
+]
 
 
 # ==============================================================================
@@ -187,6 +208,12 @@ class ConfigPipeline:
     idioma_ocr: str = "spa"
     dpi_render: int = 200
 
+    # VLM (parseo profundo)
+    vlm_enabled: bool = True
+    vlm_config: Optional[Dict[str, Any]] = None
+    dpi_vlm: int = 200
+    min_keywords_comprobante: int = 2
+
     # Operador
     operador: str = "pipeline"
     source: str = "escribano_fiel"
@@ -201,7 +228,7 @@ class EscribanoFiel:
     """
     Orquestador del pipeline de extracción de expedientes.
 
-    Encadena: custodia → OCR → parseo → router → Excel
+    Encadena: custodia → OCR → parseo → parseo profundo VLM → router → Excel
     con trazabilidad completa y verificación de integridad.
     """
 
@@ -350,6 +377,13 @@ class EscribanoFiel:
                         mensaje="Omitido: expediente preconstruido",
                     )
                 )
+                resultado.pasos.append(
+                    ResultadoPaso(
+                        paso="parseo_profundo",
+                        exito=True,
+                        mensaje="Omitido: expediente preconstruido",
+                    )
+                )
             else:
                 # --- PASO 1: Custodia ---
                 paso_custodia = self._paso_custodia(pdf_path, sinad)
@@ -385,7 +419,17 @@ class EscribanoFiel:
                     return resultado
                 expediente = paso_parseo.datos.get("expediente")
 
-            # --- PASO 4: Evaluación con IntegrityCheckpoint ---
+                # --- PASO 4: Parseo profundo con VLM ---
+                paso_profundo = self._paso_parseo_profundo(
+                    expediente=expediente,
+                    paginas_ocr=paso_ocr.datos.get("paginas", []),
+                    pdf_path=pdf_path,
+                )
+                resultado.pasos.append(paso_profundo)
+                # Parseo profundo es no-bloqueante: si falla, pipeline continúa
+                # con comprobantes=[] (router lo marcará CRITICAL)
+
+            # --- PASO 5: Evaluación con IntegrityCheckpoint ---
             paso_router = self._paso_evaluacion(expediente, observaciones)
             resultado.pasos.append(paso_router)
             resultado.expediente = expediente
@@ -410,7 +454,7 @@ class EscribanoFiel:
                 # Aún así generar Excel si está configurado
                 # (el Excel documenta POR QUÉ se detuvo)
 
-            # --- PASO 5: Generar Excel ---
+            # --- PASO 6: Generar Excel ---
             if self._config.generar_excel and resultado.decision:
                 paso_excel = self._paso_excel(
                     sinad=sinad,
@@ -446,7 +490,7 @@ class EscribanoFiel:
         """Paso 1: Registrar PDF en bóveda de custodia."""
         inicio = time.perf_counter()
         self._logger.info(
-            f"Paso 1/5: Custodia — registrando {Path(pdf_path).name}",
+            f"Paso 1/6: Custodia — registrando {Path(pdf_path).name}",
             agent_id=AGENTE_ID,
             operation="custodia",
         )
@@ -516,7 +560,7 @@ class EscribanoFiel:
         """
         inicio = time.perf_counter()
         self._logger.info(
-            f"Paso 2/5: Extracción OCR — {Path(pdf_path).name}",
+            f"Paso 2/6: Extracción OCR — {Path(pdf_path).name}",
             agent_id=AGENTE_ID,
             operation="extraccion_ocr",
         )
@@ -646,7 +690,7 @@ class EscribanoFiel:
         """
         inicio = time.perf_counter()
         self._logger.info(
-            "Paso 3/5: Parseo a ExpedienteJSON",
+            "Paso 3/6: Parseo a ExpedienteJSON",
             agent_id=AGENTE_ID,
             operation="parseo",
         )
@@ -716,13 +760,248 @@ class EscribanoFiel:
                 error=str(e),
             )
 
+    def _paso_parseo_profundo(
+        self,
+        expediente: ExpedienteJSON,
+        paginas_ocr: List[Dict[str, Any]],
+        pdf_path: str,
+    ) -> ResultadoPaso:
+        """
+        Paso 4: Extracción profunda de comprobantes con VLM (Qwen3-VL).
+
+        Identifica páginas con comprobantes usando keywords del OCR,
+        las renderiza como imágenes, y envía al VLM para extracción
+        estructurada (Grupos A-K).
+        """
+        inicio = time.perf_counter()
+
+        # Verificar si VLM está habilitado
+        if not self._config.vlm_enabled:
+            return ResultadoPaso(
+                paso="parseo_profundo",
+                exito=True,
+                duracion_ms=_elapsed_ms(inicio),
+                mensaje="VLM deshabilitado en configuración",
+            )
+
+        self._logger.info(
+            "Paso 4/6: Parseo profundo con VLM",
+            agent_id=AGENTE_ID,
+            operation="parseo_profundo",
+        )
+
+        try:
+            # Lazy imports — VLM modules may not be available in all environments
+            from src.extraction.qwen_fallback import QwenFallbackClient
+            from src.extraction.vlm_abstencion import VLMAbstencionHandler
+
+            # Identificar páginas con comprobantes
+            paginas_comprobante = self._identificar_paginas_comprobante(
+                paginas_ocr,
+                min_keywords=self._config.min_keywords_comprobante,
+            )
+
+            if not paginas_comprobante:
+                self._logger.info(
+                    "0 páginas comprobante detectadas en OCR",
+                    agent_id=AGENTE_ID,
+                    operation="parseo_profundo",
+                )
+                return ResultadoPaso(
+                    paso="parseo_profundo",
+                    exito=True,
+                    duracion_ms=_elapsed_ms(inicio),
+                    mensaje="0 páginas comprobante detectadas",
+                    datos={"paginas_analizadas": 0, "comprobantes_extraidos": 0},
+                )
+
+            self._logger.info(
+                f"{len(paginas_comprobante)} páginas comprobante detectadas: {paginas_comprobante}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
+
+            # Inicializar VLM client y handler
+            vlm_client = QwenFallbackClient(
+                config=self._config.vlm_config,
+                trace_logger=self._logger,
+            )
+            vlm_handler = VLMAbstencionHandler(trace_logger=self._logger)
+
+            # Healthcheck del VLM
+            if not vlm_client.healthcheck():
+                self._logger.warning(
+                    "Ollama no disponible; parseo profundo omitido",
+                    agent_id=AGENTE_ID,
+                    operation="parseo_profundo",
+                )
+                return ResultadoPaso(
+                    paso="parseo_profundo",
+                    exito=True,
+                    duracion_ms=_elapsed_ms(inicio),
+                    mensaje="Ollama no disponible; parseo profundo omitido",
+                    datos={"paginas_analizadas": 0, "comprobantes_extraidos": 0},
+                )
+
+            # Renderizar páginas como imágenes base64
+            imagenes = self._renderizar_paginas_base64(
+                pdf_path=pdf_path,
+                paginas=paginas_comprobante,
+                dpi=self._config.dpi_vlm,
+            )
+
+            if not imagenes:
+                return ResultadoPaso(
+                    paso="parseo_profundo",
+                    exito=True,
+                    duracion_ms=_elapsed_ms(inicio),
+                    mensaje="No se pudieron renderizar páginas",
+                    datos={"paginas_analizadas": 0, "comprobantes_extraidos": 0},
+                )
+
+            # Extraer comprobantes con VLM (nunca None gracias a vlm_handler)
+            comprobantes = []
+            for page_num, img_b64 in imagenes:
+                self._logger.info(
+                    f"VLM procesando página {page_num}/{paginas_comprobante[-1]}",
+                    agent_id=AGENTE_ID,
+                    operation="parseo_profundo",
+                )
+                comp = vlm_handler.extraer_o_abstener(
+                    client=vlm_client,
+                    image_b64=img_b64,
+                    archivo=Path(pdf_path).name,
+                    pagina=page_num,
+                )
+                comprobantes.append(comp)
+
+            # Deduplicar por serie_numero
+            antes = len(comprobantes)
+            comprobantes = vlm_client._deduplicar(comprobantes)
+            dedup = antes - len(comprobantes)
+
+            # Actualizar expediente
+            expediente.comprobantes = comprobantes
+            expediente.resumen_extraccion.comprobantes_procesados = len(comprobantes)
+
+            stats = vlm_handler.get_estadisticas()
+            msg = (
+                f"{len(comprobantes)} comprobantes extraídos de {len(paginas_comprobante)} páginas"
+            )
+            if dedup > 0:
+                msg += f" ({dedup} deduplicados)"
+            if stats.total_abstenciones > 0:
+                msg += f" ({stats.total_abstenciones} abstenciones VLM)"
+
+            self._logger.info(
+                msg,
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
+
+            return ResultadoPaso(
+                paso="parseo_profundo",
+                exito=True,
+                duracion_ms=_elapsed_ms(inicio),
+                mensaje=msg,
+                datos={
+                    "paginas_analizadas": len(paginas_comprobante),
+                    "comprobantes_extraidos": len(comprobantes),
+                    "deduplicados": dedup,
+                    "vlm_stats": stats.to_dict(),
+                },
+            )
+
+        except ImportError as e:
+            self._logger.warning(
+                f"Módulos VLM no disponibles: {e}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
+            return ResultadoPaso(
+                paso="parseo_profundo",
+                exito=True,
+                duracion_ms=_elapsed_ms(inicio),
+                mensaje=f"Módulos VLM no disponibles: {e}",
+            )
+
+        except Exception as e:
+            self._logger.error(
+                f"Error en parseo profundo: {e}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+                error=str(e),
+            )
+            return ResultadoPaso(
+                paso="parseo_profundo",
+                exito=False,
+                duracion_ms=_elapsed_ms(inicio),
+                error=str(e),
+            )
+
+    def _identificar_paginas_comprobante(
+        self,
+        paginas_ocr: List[Dict[str, Any]],
+        min_keywords: int = 2,
+    ) -> List[int]:
+        """Identifica páginas que probablemente contienen comprobantes de pago."""
+        paginas = []
+        for pag in paginas_ocr:
+            texto = (pag.get("texto", "") or "").upper()
+            if not texto:
+                continue
+            matches = sum(1 for kw in KEYWORDS_COMPROBANTE if re.search(kw, texto, re.IGNORECASE))
+            if matches >= min_keywords:
+                paginas.append(pag.get("pagina", 0))
+        return paginas
+
+    def _renderizar_paginas_base64(
+        self,
+        pdf_path: str,
+        paginas: List[int],
+        dpi: int = 200,
+    ) -> List[tuple]:
+        """Renderiza páginas específicas de un PDF como imágenes base64 PNG."""
+        resultado = []
+        try:
+            import fitz
+
+            doc = fitz.open(pdf_path)
+            zoom = dpi / 72.0
+            matrix = fitz.Matrix(zoom, zoom)
+
+            for page_num in paginas:
+                if page_num < 1 or page_num > len(doc):
+                    continue
+                page = doc[page_num - 1]
+                pix = page.get_pixmap(matrix=matrix)
+                img_bytes = pix.tobytes("png")
+                img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                resultado.append((page_num, img_b64))
+
+            doc.close()
+        except ImportError:
+            self._logger.warning(
+                "PyMuPDF no disponible para renderizar páginas",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
+        except Exception as e:
+            self._logger.error(
+                f"Error renderizando páginas: {e}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+                error=str(e),
+            )
+        return resultado
+
     def _paso_evaluacion(
         self,
         expediente: ExpedienteJSON,
         observaciones: List[Observacion],
     ) -> ResultadoPaso:
         """
-        Paso 4: Evaluar expediente con IntegrityCheckpoint.
+        Paso 5: Evaluar expediente con IntegrityCheckpoint.
 
         Ejecuta IntegrityCheckpoint.evaluar() que internamente:
         - Ejecuta ConfidenceRouter.evaluar_expediente()
@@ -732,7 +1011,7 @@ class EscribanoFiel:
         """
         inicio = time.perf_counter()
         self._logger.info(
-            "Paso 4/5: Evaluación con IntegrityCheckpoint",
+            "Paso 5/6: Evaluación con IntegrityCheckpoint",
             agent_id=AGENTE_ID,
             operation="evaluacion",
         )
@@ -805,7 +1084,7 @@ class EscribanoFiel:
         """
         inicio = time.perf_counter()
         self._logger.info(
-            "Paso 5/5: Generar Excel con DIAGNOSTICO",
+            "Paso 6/6: Generar Excel con DIAGNOSTICO",
             agent_id=AGENTE_ID,
             operation="excel",
         )

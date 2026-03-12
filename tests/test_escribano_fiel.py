@@ -122,7 +122,7 @@ class TestConstantes:
     """Tests para constantes y metadatos del módulo."""
 
     def test_version_definida(self):
-        assert VERSION_ESCRIBANO == "1.0.0"
+        assert VERSION_ESCRIBANO == "2.0.0"
 
     def test_agente_id_definido(self):
         assert AGENTE_ID == "ESCRIBANO"
@@ -255,7 +255,7 @@ class TestEscribanoFielInit:
 
     def test_instanciacion_default(self, config_test):
         escribano = EscribanoFiel(config=config_test)
-        assert escribano.version == "1.0.0"
+        assert escribano.version == "2.0.0"
         assert escribano.config is config_test
 
     def test_instanciacion_sin_config(self):
@@ -300,7 +300,7 @@ class TestEscribanoFielInit:
 
     def test_get_stats(self, escribano_basico):
         stats = escribano_basico.get_stats()
-        assert stats["version"] == "1.0.0"
+        assert stats["version"] == "2.0.0"
         assert "config" in stats
 
 
@@ -756,3 +756,161 @@ class TestIntegracionPipeline:
             observaciones_previas=obs,
         )
         assert len(resultado.observaciones) == 1
+
+
+# ==============================================================================
+# TESTS — Parseo Profundo VLM (Fase 3 Integration)
+# ==============================================================================
+
+
+class TestIdentificarPaginasComprobante:
+    """Tests para _identificar_paginas_comprobante()."""
+
+    def test_pagina_con_factura_y_ruc(self, config_test):
+        """Página con 'FACTURA' y RUC detectada como comprobante."""
+        escribano = EscribanoFiel(config=config_test)
+        paginas_ocr = [
+            {"pagina": 1, "texto": "FACTURA ELECTRONICA RUC: 20123456789 Total 100.00"},
+        ]
+        result = escribano._identificar_paginas_comprobante(paginas_ocr, min_keywords=2)
+        assert 1 in result
+
+    def test_pagina_sin_keywords(self, config_test):
+        """Página sin keywords de comprobante no se incluye."""
+        escribano = EscribanoFiel(config=config_test)
+        paginas_ocr = [
+            {"pagina": 1, "texto": "DECLARACION JURADA DE VIATICOS"},
+        ]
+        result = escribano._identificar_paginas_comprobante(paginas_ocr, min_keywords=2)
+        assert result == []
+
+    def test_pagina_con_un_solo_keyword_no_alcanza(self, config_test):
+        """Una sola keyword no alcanza con min_keywords=2."""
+        escribano = EscribanoFiel(config=config_test)
+        paginas_ocr = [
+            {"pagina": 3, "texto": "FACTURA de servicio general"},
+        ]
+        result = escribano._identificar_paginas_comprobante(paginas_ocr, min_keywords=2)
+        assert result == []
+
+    def test_min_keywords_1(self, config_test):
+        """Con min_keywords=1, una keyword basta."""
+        escribano = EscribanoFiel(config=config_test)
+        paginas_ocr = [
+            {"pagina": 5, "texto": "IGV incluido en el total"},
+        ]
+        result = escribano._identificar_paginas_comprobante(paginas_ocr, min_keywords=1)
+        assert 5 in result
+
+    def test_multiples_paginas(self, config_test):
+        """Varias páginas, solo las comprobantes se detectan."""
+        escribano = EscribanoFiel(config=config_test)
+        paginas_ocr = [
+            {"pagina": 1, "texto": "OFICIO DE COMISION"},
+            {"pagina": 2, "texto": "FACTURA ELECTRONICA RUC: 20123456789 IGV SUBTOTAL"},
+            {"pagina": 3, "texto": "DECLARACION JURADA"},
+            {"pagina": 4, "texto": "BOLETA DE VENTA SERIE: F001 IMPORTE TOTAL"},
+        ]
+        result = escribano._identificar_paginas_comprobante(paginas_ocr, min_keywords=2)
+        assert 2 in result
+        assert 4 in result
+        assert 1 not in result
+        assert 3 not in result
+
+    def test_texto_vacio(self, config_test):
+        """Página con texto vacío o None no se incluye."""
+        escribano = EscribanoFiel(config=config_test)
+        paginas_ocr = [
+            {"pagina": 1, "texto": ""},
+            {"pagina": 2, "texto": None},
+            {"pagina": 3},
+        ]
+        result = escribano._identificar_paginas_comprobante(paginas_ocr, min_keywords=1)
+        assert result == []
+
+    def test_case_insensitive(self, config_test):
+        """Keywords se detectan sin importar mayúsculas/minúsculas."""
+        escribano = EscribanoFiel(config=config_test)
+        paginas_ocr = [
+            {"pagina": 1, "texto": "factura electronica ruc: 20123456789"},
+        ]
+        result = escribano._identificar_paginas_comprobante(paginas_ocr, min_keywords=2)
+        assert 1 in result
+
+
+class TestPasoParseProfundoVLMDisabled:
+    """Tests para _paso_parseo_profundo con VLM deshabilitado."""
+
+    def test_vlm_disabled_returns_success(self, tmp_dir, expediente_minimo):
+        """Con vlm_enabled=False, retorna éxito sin procesar."""
+        config = ConfigPipeline(
+            vault_dir=os.path.join(tmp_dir, "vault"),
+            registry_dir=os.path.join(tmp_dir, "registry"),
+            output_dir=os.path.join(tmp_dir, "output"),
+            log_dir=os.path.join(tmp_dir, "logs"),
+            vlm_enabled=False,
+        )
+        escribano = EscribanoFiel(config=config)
+        result = escribano._paso_parseo_profundo(
+            expediente=expediente_minimo,
+            paginas_ocr=[],
+            pdf_path="dummy.pdf",
+        )
+        assert result.exito is True
+        assert "deshabilitado" in result.mensaje.lower()
+
+    def test_zero_comprobante_pages(self, config_test, expediente_minimo):
+        """Sin páginas comprobante, retorna éxito con 0 extraídos."""
+        escribano = EscribanoFiel(config=config_test)
+        paginas_ocr = [
+            {"pagina": 1, "texto": "DECLARACION JURADA DE VIATICOS"},
+        ]
+        result = escribano._paso_parseo_profundo(
+            expediente=expediente_minimo,
+            paginas_ocr=paginas_ocr,
+            pdf_path="dummy.pdf",
+        )
+        assert result.exito is True
+        assert "0 páginas" in result.mensaje
+
+    def test_import_error_handled(self, config_test, expediente_minimo):
+        """Si módulos VLM no están disponibles, no crashea."""
+        escribano = EscribanoFiel(config=config_test)
+        paginas_ocr = [
+            {"pagina": 1, "texto": "FACTURA ELECTRONICA RUC: 20123456789 IGV SUBTOTAL"},
+        ]
+        with patch(
+            "src.extraction.escribano_fiel.EscribanoFiel._identificar_paginas_comprobante",
+            return_value=[1],
+        ):
+            with patch.dict("sys.modules", {"src.extraction.qwen_fallback": None}):
+                result = escribano._paso_parseo_profundo(
+                    expediente=expediente_minimo,
+                    paginas_ocr=paginas_ocr,
+                    pdf_path="dummy.pdf",
+                )
+        assert result.exito is True
+        assert "no disponibles" in result.mensaje.lower() or result.mensaje
+
+
+class TestConfigPipelineVLM:
+    """Tests para las nuevas opciones VLM en ConfigPipeline."""
+
+    def test_defaults(self):
+        config = ConfigPipeline()
+        assert config.vlm_enabled is True
+        assert config.vlm_config is None
+        assert config.dpi_vlm == 200
+        assert config.min_keywords_comprobante == 2
+
+    def test_custom_values(self):
+        config = ConfigPipeline(
+            vlm_enabled=False,
+            vlm_config={"model": "qwen3-vl:8b"},
+            dpi_vlm=300,
+            min_keywords_comprobante=3,
+        )
+        assert config.vlm_enabled is False
+        assert config.vlm_config == {"model": "qwen3-vl:8b"}
+        assert config.dpi_vlm == 300
+        assert config.min_keywords_comprobante == 3
