@@ -122,7 +122,7 @@ class TestConstantes:
     """Tests para constantes y metadatos del módulo."""
 
     def test_version_definida(self):
-        assert VERSION_ESCRIBANO == "2.0.0"
+        assert VERSION_ESCRIBANO == "3.0.0"
 
     def test_agente_id_definido(self):
         assert AGENTE_ID == "ESCRIBANO"
@@ -255,7 +255,7 @@ class TestEscribanoFielInit:
 
     def test_instanciacion_default(self, config_test):
         escribano = EscribanoFiel(config=config_test)
-        assert escribano.version == "2.0.0"
+        assert escribano.version == "3.0.0"
         assert escribano.config is config_test
 
     def test_instanciacion_sin_config(self):
@@ -300,7 +300,7 @@ class TestEscribanoFielInit:
 
     def test_get_stats(self, escribano_basico):
         stats = escribano_basico.get_stats()
-        assert stats["version"] == "2.0.0"
+        assert stats["version"] == "3.0.0"
         assert "config" in stats
 
 
@@ -1005,3 +1005,483 @@ class TestConfigPipelineVLM:
         assert config.vlm_config == {"model": "qwen3-vl:8b"}
         assert config.dpi_vlm == 300
         assert config.min_keywords_comprobante == 3
+
+
+# ==============================================================================
+# TESTS — ADR-011 Nivel 2: OCR-first + Score Suficiencia
+# ==============================================================================
+
+from src.extraction.escribano_fiel import (
+    CAMPOS_ESPERADOS_POR_TIPO,
+    REGEX_FECHA_EMISION,
+    REGEX_FECHA_GENERAL,
+    REGEX_IGV,
+    REGEX_RUC,
+    REGEX_SERIE_NUMERO,
+    REGEX_SUBTOTAL,
+    REGEX_TOTAL,
+    RUCS_PAGADOR,
+    SCORE_UMBRAL_CON_OBS,
+    SCORE_UMBRAL_SIN_VLM,
+)
+
+
+class TestRegexOCRFirst:
+    """Tests para los regex de extracción OCR-first."""
+
+    def test_regex_ruc_basico(self):
+        texto = "R.U.C.: 20610827171 RESTAURANTE EL CHALAN"
+        m = REGEX_RUC.findall(texto)
+        assert "20610827171" in m
+
+    def test_regex_ruc_sin_puntos(self):
+        texto = "RUC: 20604955498"
+        m = REGEX_RUC.findall(texto)
+        assert "20604955498" in m
+
+    def test_regex_ruc_multiple(self):
+        texto = "RUC: 20131370998 MINEDU\nRUC: 20610827171 PROVEEDOR"
+        m = REGEX_RUC.findall(texto)
+        assert len(m) == 2
+        assert "20131370998" in m
+        assert "20610827171" in m
+
+    def test_regex_ruc_filtra_estado(self):
+        rucs = ["20131370998", "20610827171"]
+        filtrados = [r for r in rucs if r not in RUCS_PAGADOR]
+        assert filtrados == ["20610827171"]
+
+    def test_regex_fecha_emision(self):
+        texto = "FECHA DE EMISIÓN: 06/02/2026"
+        m = REGEX_FECHA_EMISION.search(texto)
+        assert m is not None
+        assert m.group(1) == "06/02/2026"
+
+    def test_regex_fecha_emision_variante(self):
+        texto = "F. EMISION: 03-02-2026"
+        m = REGEX_FECHA_EMISION.search(texto)
+        assert m is not None
+        assert m.group(1) == "03-02-2026"
+
+    def test_regex_fecha_emision_simple(self):
+        texto = "FECHA: 07.02.2026"
+        m = REGEX_FECHA_EMISION.search(texto)
+        assert m is not None
+        assert m.group(1) == "07.02.2026"
+
+    def test_regex_fecha_general_fallback(self):
+        texto = "Emitido el 15/03/2026 en Lima"
+        m = REGEX_FECHA_GENERAL.search(texto)
+        assert m is not None
+        assert m.group(1) == "15/03/2026"
+
+    def test_regex_serie_numero_factura(self):
+        texto = "F011-8846"
+        m = REGEX_SERIE_NUMERO.search(texto)
+        assert m is not None
+        assert m.group(1).upper() == "F011"
+        assert m.group(2) == "8846"
+
+    def test_regex_serie_numero_boleta(self):
+        texto = "B001-005367"
+        m = REGEX_SERIE_NUMERO.search(texto)
+        assert m is not None
+        assert m.group(1).upper() == "B001"
+        assert m.group(2) == "005367"
+
+    def test_regex_serie_numero_electronico(self):
+        texto = "E001-1771"
+        m = REGEX_SERIE_NUMERO.search(texto)
+        assert m is not None
+        assert m.group(1).upper() == "E001"
+        assert m.group(2) == "1771"
+
+    def test_regex_serie_numero_largo(self):
+        texto = "FP01-233"
+        m = REGEX_SERIE_NUMERO.search(texto)
+        assert m is not None
+
+    def test_regex_total(self):
+        texto = "IMPORTE TOTAL S/. 125.50"
+        m = REGEX_TOTAL.search(texto)
+        assert m is not None
+        assert m.group(1) == "125.50"
+
+    def test_regex_total_con_coma(self):
+        texto = "TOTAL A PAGAR S/ 1,250.00"
+        m = REGEX_TOTAL.search(texto)
+        assert m is not None
+        assert m.group(1) == "1,250.00"
+
+    def test_regex_total_venta(self):
+        texto = "TOTAL VENTA : S/. 89.00"
+        m = REGEX_TOTAL.search(texto)
+        assert m is not None
+        assert m.group(1) == "89.00"
+
+    def test_regex_igv(self):
+        texto = "I.G.V. (18%) S/. 22.50"
+        m = REGEX_IGV.search(texto)
+        assert m is not None
+        assert m.group(1) == "22.50"
+
+    def test_regex_igv_simple(self):
+        texto = "IGV: S/ 18.00"
+        m = REGEX_IGV.search(texto)
+        assert m is not None
+        assert m.group(1) == "18.00"
+
+    def test_regex_subtotal(self):
+        texto = "SUB TOTAL S/. 100.00"
+        m = REGEX_SUBTOTAL.search(texto)
+        assert m is not None
+        assert m.group(1) == "100.00"
+
+    def test_regex_op_gravada(self):
+        texto = "OP. GRAVADA S/. 200.00"
+        m = REGEX_SUBTOTAL.search(texto)
+        assert m is not None
+        assert m.group(1) == "200.00"
+
+    def test_regex_valor_venta(self):
+        texto = "VALOR DE VENTA S/. 150.00"
+        m = REGEX_SUBTOTAL.search(texto)
+        assert m is not None
+        assert m.group(1) == "150.00"
+
+
+class TestConstantesOCRFirst:
+    """Tests para constantes OCR-first."""
+
+    def test_umbrales_definidos(self):
+        assert SCORE_UMBRAL_SIN_VLM == 0.75
+        assert SCORE_UMBRAL_CON_OBS == 0.50
+
+    def test_campos_esperados_factura(self):
+        campos = CAMPOS_ESPERADOS_POR_TIPO["FACTURA"]
+        assert "ruc_emisor" in campos
+        assert "fecha_emision" in campos
+        assert "serie_numero" in campos
+        assert "importe_total" in campos
+        assert "igv_monto" in campos
+
+    def test_campos_esperados_boleta(self):
+        campos = CAMPOS_ESPERADOS_POR_TIPO["BOLETA"]
+        assert "igv_monto" not in campos  # Boleta no requiere IGV
+
+    def test_campos_esperados_boarding_pass(self):
+        campos = CAMPOS_ESPERADOS_POR_TIPO["BOARDING_PASS"]
+        assert len(campos) == 1  # Solo fecha
+
+    def test_rucs_pagador_minedu(self):
+        assert "20131370998" in RUCS_PAGADOR
+
+
+class TestExtraerCamposOCRPorTipo:
+    """Tests para _extraer_campos_ocr_por_tipo()."""
+
+    @pytest.fixture
+    def escribano(self, tmp_dir):
+        config = ConfigPipeline(
+            vault_dir=os.path.join(tmp_dir, "vault"),
+            registry_dir=os.path.join(tmp_dir, "registry"),
+            output_dir=os.path.join(tmp_dir, "output"),
+            log_dir=os.path.join(tmp_dir, "logs"),
+        )
+        return EscribanoFiel(config=config)
+
+    def test_factura_completa(self, escribano):
+        texto = """
+        FACTURA ELECTRONICA
+        R.U.C.: 20610827171
+        RESTAURANTE EL CHALAN S.A.C.
+        FECHA DE EMISIÓN: 06/02/2026
+        F011-8846
+        OP. GRAVADA S/. 106.36
+        I.G.V. (18%) S/. 19.14
+        IMPORTE TOTAL S/. 125.50
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 5)
+
+        assert comp.grupo_a.ruc_emisor is not None
+        assert comp.grupo_a.ruc_emisor.valor == "20610827171"
+        assert comp.grupo_b.fecha_emision is not None
+        assert comp.grupo_b.fecha_emision.valor == "06/02/2026"
+        assert comp.grupo_b.serie is not None
+        assert comp.grupo_b.serie.valor == "F011"
+        assert comp.grupo_b.numero is not None
+        assert comp.grupo_b.numero.valor == "8846"
+        assert comp.grupo_f.importe_total is not None
+        assert comp.grupo_f.importe_total.valor == "125.50"
+        assert comp.grupo_f.igv_monto is not None
+        assert comp.grupo_f.igv_monto.valor == "19.14"
+        assert comp.grupo_f.subtotal is not None
+        assert comp.grupo_f.subtotal.valor == "106.36"
+
+    def test_factura_filtra_ruc_minedu(self, escribano):
+        texto = """
+        RUC: 20131370998 MINISTERIO DE EDUCACION
+        RUC: 20610827171 PROVEEDOR SAC
+        FECHA DE EMISIÓN: 06/02/2026
+        F011-8846
+        IMPORTE TOTAL S/. 125.50
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 1)
+        assert comp.grupo_a.ruc_emisor.valor == "20610827171"
+
+    def test_boleta_sin_igv(self, escribano):
+        texto = """
+        BOLETA DE VENTA
+        RUC: 10701855406
+        FECHA: 07/02/2026
+        B001-005367
+        TOTAL VENTA : S/. 25.00
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "BOLETA", "test.pdf", 10)
+        assert comp.grupo_a.ruc_emisor is not None
+        assert comp.grupo_a.ruc_emisor.valor == "10701855406"
+        assert comp.grupo_b.fecha_emision is not None
+        assert comp.grupo_f.importe_total is not None
+        assert comp.grupo_f.igv_monto is None
+
+    def test_recibo_honorarios(self, escribano):
+        texto = """
+        RECIBO POR HONORARIOS ELECTRONICO
+        RUC: 10073775006
+        FECHA DE EMISIÓN: 15/02/2026
+        E001-1771
+        IMPORTE TOTAL S/. 500.00
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "RECIBO_HONORARIOS", "test.pdf", 3)
+        assert comp.grupo_a.ruc_emisor.valor == "10073775006"
+        assert comp.grupo_b.serie.valor == "E001"
+        assert comp.grupo_b.numero.valor == "1771"
+
+    def test_metadatos_ocr_first(self, escribano):
+        texto = "RUC: 20610827171\nFECHA: 06/02/2026\nIMPORTE TOTAL S/. 100.00"
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "exp.pdf", 7)
+        assert comp.grupo_k.pagina_origen == 7
+        assert comp.grupo_k.metodo_extraccion == "OCR_FIRST_REGEX"
+        assert comp.grupo_k.timestamp_extraccion != ""
+
+    def test_metodo_extraccion_regex(self, escribano):
+        texto = "RUC: 20610827171"
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 1)
+        from config.settings import MetodoExtraccion
+
+        assert comp.grupo_a.ruc_emisor.metodo == MetodoExtraccion.REGEX
+
+    def test_texto_vacio(self, escribano):
+        comp = escribano._extraer_campos_ocr_por_tipo("", "FACTURA", "test.pdf", 1)
+        assert comp.grupo_a.ruc_emisor is None
+        assert comp.grupo_b.fecha_emision is None
+        assert comp.grupo_f.importe_total is None
+
+    def test_solo_ruc_estado(self, escribano):
+        texto = "RUC: 20131370998 MINISTERIO DE EDUCACION"
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 1)
+        # Should be None because only state RUC found
+        assert comp.grupo_a.ruc_emisor is None
+
+    def test_tipo_comprobante_siempre_presente(self, escribano):
+        texto = "algo de texto"
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "BOLETA", "test.pdf", 1)
+        assert comp.grupo_b.tipo_comprobante is not None
+        assert comp.grupo_b.tipo_comprobante.valor == "BOLETA"
+
+    def test_confianza_fecha_emision_alta(self, escribano):
+        texto = "FECHA DE EMISIÓN: 06/02/2026"
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 1)
+        assert comp.grupo_b.fecha_emision.confianza == 0.85
+
+    def test_confianza_fecha_general_baja(self, escribano):
+        texto = "Documento del 06/02/2026"
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 1)
+        assert comp.grupo_b.fecha_emision.confianza == 0.6
+
+    def test_total_con_coma_limpia_valor(self, escribano):
+        texto = "TOTAL A PAGAR S/ 1,250.00"
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 1)
+        assert comp.grupo_f.importe_total.valor == "1250.00"
+
+
+class TestCalcularScoreSuficiencia:
+    """Tests para _calcular_score_suficiencia()."""
+
+    @pytest.fixture
+    def escribano(self, tmp_dir):
+        config = ConfigPipeline(
+            vault_dir=os.path.join(tmp_dir, "vault"),
+            registry_dir=os.path.join(tmp_dir, "registry"),
+            output_dir=os.path.join(tmp_dir, "output"),
+            log_dir=os.path.join(tmp_dir, "logs"),
+        )
+        return EscribanoFiel(config=config)
+
+    def test_factura_completa_score_1(self, escribano):
+        texto = """
+        RUC: 20610827171
+        FECHA DE EMISIÓN: 06/02/2026
+        F011-8846
+        IMPORTE TOTAL S/. 125.50
+        IGV: S/ 19.14
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "t.pdf", 1)
+        score, encontrados, esperados, faltantes = escribano._calcular_score_suficiencia(
+            comp, "FACTURA"
+        )
+        assert score == 1.0
+        assert len(faltantes) == 0
+        assert len(encontrados) == 5
+
+    def test_factura_sin_igv_score_080(self, escribano):
+        texto = """
+        RUC: 20610827171
+        FECHA DE EMISIÓN: 06/02/2026
+        F011-8846
+        IMPORTE TOTAL S/. 125.50
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "t.pdf", 1)
+        score, encontrados, esperados, faltantes = escribano._calcular_score_suficiencia(
+            comp, "FACTURA"
+        )
+        assert score == 0.8
+        assert "igv_monto" in faltantes
+
+    def test_factura_solo_ruc_fecha_score_040(self, escribano):
+        texto = """
+        RUC: 20610827171
+        FECHA DE EMISIÓN: 06/02/2026
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "t.pdf", 1)
+        score, encontrados, esperados, faltantes = escribano._calcular_score_suficiencia(
+            comp, "FACTURA"
+        )
+        assert score == 0.4
+        assert "serie_numero" in faltantes
+        assert "importe_total" in faltantes
+        assert "igv_monto" in faltantes
+
+    def test_boleta_completa_score_1(self, escribano):
+        texto = """
+        RUC: 10701855406
+        FECHA: 07/02/2026
+        B001-005367
+        TOTAL VENTA : S/. 25.00
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "BOLETA", "t.pdf", 1)
+        score, encontrados, esperados, faltantes = escribano._calcular_score_suficiencia(
+            comp, "BOLETA"
+        )
+        assert score == 1.0
+
+    def test_boarding_pass_solo_fecha(self, escribano):
+        texto = "15/03/2026"
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "BOARDING_PASS", "t.pdf", 1)
+        score, encontrados, esperados, faltantes = escribano._calcular_score_suficiencia(
+            comp, "BOARDING_PASS"
+        )
+        assert score == 1.0
+
+    def test_vacio_score_0(self, escribano):
+        from src.extraction.expediente_contract import ComprobanteExtraido
+
+        comp = ComprobanteExtraido()
+        score, encontrados, esperados, faltantes = escribano._calcular_score_suficiencia(
+            comp, "FACTURA"
+        )
+        assert score == 0.0
+        assert len(faltantes) == 5
+
+    def test_score_umbral_sin_vlm(self, escribano):
+        """Score >= 0.75 should resolve without VLM."""
+        texto = """
+        RUC: 20610827171
+        FECHA DE EMISIÓN: 06/02/2026
+        F011-8846
+        IMPORTE TOTAL S/. 125.50
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "t.pdf", 1)
+        score, _, _, _ = escribano._calcular_score_suficiencia(comp, "FACTURA")
+        assert score >= SCORE_UMBRAL_SIN_VLM
+
+    def test_score_umbral_con_obs(self, escribano):
+        """Score 0.50-0.74 should resolve with observation."""
+        texto = """
+        RUC: 20610827171
+        FECHA DE EMISIÓN: 06/02/2026
+        IMPORTE TOTAL S/. 125.50
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "t.pdf", 1)
+        score, _, _, _ = escribano._calcular_score_suficiencia(comp, "FACTURA")
+        assert SCORE_UMBRAL_CON_OBS <= score < SCORE_UMBRAL_SIN_VLM
+
+    def test_score_bajo_escalar_vlm(self, escribano):
+        """Score < 0.50 should escalate to VLM."""
+        texto = """
+        RUC: 20610827171
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "t.pdf", 1)
+        score, _, _, _ = escribano._calcular_score_suficiencia(comp, "FACTURA")
+        assert score < SCORE_UMBRAL_CON_OBS
+
+    def test_tipo_desconocido_usa_default(self, escribano):
+        from src.extraction.expediente_contract import ComprobanteExtraido
+
+        comp = ComprobanteExtraido()
+        score, _, esperados, _ = escribano._calcular_score_suficiencia(comp, "TIPO_RARO")
+        assert esperados == ["fecha_emision"]
+
+
+class TestOCRFirstIntegracion:
+    """Tests de integración para OCR-first en pipeline."""
+
+    @pytest.fixture
+    def escribano(self, tmp_dir):
+        config = ConfigPipeline(
+            vault_dir=os.path.join(tmp_dir, "vault"),
+            registry_dir=os.path.join(tmp_dir, "registry"),
+            output_dir=os.path.join(tmp_dir, "output"),
+            log_dir=os.path.join(tmp_dir, "logs"),
+        )
+        return EscribanoFiel(config=config)
+
+    def test_factura_ocr_first_sin_vlm(self, escribano):
+        """Factura con score alto → comprobante resuelto sin VLM."""
+        texto = """
+        FACTURA ELECTRONICA
+        R.U.C.: 20610827171
+        RESTAURANTE EL CHALAN S.A.C.
+        FECHA DE EMISIÓN: 06/02/2026
+        F011-8846
+        OP. GRAVADA S/. 106.36
+        I.G.V. (18%) S/. 19.14
+        IMPORTE TOTAL S/. 125.50
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 5)
+        score, _, _, _ = escribano._calcular_score_suficiencia(comp, "FACTURA")
+
+        assert score == 1.0
+        assert comp.grupo_a.ruc_emisor.valor == "20610827171"
+        assert comp.grupo_b.fecha_emision.valor == "06/02/2026"
+        assert comp.grupo_b.serie.valor == "F011"
+        assert comp.grupo_f.importe_total.valor == "125.50"
+        assert comp.grupo_f.igv_monto.valor == "19.14"
+
+    def test_snippet_ruc_contexto(self, escribano):
+        """Snippet del RUC incluye contexto circundante."""
+        texto = "EMISOR R.U.C.: 20610827171 SAC LIMA"
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 1)
+        assert comp.grupo_a.ruc_emisor.snippet != ""
+        assert "20610827171" in comp.grupo_a.ruc_emisor.snippet
+
+    def test_multiples_ruc_toma_primero_no_estado(self, escribano):
+        """Con múltiples RUCs, toma el primer no-pagador."""
+        texto = """
+        RUC: 20505855627
+        RUC: 20380795907
+        RUC: 20610827171
+        RUC: 20440493781
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 1)
+        assert comp.grupo_a.ruc_emisor.valor == "20610827171"
