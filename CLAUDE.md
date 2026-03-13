@@ -5,6 +5,20 @@
 
 ---
 
+## Estado del Sistema (referencia rápida)
+
+| Indicador | Valor |
+|---|---|
+| **Pipeline** | 7 pasos: custodia → OCR → parseo → profundo VLM → evaluación → validación → Excel |
+| **Fases completadas** | 0-4 (28/42 tareas = 66.7%) |
+| **Fase siguiente** | Fase 5: Evaluación + Legal prep |
+| **Tests** | 1284 passed, 0 failed |
+| **GPU** | RTX 5090 24GB VRAM |
+| **Orquestador** | src/extraction/escribano_fiel.py |
+| **Última actualización** | 2026-03-13 |
+
+---
+
 ## Estado Actual
 
 - **Proyecto:** AG-EVIDENCE v2.0 — Sistema multi-agente de control previo
@@ -22,33 +36,23 @@
 
 ## Última Tarea Completada
 
-- **Tarea #21** — Integrar router en escribano_fiel.py (Fase 2, ÚLTIMA)
-- src/extraction/escribano_fiel.py: 1027 líneas, VERSION_ESCRIBANO = "1.0.0"
-- Pipeline 5 pasos: custodia → OCR → parseo → evaluación → Excel DIAGNOSTICO
-- EscribanoFiel con inyección de dependencias (CustodyChain, TraceLogger, IntegrityCheckpoint, AbstencionPolicy)
-- Modo re-evaluación: expediente_preconstruido salta custodia+OCR+parseo
-- Función de conveniencia: procesar_expediente() + evaluar_expediente()
-- Tests: 44 tests propios, 885 totales, 0 failures
-- Commits: f9eeb4a (código), 9887a43 (docs)
-- **Fase 2 COMPLETADA** (5/5 tareas: #17 ✅ #18 ✅ #19 ✅ #20 ✅ #21 ✅)
+- **Tarea #29** — reporte_hallazgos.py + ADR-011 Performance + Pipeline improvements (Fase 4, ÚLTIMA)
+- src/validation/reporte_hallazgos.py: 532 líneas, EscritorHallazgos, hoja HALLAZGOS semáforo
+- src/extraction/escribano_fiel.py: pipeline 7 pasos, gating por tipo, downscale VLM, métricas dispatcher
+- docs/ADR-011-performance-pipeline.md: estrategia incremental 4 niveles para páginas escaneadas
+- PATRONES_TIPO_COMPROBANTE: clasificación FACTURA/BOLETA/BOARDING_PASS/DJ/RECIBO_HONORARIOS/ADMINISTRATIVO
+- MAX_VLM_IMAGE_PX = 1200: downscale adaptativo antes de VLM
+- Tests: 1284 passed, 0 failures
+- **Fase 4 COMPLETADA** (3/3 tareas: #27 ✅ #28 ✅ #29 ✅)
+- **Fase 3 COMPLETADA** (5/5 tareas: #22 ✅ #23 ✅ #24 ✅ #25 ✅ #26 ✅)
 
-### Validación End-to-End con Expediente Real (2026-02-26)
-
-- **Expediente:** DIGC2026-INT-0072851 (viáticos, Ronny Durand)
-- **PDF:** 45 páginas, procesado vía WSL2 + PaddleOCR PP-OCRv5 GPU
-- **Resultado:** Pipeline completó 5/5 pasos en 48.7 segundos
-  - Custodia: SHA-256 registrado (156ms)
-  - OCR: 1840 palabras extraídas de 45 páginas (48.5s GPU)
-  - Parseo: ExpedienteJSON esqueleto creado (14ms)
-  - Router: Status CRITICAL (esperado: parseo profundo es Fase 3)
-  - Excel: DIAGNOSTICO generado con semáforo correctamente
-- **Conclusión:** Orquestador funciona E2E. El CRITICAL es esperado porque el parseo profundo (regex comprobantes, grupos A-K) se implementa en Fase 3 (#22-26).
-
-## Tarea Anterior Completada
+## Tareas Anteriores Completadas
 
 - **Tarea #41** — Blindaje de Seguridad (Transversal)
 - 4 capas defense-in-depth: GitHub platform → CI → pre-commit hooks → session protocol
-- Commits: 1540fe4, 35425aa, 1f7fe62, fdc0b1a (ruff), ec308c5 (CI fix), 8e6e7f8
+- **Tarea #21** — Integrar router en escribano_fiel.py (Fase 2, ÚLTIMA)
+- Pipeline 5→7 pasos, EscribanoFiel con inyección de dependencias
+- **Fase 2 COMPLETADA** (5/5 tareas: #17-#21)
 
 ## Tareas Anteriores Completadas
 
@@ -213,32 +217,20 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 
 ## Siguiente Sesión — Pendientes
 
-### Completado esta sesión (2026-03-10):
-1. **PRE-FASE 3: Migración VLM** — qwen2.5vl:7b → qwen3-vl:8b ✅ (commit 148fb2e, Cursor)
-   - qwen3-vl:8b descargado, VRAM 8.7GB, benchmark 3/3 OK
-   - Virgen del Carmen: confianza baja → alta (mejora confirmada)
-   - Trade-off: latencia 3-5x mayor por thinking tokens
-
-### Completado esta sesión (2026-03-12):
-- Verificación alineación 5 fuentes: Git (107 commits), Notion, Obsidian, CURRENT_STATE, CLAUDE.md
-- 5 discrepancias detectadas y corregidas
-- Auditoría informe Viáticos AI (354 líneas, 8 iteraciones, 3 opciones)
-- Hallazgos absorbidos en Tareas #23, #24, #25 (Notion) con diseño detallado
-- Informe copiado a repo: `docs/INFORME_TECNICO_VIATICOS_AI_PARA_AG_EVIDENCE.md`
-
-### Hallazgos Viáticos AI absorbidos (2026-03-12):
-- **Opción A (100% local) = PRINCIPAL** — alineada con regla local-first
-- **Opción B (cloud) = fallback documentado** — requiere aprobación Hans
-- Absorber en #23: prompt forense, chunking overlap 2 pág, retry JSON (max 2), dedup por serie_numero
-- Absorber en #27: validación RUC (dígito verificador SUNAT), validación IGV (Amazonía + recargo)
-- Absorber en ADR-010: cache SHA-256
+### Completado sesión 2026-03-13:
+- Tarea #29 (reporte_hallazgos.py) — 49 tests, commit 490dacd
+- ADR-011 Performance Pipeline — estrategia 4 niveles aprobada
+- Pipeline improvements: gating tipo comprobante, downscale VLM 1200px, métricas dispatcher
+- CLAUDE.md sincronizado (estaba 2 fases atrasado)
+- Auditoría multi-AI: ChatGPT, Gemini, Opus consolidados
+- 1284 tests, 0 failures
 
 ### Siguiente sesión:
-2. **Fase 3: Parseo profundo** — Tareas #22-26 (comprobantes, grupos A-K)
-3. **Tarea #16** — Re-generar Excel con pipeline formal
-4. **Procesar expediente DIRI2026-INT-0068815 completo**
-5. Reprocesar Caja Chica N.3 con pipeline formal
-6. **Branch protection** — Hans configura en GitHub UI
+1. **Fase 5: Evaluación + Legal prep** — Tareas #30-34
+2. **Tarea #16** — Re-generar Excel con pipeline formal
+3. **Procesar expediente DIRI2026-INT-0068815 y DIRI2026-INT-0196314**
+4. Reprocesar Caja Chica N.3 con pipeline formal
+5. **Branch protection** — Hans configura en GitHub UI
 
 ### Mejoras de pipeline aprobadas (implementar en Fases 3-4):
 7. **Cache OCR** — Si SHA-256 del PDF ya existe, saltar OCR y cargar resultado previo (→ ADR-010 ERL)
@@ -534,8 +526,8 @@ pdftotext "archivo_ocr.pdf" "archivo.txt"
 | 0: Setup | ✅ Completada | #1-9 |
 | 1: Trazabilidad + OCR | 🔵 En progreso | #10-15 ✅, #16 🔵 en progreso |
 | 2: Contrato + Router | ✅ Completada | #17 ✅, #18 ✅, #19 ✅, #20 ✅, #21 ✅ |
-| 3: Qwen Fallback | ⬜ Pendiente | #22-26 |
-| 4: Validaciones | ⬜ Pendiente | #27-29 |
+| 3: Qwen Fallback | ✅ Completada | #22 ✅, #23 ✅, #24 ✅, #25 ✅, #26 ✅ |
+| 4: Validaciones | ✅ Completada | #27 ✅, #28 ✅, #29 ✅ |
 | 5: Evaluación + Legal prep | ⬜ Pendiente | #30-34 |
 | 6: Motor Legal | ⬜ Pendiente | #35-40 |
 | Transversal: Seguridad | ✅ Completada | #41 (Blindaje 4 capas) |
@@ -566,6 +558,8 @@ src/
     pdf_text_extractor.py, trace_logger.py
   ocr/
     __init__.py, core.py
+  validation/
+    __init__.py, reporte_hallazgos.py
   rules/
     __init__.py, detraccion_spot.py, integrador.py, tdr_requirements.py
   tools/

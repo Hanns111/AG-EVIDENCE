@@ -408,6 +408,31 @@ y estado success. Invalidar al cambiar regla o motor.
 
 ---
 
+## ADR-011 — Estrategia de Performance para Páginas Escaneadas
+
+**Estado:** Aceptada
+**Fecha:** 2026-03-13
+
+### Contexto
+Las ~16 páginas escaneadas de un expediente típico van al VLM qwen3-vl:8b (~30-90s/pág),
+totalizando 12-27 minutos. Objetivo: <5 minutos sin cambiar stack.
+
+### Decisión
+Estrategia incremental en 4 niveles: (1) ROI crop + downscale + gating por tipo de página,
+(2) OCR-first para skip VLM cuando campos clave tienen alta confianza, (3) benchmark de
+modelos documentales especializados (MonkeyOCR, PaddleOCR-VL), (4) migración a vLLM con
+continuous batching solo si niveles anteriores son insuficientes.
+
+### Consecuencias
+- Stack actual se mantiene (Ollama + qwen3-vl:8b)
+- Crop usa bboxes de PaddleOCR ya disponibles (LineaOCR, Tarea #14)
+- Estimación Niveles 1-2: de 12-27 min a 4-7 min por expediente
+- Paralelismo y cambio de modelo son decisiones diferidas hasta tener métricas
+
+**Documento completo:** [ADR-011-performance-pipeline.md](ADR-011-performance-pipeline.md)
+
+---
+
 ## Regla de Actualización
 
 Si una decisión:

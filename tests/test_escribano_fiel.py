@@ -840,6 +840,95 @@ class TestIdentificarPaginasComprobante:
         assert 1 in result
 
 
+class TestClasificarTipoComprobante:
+    """Tests para _clasificar_tipo_comprobante() — ADR-011 gating mejorado."""
+
+    def test_factura_electronica(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert escribano._clasificar_tipo_comprobante("FACTURA ELECTRONICA F001-123") == "FACTURA"
+
+    def test_factura_por_serie(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert escribano._clasificar_tipo_comprobante("SERIE: F001 algo más") == "FACTURA"
+
+    def test_boleta_de_venta(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert escribano._clasificar_tipo_comprobante("BOLETA DE VENTA B001-999") == "BOLETA"
+
+    def test_boleta_por_serie(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert escribano._clasificar_tipo_comprobante("SERIE: B001 IGV TOTAL") == "BOLETA"
+
+    def test_boarding_pass(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert (
+            escribano._clasificar_tipo_comprobante("BOARDING PASS GATE 5 SEAT 12A")
+            == "BOARDING_PASS"
+        )
+
+    def test_boarding_tarjeta_embarque(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert (
+            escribano._clasificar_tipo_comprobante("TARJETA DE EMBARQUE PASAJERO")
+            == "BOARDING_PASS"
+        )
+
+    def test_declaracion_jurada(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert (
+            escribano._clasificar_tipo_comprobante("DECLARACION JURADA DE GASTOS")
+            == "DECLARACION_JURADA"
+        )
+
+    def test_recibo_honorarios(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert (
+            escribano._clasificar_tipo_comprobante("RECIBO POR HONORARIOS E001-500")
+            == "RECIBO_HONORARIOS"
+        )
+
+    def test_administrativo_default(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert (
+            escribano._clasificar_tipo_comprobante("OFICIO DE COMISION DE SERVICIO")
+            == "ADMINISTRATIVO"
+        )
+
+    def test_texto_vacio(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert escribano._clasificar_tipo_comprobante("") == "ADMINISTRATIVO"
+
+    def test_case_insensitive(self, config_test):
+        escribano = EscribanoFiel(config=config_test)
+        assert escribano._clasificar_tipo_comprobante("factura electronica") == "FACTURA"
+
+    def test_prioridad_factura_sobre_admin(self, config_test):
+        """Si texto tiene keywords de factura, clasifica como FACTURA aunque tenga otros textos."""
+        escribano = EscribanoFiel(config=config_test)
+        assert (
+            escribano._clasificar_tipo_comprobante("OFICIO FACTURA ELECTRONICA RUC: 20123456789")
+            == "FACTURA"
+        )
+
+
+class TestConstantesADR011:
+    """Tests para constantes de ADR-011."""
+
+    def test_max_vlm_image_px(self):
+        from src.extraction.escribano_fiel import MAX_VLM_IMAGE_PX
+
+        assert MAX_VLM_IMAGE_PX == 1200
+
+    def test_patrones_tipo_comprobante_completos(self):
+        from src.extraction.escribano_fiel import PATRONES_TIPO_COMPROBANTE
+
+        assert "FACTURA" in PATRONES_TIPO_COMPROBANTE
+        assert "BOLETA" in PATRONES_TIPO_COMPROBANTE
+        assert "BOARDING_PASS" in PATRONES_TIPO_COMPROBANTE
+        assert "DECLARACION_JURADA" in PATRONES_TIPO_COMPROBANTE
+        assert "RECIBO_HONORARIOS" in PATRONES_TIPO_COMPROBANTE
+
+
 class TestPasoParseProfundoVLMDisabled:
     """Tests para _paso_parseo_profundo con VLM deshabilitado."""
 

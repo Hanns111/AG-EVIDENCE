@@ -16,7 +16,8 @@ Flujo:
   3. Parseo: construir ExpedienteJSON esqueleto desde resultados OCR
   4. Parseo profundo: VLM extrae comprobantes (Grupos A-K) de páginas imagen
   5. Evaluación: ConfidenceRouter + IntegrityCheckpoint
-  6. Diagnóstico Excel: hoja DIAGNOSTICO con semáforo
+  6. Validación: aritméticas + reglas viáticos (Fase 4)
+  7. Excel: hojas DIAGNOSTICO + HALLAZGOS
 
 Principios:
   - Cada paso produce un resultado verificable antes de avanzar
@@ -116,6 +117,42 @@ KEYWORDS_COMPROBANTE = [
     r"SERIE\s*[-:]?\s*[A-Z]\d{3}",
     r"TOTAL\s+VENTA",
 ]
+
+# Patrones para clasificar tipo de comprobante (ADR-011: gating mejorado)
+PATRONES_TIPO_COMPROBANTE = {
+    "FACTURA": [
+        r"factura\s*(electr[oó]nica)?",
+        r"SERIE\s*[-:]?\s*F\d{3}",
+        r"FW?\d{2,3}\s*-\s*\d+",
+    ],
+    "BOLETA": [
+        r"boleta\s+de\s+venta",
+        r"SERIE\s*[-:]?\s*B\d{3}",
+        r"B\d{3}\s*-\s*\d+",
+    ],
+    "BOARDING_PASS": [
+        r"boarding\s*pass",
+        r"tarjeta\s+de\s+embarque",
+        r"pasajero",
+        r"vuelo\s*n",
+        r"flight",
+        r"gate\s*\d",
+        r"seat\s*\d",
+    ],
+    "DECLARACION_JURADA": [
+        r"declaraci[oó]n\s+jurada",
+        r"bajo\s+juramento",
+        r"DJ\s*[-:.]",
+    ],
+    "RECIBO_HONORARIOS": [
+        r"recibo\s+por\s+honorarios",
+        r"SERIE\s*[-:]?\s*E\d{3}",
+    ],
+}
+
+# Resolución máxima para VLM (ADR-011: downscale adaptativo)
+MAX_VLM_IMAGE_PX = 1200
+"""Lado mayor máximo de imagen antes de enviar al VLM (px)."""
 
 
 # ==============================================================================
@@ -861,19 +898,38 @@ class EscribanoFiel:
             comprobantes = []
             n_digital = 0
             n_imagen = 0
+            tiempo_vlm_total = 0.0
+            tipos_detectados: Dict[str, int] = {}
+
+            # ADR-011: clasificar tipo de cada página comprobante
+            paginas_ocr_dict = {p.get("pagina", 0): p for p in paginas_ocr}
+            for pg_num in paginas_comprobante:
+                pag_data = paginas_ocr_dict.get(pg_num, {})
+                texto_ocr = pag_data.get("texto", "") or ""
+                tipo = self._clasificar_tipo_comprobante(texto_ocr)
+                tipos_detectados[tipo] = tipos_detectados.get(tipo, 0) + 1
+
+            self._logger.info(
+                f"Tipos detectados: {tipos_detectados}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
 
             # --- Ruta 1: Páginas digitales → PyMuPDF texto → LLM texto (rápido) ---
             for page_num, texto in digitales:
+                tipo = self._clasificar_tipo_comprobante(texto)
                 self._logger.info(
-                    f"LLM texto pág {page_num} ({len(texto)} chars)",
+                    f"LLM texto pág {page_num} [{tipo}] ({len(texto)} chars)",
                     agent_id=AGENTE_ID,
                     operation="parseo_profundo",
                 )
+                t0 = time.perf_counter()
                 comp = vlm_client.extraer_comprobante_texto(
                     texto_pagina=texto,
                     archivo=Path(pdf_path).name,
                     pagina=page_num,
                 )
+                tiempo_vlm_total += time.perf_counter() - t0
                 if comp is not None:
                     comprobantes.append(comp)
                     n_digital += 1
@@ -893,17 +949,21 @@ class EscribanoFiel:
                     dpi=self._config.dpi_vlm,
                 )
                 for page_num, img_b64 in imagenes_b64:
+                    pag_data = paginas_ocr_dict.get(page_num, {})
+                    tipo = self._clasificar_tipo_comprobante(pag_data.get("texto", "") or "")
                     self._logger.info(
-                        f"VLM imagen pág {page_num}",
+                        f"VLM imagen pág {page_num} [{tipo}]",
                         agent_id=AGENTE_ID,
                         operation="parseo_profundo",
                     )
+                    t0 = time.perf_counter()
                     comp = vlm_handler.extraer_o_abstener(
                         client=vlm_client,
                         image_b64=img_b64,
                         archivo=Path(pdf_path).name,
                         pagina=page_num,
                     )
+                    tiempo_vlm_total += time.perf_counter() - t0
                     comprobantes.append(comp)
                     n_imagen += 1
 
@@ -928,6 +988,12 @@ class EscribanoFiel:
 
             self._logger.info(msg, agent_id=AGENTE_ID, operation="parseo_profundo")
 
+            # ADR-011: métricas del dispatcher
+            total_paginas = len(paginas_ocr)
+            tiempo_vlm_promedio = (
+                tiempo_vlm_total / (n_digital + n_imagen) if (n_digital + n_imagen) > 0 else 0.0
+            )
+
             return ResultadoPaso(
                 paso="parseo_profundo",
                 exito=True,
@@ -940,6 +1006,18 @@ class EscribanoFiel:
                     "paginas_imagen": n_imagen,
                     "deduplicados": dedup,
                     "vlm_stats": stats.to_dict(),
+                    # ADR-011: métricas dispatcher
+                    "dispatcher": {
+                        "total_paginas_pdf": total_paginas,
+                        "paginas_comprobante": len(paginas_comprobante),
+                        "paginas_digitales": len(digitales),
+                        "paginas_imagen": len(imagenes_pg),
+                        "paginas_enviadas_vlm": n_digital + n_imagen,
+                        "tipos_detectados": tipos_detectados,
+                        "tiempo_vlm_total_s": round(tiempo_vlm_total, 1),
+                        "tiempo_vlm_promedio_s": round(tiempo_vlm_promedio, 1),
+                        "max_image_px": MAX_VLM_IMAGE_PX,
+                    },
                 },
             )
 
@@ -985,6 +1063,26 @@ class EscribanoFiel:
             if matches >= min_keywords:
                 paginas.append(pag.get("pagina", 0))
         return paginas
+
+    def _clasificar_tipo_comprobante(
+        self,
+        texto: str,
+    ) -> str:
+        """
+        Clasifica el tipo de comprobante de una página por su texto OCR.
+
+        Devuelve uno de: FACTURA, BOLETA, BOARDING_PASS, DECLARACION_JURADA,
+        RECIBO_HONORARIOS, ADMINISTRATIVO.
+
+        ADR-011: gating mejorado para habilitar prompts especializados,
+        validaciones por tipo y métricas por clase documental.
+        """
+        if not texto:
+            return "ADMINISTRATIVO"
+        for tipo, patrones in PATRONES_TIPO_COMPROBANTE.items():
+            if any(re.search(p, texto, re.IGNORECASE) for p in patrones):
+                return tipo
+        return "ADMINISTRATIVO"
 
     def _clasificar_paginas_digital_imagen(
         self,
@@ -1038,7 +1136,12 @@ class EscribanoFiel:
         paginas: List[int],
         dpi: int = 200,
     ) -> List[tuple]:
-        """Renderiza páginas específicas de un PDF como imágenes base64 PNG."""
+        """
+        Renderiza páginas de un PDF como imágenes base64 PNG.
+
+        ADR-011: aplica downscale adaptativo (MAX_VLM_IMAGE_PX) para reducir
+        latencia VLM sin pérdida significativa de legibilidad.
+        """
         resultado = []
         try:
             import fitz
@@ -1052,7 +1155,34 @@ class EscribanoFiel:
                     continue
                 page = doc[page_num - 1]
                 pix = page.get_pixmap(matrix=matrix)
-                img_bytes = pix.tobytes("png")
+
+                # ADR-011: downscale si excede MAX_VLM_IMAGE_PX
+                max_side = max(pix.width, pix.height)
+                if max_side > MAX_VLM_IMAGE_PX:
+                    scale = MAX_VLM_IMAGE_PX / max_side
+                    new_w = int(pix.width * scale)
+                    new_h = int(pix.height * scale)
+                    try:
+                        import io
+
+                        from PIL import Image
+
+                        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                        img = img.resize((new_w, new_h), Image.LANCZOS)
+                        buf = io.BytesIO()
+                        img.save(buf, format="PNG")
+                        img_bytes = buf.getvalue()
+                        self._logger.info(
+                            f"Downscale pág {page_num}: {pix.width}x{pix.height} → {new_w}x{new_h}",
+                            agent_id=AGENTE_ID,
+                            operation="parseo_profundo",
+                        )
+                    except ImportError:
+                        # Sin PIL, enviar original
+                        img_bytes = pix.tobytes("png")
+                else:
+                    img_bytes = pix.tobytes("png")
+
                 img_b64 = base64.b64encode(img_bytes).decode("utf-8")
                 resultado.append((page_num, img_b64))
 
