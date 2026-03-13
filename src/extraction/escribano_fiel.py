@@ -214,6 +214,9 @@ class ConfigPipeline:
     dpi_vlm: int = 200
     min_keywords_comprobante: int = 2
 
+    # Validación (Fase 4)
+    validacion_enabled: bool = True
+
     # Operador
     operador: str = "pipeline"
     source: str = "escribano_fiel"
@@ -454,12 +457,25 @@ class EscribanoFiel:
                 # Aún así generar Excel si está configurado
                 # (el Excel documenta POR QUÉ se detuvo)
 
-            # --- PASO 6: Generar Excel ---
+            # --- PASO 6: Validación (Fase 4) ---
+            obs_validacion = []
+            if self._config.validacion_enabled and expediente:
+                paso_val = self._paso_validacion(
+                    expediente=expediente,
+                    naturaleza=naturaleza,
+                )
+                resultado.pasos.append(paso_val)
+                obs_validacion = paso_val.datos.get("observaciones", [])
+                observaciones.extend(obs_validacion)
+                resultado.observaciones = observaciones
+
+            # --- PASO 7: Generar Excel ---
             if self._config.generar_excel and resultado.decision:
                 paso_excel = self._paso_excel(
                     sinad=sinad,
                     decision=resultado.decision,
                     ruta_excel=ruta_excel,
+                    observaciones_validacion=obs_validacion,
                 )
                 resultado.pasos.append(paso_excel)
                 if paso_excel.exito:
@@ -1130,22 +1146,103 @@ class EscribanoFiel:
                 error=str(e),
             )
 
+    def _paso_validacion(
+        self,
+        expediente: ExpedienteJSON,
+        naturaleza: NaturalezaExpediente = NaturalezaExpediente.NO_DETERMINADO,
+    ) -> ResultadoPaso:
+        """
+        Paso 6: Validaciones aritméticas y reglas de viáticos (Fase 4).
+
+        Ejecuta ValidadorExpediente (Grupo J) y ReglasViaticos (directiva).
+        No es bloqueante: si falla, pipeline continúa sin validaciones.
+        """
+        inicio = time.perf_counter()
+        self._logger.info(
+            "Paso 6/7: Validación aritmética + reglas viáticos",
+            agent_id=AGENTE_ID,
+            operation="validacion",
+        )
+
+        try:
+            from src.validation.reglas_viaticos import ReglasViaticos
+            from src.validation.validador_expediente import ValidadorExpediente
+
+            todas_obs = []
+
+            # Validaciones aritméticas (Tarea #27)
+            validador = ValidadorExpediente()
+            resultado_val = validador.validar_expediente(expediente)
+            todas_obs.extend(resultado_val.observaciones)
+
+            # Reglas de viáticos (Tarea #28) — solo si es viáticos
+            resultado_reglas = None
+            if naturaleza == NaturalezaExpediente.VIATICOS:
+                reglas = ReglasViaticos()
+                resultado_reglas = reglas.validar(expediente)
+                todas_obs.extend(resultado_reglas.observaciones)
+
+            n_arit = resultado_val.errores_aritmeticos
+            n_reglas = resultado_reglas.reglas_fallidas if resultado_reglas else 0
+
+            return ResultadoPaso(
+                paso="validacion",
+                exito=True,
+                duracion_ms=_elapsed_ms(inicio),
+                mensaje=(f"{len(todas_obs)} hallazgos ({n_arit} aritmético, {n_reglas} normativo)"),
+                datos={
+                    "observaciones": todas_obs,
+                    "validacion_aritmetica": resultado_val.to_dict(),
+                    "validacion_reglas": resultado_reglas.to_dict() if resultado_reglas else None,
+                    "total_hallazgos": len(todas_obs),
+                },
+            )
+
+        except ImportError as e:
+            self._logger.warning(
+                f"Módulos de validación no disponibles: {e}",
+                agent_id=AGENTE_ID,
+                operation="validacion",
+            )
+            return ResultadoPaso(
+                paso="validacion",
+                exito=True,
+                duracion_ms=_elapsed_ms(inicio),
+                mensaje="Validación omitida: módulos no disponibles",
+                datos={"observaciones": []},
+            )
+
+        except Exception as e:
+            self._logger.error(
+                f"Error en validación: {e}",
+                agent_id=AGENTE_ID,
+                operation="validacion",
+                error=str(e),
+            )
+            return ResultadoPaso(
+                paso="validacion",
+                exito=False,
+                duracion_ms=_elapsed_ms(inicio),
+                error=str(e),
+                datos={"observaciones": []},
+            )
+
     def _paso_excel(
         self,
         sinad: str,
         decision: DecisionCheckpoint,
         ruta_excel: Optional[str] = None,
+        observaciones_validacion: Optional[List[Observacion]] = None,
     ) -> ResultadoPaso:
         """
-        Paso 5: Generar Excel con hoja DIAGNOSTICO.
+        Paso 7: Generar Excel con hojas DIAGNOSTICO + HALLAZGOS.
 
-        Crea un workbook nuevo con la hoja DIAGNOSTICO usando
-        EscritorDiagnostico. La ruta de salida se genera automáticamente
-        si no se proporciona.
+        Crea un workbook nuevo con DIAGNOSTICO (router) y HALLAZGOS
+        (validaciones Fase 4). La ruta se genera automáticamente.
         """
         inicio = time.perf_counter()
         self._logger.info(
-            "Paso 6/6: Generar Excel con DIAGNOSTICO",
+            "Paso 7/7: Generar Excel con DIAGNOSTICO + HALLAZGOS",
             agent_id=AGENTE_ID,
             operation="excel",
         )
@@ -1179,6 +1276,20 @@ class EscribanoFiel:
                 decision=decision,
                 nombre_hoja=self._config.nombre_hoja_diagnostico,
             )
+
+            # Escribir hoja HALLAZGOS si hay observaciones de validación
+            if observaciones_validacion:
+                try:
+                    from src.validation.reporte_hallazgos import escribir_hallazgos
+
+                    escribir_hallazgos(
+                        wb=wb,
+                        observaciones=observaciones_validacion,
+                        sinad=sinad,
+                    )
+                except ImportError:
+                    pass  # Módulo no disponible, omitir hoja
+
             wb.save(ruta_excel)
 
             self._logger.info(

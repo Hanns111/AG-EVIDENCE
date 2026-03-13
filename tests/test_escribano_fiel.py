@@ -755,7 +755,9 @@ class TestIntegracionPipeline:
             expediente_preconstruido=expediente_minimo,
             observaciones_previas=obs,
         )
-        assert len(resultado.observaciones) == 1
+        # La observación previa + posibles observaciones de validación (Fase 4)
+        assert any(o.agente == "TEST" for o in resultado.observaciones)
+        assert resultado.observaciones[0].descripcion == "Observación de prueba"
 
 
 # ==============================================================================
