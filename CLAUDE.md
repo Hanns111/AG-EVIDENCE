@@ -613,3 +613,40 @@ data/
 ---
 
 *Actualizado: 2026-02-26 por Claude Code*
+
+## Reglas de Sesión Obligatorias
+
+### Fuente de verdad
+- origin/main es LA ÚNICA fuente de verdad del proyecto
+- Notion y Obsidian son herramientas de CONSULTA y APRENDIZAJE del usuario, NO bases del proyecto
+- NUNCA tomar decisiones basándose en lo que dice Notion u Obsidian
+- SIEMPRE verificar contra origin/main antes de cualquier diagnóstico
+
+### Al INICIAR cada sesión:
+1. git fetch && git pull origin main (SIEMPRE primero)
+2. git log --oneline -5 (verificar estado real)
+3. pytest --co -q 2>/dev/null | tail -3 (conteo de tests)
+
+### Al COMPLETAR cada tarea:
+1. git add -A && git commit -m "feat: descripción"
+2. git push origin main (INMEDIATAMENTE)
+3. Mostrar output completo del push
+4. git log origin/main --oneline -1 (VERIFICAR que llegó al remoto)
+
+### Después de push exitoso, PROPAGAR a:
+1. Notion Checkpoint (321b188d-be2e-81fe-a4fd-eff56dc82cdb) — actualizar estado
+2. Notion Dashboard — actualizar conteo tareas y tests
+3. Notion Bitácora — agregar entrada de la tarea completada
+4. Obsidian Tablero, Bitácora y archivo de Fase correspondiente
+
+### PROHIBIDO:
+- Usar worktrees o ramas temporales — todo va directo a main
+- Decir "pusheado" sin mostrar el output real del push
+- Diagnosticar estado del repo sin hacer git fetch primero
+- Tomar Notion u Obsidian como base para decisiones
+- Hacer preguntas al usuario — tomar decisiones y ejecutar
+- Continuar con la siguiente tarea si el push falla
+
+### Si el push falla:
+- Reportar el error completo inmediatamente
+- NO continuar hasta resolver
