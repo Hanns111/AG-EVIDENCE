@@ -219,23 +219,45 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 
 ### Completado sesión 2026-03-13:
 - Tarea #29 (reporte_hallazgos.py) — 49 tests, commit 490dacd
-- ADR-011 Performance Pipeline — estrategia 4 niveles aprobada
+- ADR-011 Performance Pipeline — estrategia 5 niveles, reordenada tras auditoría multi-AI
 - Pipeline improvements: gating tipo comprobante, downscale VLM 1200px, métricas dispatcher
 - CLAUDE.md sincronizado (estaba 2 fases atrasado)
-- Auditoría multi-AI: ChatGPT, Gemini, Opus consolidados
-- 1284 tests, 0 failures
+- Auditoría multi-AI: ChatGPT + Gemini + Opus → consolidado, ADR-011 ajustado
+- Commits: 490dacd, a2bb4c1, fa456c5 — 1284 tests, 0 failures
 
-### Siguiente sesión:
-1. **Fase 5: Evaluación + Legal prep** — Tareas #30-34
-2. **Tarea #16** — Re-generar Excel con pipeline formal
-3. **Procesar expediente DIRI2026-INT-0068815 y DIRI2026-INT-0196314**
-4. Reprocesar Caja Chica N.3 con pipeline formal
-5. **Branch protection** — Hans configura en GitHub UI
+### Próxima sesión — Plan consolidado (aprobado por Hans 2026-03-13):
 
-### Mejoras de pipeline aprobadas (implementar en Fases 3-4):
-7. **Cache OCR** — Si SHA-256 del PDF ya existe, saltar OCR y cargar resultado previo (→ ADR-010 ERL)
-8. **Separación OCR-CPU / VLM-GPU** — Mover PaddleOCR a CPU cuando se necesite VLM más grande (opción futura para qwen3-vl:32b)
-9. **Ampliar benchmark dataset** — Agregar 2 facturas adicionales: 1 compleja + 1 escaneo malo (total: 5 facturas de referencia)
+**BLOQUE 1 — ADR-011 Nivel 2: OCR-first + score suficiencia**
+- Implementar `_extraer_campos_ocr_por_tipo()` en escribano_fiel.py
+- Score: `campos_encontrados / campos_esperados` (RUC + fecha + total como núcleo, proveedor opcional)
+- Umbrales: ≥0.75 resolver sin VLM, 0.50-0.74 resolver con observación, <0.50 escalar a VLM
+- Métricas nuevas: paginas_resueltas_sin_vlm, paginas_escaladas_vlm, score_promedio_ocr_por_tipo
+- PPStructure (PaddleOCR layout integrado) como sub-paso para mejorar clustering bboxes
+- Impacto esperado: eliminar 60-70% llamadas VLM en expedientes de viáticos
+
+**BLOQUE 2 — ADR-011 Nivel 3: ROI crop real**
+- Clustering de bboxes PaddleOCR → región dominante → crop con margen
+- Downscale post-crop a max 1200px
+- Orden obligatorio: OCR → score → si falla: crop → downscale → VLM
+- Fallback: si no hay bboxes útiles, página completa con downscale directo
+
+**BLOQUE 3 — Procesamiento expedientes**
+- Procesar DIRI2026-INT-0068815 y DIRI2026-INT-0196314 con pipeline optimizado
+- Reprocesar Caja Chica N.3 con pipeline formal
+- Medir impacto real de OCR-first (antes vs después)
+
+**BLOQUE 4 — Fase 5 inicio**
+- Tarea #30: Golden dataset (expected.json por expediente)
+- Tarea #16: Re-generar Excel con pipeline formal
+
+**BLOQUE 5 — Pendientes menores**
+- Branch protection — Hans configura en GitHub UI
+- Convertir las 15 preguntas de ChatGPT en checklist de métricas automáticas por expediente
+
+### Mejoras de pipeline aprobadas (implementar progresivamente):
+- **Cache OCR** — Si SHA-256 del PDF ya existe, saltar OCR y cargar resultado previo (→ ADR-010 ERL)
+- **Pipeline overlap CPU/GPU** — OCR página N+1 en CPU mientras VLM procesa página N (ADR-011 Nivel 5)
+- **Ampliar benchmark dataset** — Agregar 2 facturas adicionales: 1 compleja + 1 escaneo malo (total: 5 facturas de referencia)
 
 ### Vigilancia tecnológica:
 10. **AI Stack Sentinel** — Ejecutar `python3 scripts/tech_monitor.py` semanalmente (lunes)
