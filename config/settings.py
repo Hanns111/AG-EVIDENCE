@@ -392,7 +392,7 @@ VLM_CONFIG = {
     "fallback_model": None,  # Sin fallback: qwen2.5vl:7b es estable
     "ollama_url": "http://localhost:11434",
     "timeout_seconds": 60,  # Reducido: qwen2.5vl:7b no necesita thinking, responde <30s
-    "max_tokens": 200,  # JSON comprobante ~150-180 tokens, sin thinking overhead
+    "max_tokens": 800,  # JSON comprobante ~600-700 tokens, sin thinking overhead
     "temperature": 0.1,
     "num_ctx": 4096,  # Comprobante prompt + imagen < 2K tokens
     "no_think": False,

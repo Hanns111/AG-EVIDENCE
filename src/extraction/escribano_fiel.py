@@ -1091,6 +1091,7 @@ class EscribanoFiel:
                             comp_abstencion = vlm_handler.generar_abstencion_vlm(
                                 archivo=Path(pdf_path).name,
                                 pagina=pg_num,
+                                razon="LLM texto falló tras retries",
                             )
                             comprobantes.append(comp_abstencion)
                         self._logger.info(

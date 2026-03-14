@@ -106,6 +106,7 @@ class TestVLMConfig:
 
     def test_max_tokens(self):
         assert VLM_CONFIG["max_tokens"] >= 200
+        assert VLM_CONFIG["max_tokens"] <= 2000  # Cap para evitar thinking runaway
 
     def test_temperature_baja(self):
         """Temperature baja para extracción determinista."""

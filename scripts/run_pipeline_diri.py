@@ -150,8 +150,10 @@ if resultado.expediente:
             metodo = c.grupo_k.metodo_extraccion if c.grupo_k else "?"
             pag = c.grupo_k.pagina_origen if c.grupo_k else "?"
             print(
-                f"    [{i + 1:2d}] p{pag:>2} {tipo_val:<10} {serie_val}-{num_val:<10} "
-                f"RUC:{ruc_val} Total:{total_val} Fecha:{fecha_val} [{metodo}]"
+                f"    [{i + 1:2d}] p{pag or '?':>2} {tipo_val or '?':<10} "
+                f"{serie_val or '?'}-{num_val or '?':<10} "
+                f"RUC:{ruc_val or '?'} Total:{total_val or '?'} "
+                f"Fecha:{fecha_val or '?'} [{metodo or '?'}]"
             )
 
 # Decision del router
