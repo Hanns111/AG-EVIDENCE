@@ -21,15 +21,15 @@ from src.extraction.escribano_fiel import VERSION_ESCRIBANO, ConfigPipeline, Esc
 PDF = "data/expedientes/pruebas/viaticos_2026/DIRI2026-INT-0196314/2026031211199PV0086JOSEADRIANZENRENDICION.pdf"
 SINAD = "DIRI2026-INT-0196314"
 
-# Baseline anterior (sesión 2026-03-12, v2.0.0, pipeline 6 pasos)
+# Baseline anterior (sesión 2026-03-13, v3.0.0, OCR-first sin crop)
 BASELINE = {
-    "version": "2.0.0",
+    "version": "3.0.0",
     "comprobantes": 19,
     "digital": 13,
     "imagen": 8,
     "dedup": 2,
-    "duracion_s": 2700,  # ~45 min estimado (VLM en todas las páginas)
-    "paginas_vlm": 21,  # Todas iban al VLM
+    "duracion_s": 2616,  # 43.6 min (OCR-first, sin ROI crop)
+    "paginas_vlm": 13,  # 13 de 21 escaladas a VLM (8 resueltas OCR-first)
 }
 
 print("=" * 70)
@@ -92,10 +92,11 @@ for paso in resultado.pasos:
         print(f"         {paso.mensaje}")
     if paso.error:
         print(f"         ERROR: {paso.error}")
-    # Extraer datos OCR-first del paso parseo_profundo
+    # Extraer datos OCR-first y ROI crop del paso parseo_profundo
     if paso.paso == "parseo_profundo" and paso.datos:
         ocr_first_data = paso.datos.get("ocr_first")
         dispatcher_data = paso.datos.get("dispatcher")
+        roi_crop_data = paso.datos.get("roi_crop")
 
 # Métricas OCR-first (ADR-011 Nivel 2)
 print("\n" + "=" * 70)
@@ -108,6 +109,17 @@ if ocr_first_data:
     print(f"  Scores por página:           {ocr_first_data['scores_por_pagina']}")
 else:
     print("  (Sin datos OCR-first — posiblemente 0 páginas comprobante)")
+
+# Métricas ROI crop (ADR-011 Nivel 3)
+if "roi_crop_data" in dir() and roi_crop_data:
+    print("\n  ROI Crop (Nivel 3):")
+    print(f"    Páginas con crop:          {roi_crop_data.get('pages_with_crop', 0)}")
+    print(f"    Páginas sin crop (full):   {roi_crop_data.get('pages_full_page', 0)}")
+    ratios = roi_crop_data.get("crop_area_ratios", [])
+    if ratios:
+        avg_ratio = sum(ratios) / len(ratios)
+        print(f"    Ratio área promedio:       {avg_ratio:.3f} (1.0 = página completa)")
+        print(f"    Ratios por página:         {ratios}")
 
 if dispatcher_data:
     print("\n  Dispatcher:")

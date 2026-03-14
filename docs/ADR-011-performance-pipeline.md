@@ -41,11 +41,13 @@ Adoptar estrategia incremental en 5 niveles. Principio rector: evitar costo → 
    - score < 0.50 → escalar a VLM
 8. Métricas nuevas: paginas_resueltas_sin_vlm, paginas_escaladas_vlm, score_promedio_ocr_por_tipo
 
-**Nivel 3 — ROI crop + downscale (solo para páginas que escalan a VLM):**
-9. Clustering de bboxes PaddleOCR → región dominante → crop con margen de seguridad
+**Nivel 3 — ROI crop + downscale + timeout audit (IMPLEMENTADO 2026-03-13):**
+9. Unión de bboxes PaddleOCR → región dominante → crop con 5% margen
 10. Downscale post-crop: reducir imagen cropeada a max 1200px
-11. Fallback: si no hay bboxes útiles, página completa con downscale directo
-12. Orden obligatorio: OCR → score → si falla: crop → downscale → VLM
+11. Fallback: si <3 bboxes válidos o crop <5% área, página completa con downscale
+12. Orden: OCR → score → si falla: crop → downscale → VLM
+13. Timeout audit: num_predict 16384→4096, num_ctx 16384→8192 (caps thinking tokens)
+14. Métricas: pages_with_crop, pages_full_page, crop_area_ratios, VLM input dimensions
 
 **Nivel 4 — Benchmark modelo especializado (EVALUADO 2026-03-13):**
 13. MonkeyOCR-pro-1.2B: **DESCARTADO** para RTX 5090 (Blackwell sm_120)
