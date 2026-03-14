@@ -12,10 +12,10 @@
 | **Pipeline** | 7 pasos: custodia → OCR → parseo → OCR-first + VLM → evaluación → validación → Excel |
 | **Fases completadas** | 0-4 (28/42 tareas = 66.7%) + ADR-011 Niveles 1-2 + Nivel 4 benchmark |
 | **Fase siguiente** | Fase 5: Evaluación + Legal prep |
-| **Tests** | 1341 passed, 0 failed |
+| **Tests** | 1355 passed, 0 failed |
 | **GPU** | RTX 5090 24GB VRAM |
 | **Orquestador** | src/extraction/escribano_fiel.py |
-| **Última actualización** | 2026-03-13 |
+| **Última actualización** | 2026-03-14 |
 
 ---
 
@@ -36,17 +36,14 @@
 
 ## Última Tarea Completada
 
-- **ADR-011 Niveles 2+3+4** — OCR-first + ROI crop + benchmark + timeout audit (sesión 2026-03-13)
-- escribano_fiel.py v3.1.0: OCR-first + ROI crop + auditoría timeouts VLM
-- Nivel 2: `_extraer_campos_ocr_por_tipo()` — regex RUC, fecha, serie, total, IGV, subtotal
-- Nivel 3: `_calcular_roi_desde_bboxes()` — unión bboxes + 5% margen, crop antes de VLM
-- Nivel 4: MonkeyOCR-pro-1.2B **DESCARTADO** (sm_120 incompatible PyTorch cu124)
-- Timeout audit: num_predict 16384→4096, num_ctx 16384→8192
-- E2E DIRI2026: 8/21 sin VLM, ROI crop 1 pág (17.6% área), status OK
-- **Hallazgo crítico:** qwen3-vl:8b produce JSON corrupto con num_predict=4096 → qwen2.5vl:7b funciona perfecto como fallback (~25-30s/pág)
-- **Recomendación:** cambiar qwen2.5vl:7b como modelo primario (elimina 2x120s retry overhead)
-- 50 tests nuevos: 1341 passed, 0 failures
-- Commits: 380dc71, 40a9637, cd08bf9, 5d53935, 3fa7431
+- **Pipeline v4.1.0** — Performance optimizado: 2.7 min/expediente (sesión 2026-03-13/14)
+- escribano_fiel.py v4.1.0: overlap + keep_alive + JSON estricto + telemetría
+- qwen2.5vl:7b primario (sin fallback), format="json", keep_alive="10m"
+- num_predict=800, num_ctx=4096, timeout=60s, vlm_workers=2
+- OCR-first (8/21 sin VLM), ROI crop (17.6% área), ThreadPoolExecutor paralelo
+- E2E DIRI2026: **2.7 min** (16x speedup vs 45 min), 19 comprobantes, 0 fallos JSON
+- MonkeyOCR-pro-1.2B descartado (sm_120 incompatible PyTorch cu124)
+- Tests: 1355 passed, 0 failures
 - **Fase 4 COMPLETADA** (3/3 tareas: #27 ✅ #28 ✅ #29 ✅)
 - **Fase 3 COMPLETADA** (5/5 tareas: #22 ✅ #23 ✅ #24 ✅ #25 ✅ #26 ✅)
 

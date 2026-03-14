@@ -66,18 +66,29 @@ Adoptar estrategia incremental en 5 niveles. Principio rector: evitar costo → 
 16. Migrar etapa VLM a vLLM con continuous batching (alternativa al overlap)
 17. Workers concurrentes (max 2) con scheduling de VRAM
 
-### Resultados reales E2E (DIRI2026-INT-0196314, 2026-03-13)
+### Resultados reales E2E (DIRI2026-INT-0196314)
 
-| Métrica | Baseline v2.0.0 | v3.0.0 OCR-first |
-|---|---|---|
-| Páginas al VLM | 21 | **13** (-38%) |
-| Páginas resueltas sin VLM | 0 | **8** |
-| Comprobantes extraídos | 19 | **19** (mismo) |
-| Score promedio OCR | N/A | **0.41** |
-| Tiempo total | ~45 min | **43.6 min** |
-| Status | CRITICAL | **WARNING** (mejoró) |
+| Métrica | v2.0 baseline | v3.0 OCR-first | v4.0 model swap | **v4.1 final** |
+|---|---|---|---|---|
+| Tiempo total | ~45 min | 43.6 min | 2.8 min | **2.7 min** |
+| VLM/pág promedio | 221s | 221s | 20s | **14.1s** |
+| Comprobantes | 19 | 19 | 19 | **19** |
+| Páginas VLM | 21 | 13 | 13 | **13** |
+| OCR-first resueltas | 0 | 8 | 8 | **8** |
+| JSON fallos | N/A | N/A | 1 | **0** |
+| Status | CRITICAL | WARNING | OK | **OK** |
+| Abstenciones | N/A | N/A | 1 | **0** |
 
-Nota: el tiempo no bajó significativamente porque el cuello de botella son los timeouts de qwen3-vl:8b (120s) con fallback a qwen2.5vl:7b. Las 8 páginas resueltas por OCR-first son instantáneas (<1ms).
+**Speedup total: 16x** (45 min → 2.7 min)
+
+Optimizaciones clave de v4.1:
+- qwen2.5vl:7b primario (sin fallback, sin thinking tokens)
+- format="json" (Ollama structured output, elimina JSON truncado)
+- keep_alive="10m" (evita cold start entre páginas)
+- num_predict=800, num_ctx=4096, timeout=60s
+- ThreadPoolExecutor(max_workers=2) para VLM paralelo
+- ROI crop (17.6% del área de la página imagen)
+- OCR-first con umbrales 0.60/0.40 (8/21 páginas sin VLM)
 
 ### Estimación de impacto (proyección original)
 
