@@ -122,7 +122,7 @@ class TestConstantes:
     """Tests para constantes y metadatos del módulo."""
 
     def test_version_definida(self):
-        assert VERSION_ESCRIBANO == "3.0.0"
+        assert VERSION_ESCRIBANO == "3.1.0"
 
     def test_agente_id_definido(self):
         assert AGENTE_ID == "ESCRIBANO"
@@ -255,7 +255,7 @@ class TestEscribanoFielInit:
 
     def test_instanciacion_default(self, config_test):
         escribano = EscribanoFiel(config=config_test)
-        assert escribano.version == "3.0.0"
+        assert escribano.version == "3.1.0"
         assert escribano.config is config_test
 
     def test_instanciacion_sin_config(self):
@@ -300,7 +300,7 @@ class TestEscribanoFielInit:
 
     def test_get_stats(self, escribano_basico):
         stats = escribano_basico.get_stats()
-        assert stats["version"] == "3.0.0"
+        assert stats["version"] == "3.1.0"
         assert "config" in stats
 
 
@@ -1485,3 +1485,184 @@ class TestOCRFirstIntegracion:
         """
         comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "test.pdf", 1)
         assert comp.grupo_a.ruc_emisor.valor == "20610827171"
+
+
+# ==============================================================================
+# TESTS — ADR-011 Nivel 3: ROI Crop
+# ==============================================================================
+
+from src.extraction.escribano_fiel import (
+    CROP_MARGIN_PERCENT,
+    MIN_BBOX_CONFIDENCE,
+    MIN_BBOXES_FOR_CROP,
+)
+
+
+class TestCalcularROIDesdeBboxes:
+    """Tests para _calcular_roi_desde_bboxes()."""
+
+    @pytest.fixture
+    def escribano(self, tmp_dir):
+        config = ConfigPipeline(
+            vault_dir=os.path.join(tmp_dir, "vault"),
+            registry_dir=os.path.join(tmp_dir, "registry"),
+            output_dir=os.path.join(tmp_dir, "output"),
+            log_dir=os.path.join(tmp_dir, "logs"),
+        )
+        return EscribanoFiel(config=config)
+
+    def test_roi_normal_5_bboxes(self, escribano):
+        """5 bboxes -> returns union + margin."""
+        lineas = [
+            {"texto": "RUC: 20610827171", "bbox": [100, 200, 500, 230], "confianza": 0.95},
+            {"texto": "FACTURA", "bbox": [100, 240, 400, 270], "confianza": 0.92},
+            {"texto": "F011-8846", "bbox": [100, 280, 300, 310], "confianza": 0.88},
+            {"texto": "TOTAL S/. 125.50", "bbox": [100, 500, 500, 530], "confianza": 0.90},
+            {"texto": "IGV S/. 19.14", "bbox": [100, 470, 400, 500], "confianza": 0.87},
+        ]
+        roi = escribano._calcular_roi_desde_bboxes(lineas, 1654, 2338)
+        assert roi is not None
+        x_min, y_min, x_max, y_max = roi
+        assert x_min < 100
+        assert y_min < 200
+        assert x_max > 500
+        assert y_max > 530
+
+    def test_roi_all_none_bbox(self, escribano):
+        """All bboxes None -> returns None."""
+        lineas = [
+            {"texto": "algo", "bbox": None, "confianza": 0.9},
+            {"texto": "otro", "bbox": None, "confianza": 0.8},
+        ]
+        roi = escribano._calcular_roi_desde_bboxes(lineas, 1654, 2338)
+        assert roi is None
+
+    def test_roi_fewer_than_3_bboxes(self, escribano):
+        """Less than MIN_BBOXES_FOR_CROP -> returns None."""
+        lineas = [
+            {"texto": "uno", "bbox": [100, 200, 300, 230], "confianza": 0.9},
+            {"texto": "dos", "bbox": [100, 240, 300, 270], "confianza": 0.9},
+        ]
+        roi = escribano._calcular_roi_desde_bboxes(lineas, 1654, 2338)
+        assert roi is None
+
+    def test_roi_empty_lineas(self, escribano):
+        """Empty list -> returns None."""
+        roi = escribano._calcular_roi_desde_bboxes([], 1654, 2338)
+        assert roi is None
+
+    def test_roi_low_confidence_filtered(self, escribano):
+        """Bboxes below MIN_BBOX_CONFIDENCE are excluded."""
+        lineas = [
+            {"texto": "bueno1", "bbox": [100, 200, 800, 400], "confianza": 0.9},
+            {"texto": "bueno2", "bbox": [100, 400, 800, 600], "confianza": 0.8},
+            {"texto": "bueno3", "bbox": [100, 600, 800, 900], "confianza": 0.5},
+            {"texto": "malo1", "bbox": [800, 1800, 1600, 2300], "confianza": 0.1},
+            {"texto": "malo2", "bbox": [900, 1900, 1500, 2200], "confianza": 0.2},
+        ]
+        roi = escribano._calcular_roi_desde_bboxes(lineas, 1654, 2338)
+        assert roi is not None
+        x_min, y_min, x_max, y_max = roi
+        assert x_max < 1000
+
+    def test_roi_margin_clamped_to_bounds(self, escribano):
+        """Margin doesn't go beyond image bounds."""
+        lineas = [
+            {"texto": "a", "bbox": [0, 0, 50, 30], "confianza": 0.9},
+            {"texto": "b", "bbox": [0, 40, 50, 70], "confianza": 0.9},
+            {"texto": "c", "bbox": [0, 80, 50, 110], "confianza": 0.9},
+        ]
+        roi = escribano._calcular_roi_desde_bboxes(lineas, 100, 200)
+        assert roi is not None
+        x_min, y_min, x_max, y_max = roi
+        assert x_min >= 0
+        assert y_min >= 0
+        assert x_max <= 100
+        assert y_max <= 200
+
+    def test_roi_near_bottom_right(self, escribano):
+        """Bboxes near image edge -> margin clamped."""
+        lineas = [
+            {"texto": "a", "bbox": [800, 1500, 1650, 1700], "confianza": 0.9},
+            {"texto": "b", "bbox": [800, 1700, 1650, 1900], "confianza": 0.9},
+            {"texto": "c", "bbox": [800, 1900, 1650, 2338], "confianza": 0.9},
+        ]
+        roi = escribano._calcular_roi_desde_bboxes(lineas, 1654, 2338)
+        assert roi is not None
+        x_min, y_min, x_max, y_max = roi
+        assert x_max <= 1654
+        assert y_max <= 2338
+
+    def test_roi_tiny_crop_rejected(self, escribano):
+        """Very tiny crop (< 5% area) is rejected."""
+        lineas = [
+            {"texto": "a", "bbox": [100, 100, 110, 105], "confianza": 0.9},
+            {"texto": "b", "bbox": [100, 106, 110, 111], "confianza": 0.9},
+            {"texto": "c", "bbox": [100, 112, 110, 117], "confianza": 0.9},
+        ]
+        roi = escribano._calcular_roi_desde_bboxes(lineas, 1654, 2338)
+        assert roi is None
+
+    def test_constants_defined(self):
+        assert MIN_BBOXES_FOR_CROP == 3
+        assert MIN_BBOX_CONFIDENCE == 0.3
+        assert CROP_MARGIN_PERCENT == 0.05
+
+    def test_roi_confianza_none_accepted(self, escribano):
+        """Bboxes with confianza=None pass (no threshold applied)."""
+        lineas = [
+            {"texto": "a", "bbox": [100, 200, 500, 230], "confianza": None},
+            {"texto": "b", "bbox": [100, 240, 500, 270], "confianza": None},
+            {"texto": "c", "bbox": [100, 280, 500, 310], "confianza": None},
+        ]
+        roi = escribano._calcular_roi_desde_bboxes(lineas, 1654, 2338)
+        assert roi is not None
+
+    def test_roi_returns_ints(self, escribano):
+        """ROI coordinates are integers."""
+        lineas = [
+            {"texto": "a", "bbox": [100.5, 200.3, 500.7, 230.1], "confianza": 0.9},
+            {"texto": "b", "bbox": [100.5, 240.3, 500.7, 270.1], "confianza": 0.9},
+            {"texto": "c", "bbox": [100.5, 280.3, 500.7, 310.1], "confianza": 0.9},
+        ]
+        roi = escribano._calcular_roi_desde_bboxes(lineas, 1654, 2338)
+        assert roi is not None
+        for coord in roi:
+            assert isinstance(coord, int)
+
+
+class TestCropStatsInit:
+    """Tests for crop stats initialization."""
+
+    @pytest.fixture
+    def escribano(self, tmp_dir):
+        config = ConfigPipeline(
+            vault_dir=os.path.join(tmp_dir, "vault"),
+            registry_dir=os.path.join(tmp_dir, "registry"),
+            output_dir=os.path.join(tmp_dir, "output"),
+            log_dir=os.path.join(tmp_dir, "logs"),
+        )
+        return EscribanoFiel(config=config)
+
+    def test_crop_stats_initialized_on_render(self, escribano):
+        """_ultimo_crop_stats is initialized on each render call."""
+        escribano._renderizar_paginas_base64(
+            pdf_path="/nonexistent.pdf",
+            paginas=[],
+            dpi=200,
+        )
+        stats = escribano._ultimo_crop_stats
+        assert stats["pages_with_crop"] == 0
+        assert stats["pages_full_page"] == 0
+        assert stats["crop_area_ratios"] == []
+
+    def test_render_backward_compat_no_ocr_dict(self, escribano):
+        """Without paginas_ocr_dict, returns empty result gracefully."""
+        result = escribano._renderizar_paginas_base64(
+            pdf_path="/nonexistent.pdf",
+            paginas=[1],
+            dpi=200,
+            paginas_ocr_dict=None,
+        )
+        assert result == []
+        assert hasattr(escribano, "_ultimo_crop_stats")

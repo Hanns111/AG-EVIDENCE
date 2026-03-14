@@ -392,9 +392,9 @@ VLM_CONFIG = {
     "fallback_model": "qwen2.5vl:7b",  # Mantenido como fallback
     "ollama_url": "http://localhost:11434",
     "timeout_seconds": 120,  # Ampliado: qwen3-vl tiene latencia 3-5x por thinking
-    "max_tokens": 16384,
+    "max_tokens": 4096,  # Reducido de 16384: JSON output ~900 tokens, evita timeouts por thinking
     "temperature": 0.1,
-    "num_ctx": 16384,
+    "num_ctx": 8192,  # Reducido de 16384: comprobante típico < 2K tokens prompt
     "no_think": False,  # NOTA: /no_think en content causa respuesta vacía. Dejar thinking activo, extraer de content.
     "dpi_render": 200,  # DPI para renderizar PDF a imagen para VLM
     "max_retries": 2,  # Retry en JSON corrupto (dato Viáticos AI: 10-30% fallan)

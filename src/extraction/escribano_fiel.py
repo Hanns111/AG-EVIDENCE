@@ -101,8 +101,8 @@ from src.ingestion.trace_logger import TraceLogger
 # CONSTANTES
 # ==============================================================================
 
-VERSION_ESCRIBANO = "3.0.0"
-"""Versión del módulo escribano_fiel (3.0: OCR-first ADR-011 Nivel 2)."""
+VERSION_ESCRIBANO = "3.1.0"
+"""Versión del módulo escribano_fiel (3.1: ROI crop ADR-011 Nivel 3)."""
 
 AGENTE_ID = "ESCRIBANO"
 """ID de agente para logging."""
@@ -160,6 +160,19 @@ PATRONES_TIPO_COMPROBANTE = {
 # Resolución máxima para VLM (ADR-011: downscale adaptativo)
 MAX_VLM_IMAGE_PX = 1200
 """Lado mayor máximo de imagen antes de enviar al VLM (px)."""
+
+# ==============================================================================
+# ADR-011 NIVEL 3 — ROI crop: Recorte inteligente antes del VLM
+# ==============================================================================
+
+MIN_BBOXES_FOR_CROP = 3
+"""Mínimo de líneas OCR con bbox para intentar crop."""
+
+MIN_BBOX_CONFIDENCE = 0.3
+"""Confianza mínima de una línea OCR para incluirla en el cálculo de ROI."""
+
+CROP_MARGIN_PERCENT = 0.05
+"""Margen de seguridad alrededor del ROI (5% de cada lado)."""
 
 # ==============================================================================
 # ADR-011 NIVEL 2 — OCR-first: Regex por tipo de comprobante
@@ -1110,6 +1123,7 @@ class EscribanoFiel:
                         pdf_path=pdf_path,
                         paginas=imagenes_pendientes_vlm,
                         dpi=self._config.dpi_vlm,
+                        paginas_ocr_dict=paginas_ocr_dict,
                     )
                     for page_num, img_b64 in imagenes_b64:
                         pag_data = paginas_ocr_dict.get(page_num, {})
@@ -1194,6 +1208,8 @@ class EscribanoFiel:
                         "score_promedio_ocr": round(score_promedio, 3),
                         "scores_por_pagina": [round(s, 3) for s in scores_ocr],
                     },
+                    # ADR-011 Nivel 3: métricas ROI crop
+                    "roi_crop": getattr(self, "_ultimo_crop_stats", {}),
                 },
             )
 
@@ -1480,6 +1496,73 @@ class EscribanoFiel:
 
         return score, encontrados, esperados, faltantes
 
+    # ==========================================================================
+    # ADR-011 NIVEL 3 — ROI crop: Recorte inteligente antes del VLM
+    # ==========================================================================
+
+    def _calcular_roi_desde_bboxes(
+        self,
+        lineas: List[Dict[str, Any]],
+        img_width: int,
+        img_height: int,
+    ) -> Optional[tuple]:
+        """
+        Calcula la región de interés (ROI) desde bboxes de OCR.
+
+        ADR-011 Nivel 3: usa la unión de bboxes de PaddleOCR para
+        determinar la región dominante del comprobante. Añade margen
+        de seguridad y clampea a los límites de la imagen.
+
+        Parameters
+        ----------
+        lineas : list
+            Lista de dicts con bbox y confianza (de LineaOCR.to_dict()).
+        img_width : int
+            Ancho de la imagen en píxeles.
+        img_height : int
+            Alto de la imagen en píxeles.
+
+        Returns
+        -------
+        (x_min, y_min, x_max, y_max) o None si no hay suficientes bboxes.
+        """
+        # Filtrar líneas con bbox válido y confianza mínima
+        bboxes_validos = []
+        for linea in lineas:
+            bbox = linea.get("bbox")
+            conf = linea.get("confianza")
+            if bbox is None or len(bbox) < 4:
+                continue
+            if conf is not None and conf < MIN_BBOX_CONFIDENCE:
+                continue
+            bboxes_validos.append(bbox)
+
+        if len(bboxes_validos) < MIN_BBOXES_FOR_CROP:
+            return None
+
+        # Unión de todos los bboxes
+        x_min = min(b[0] for b in bboxes_validos)
+        y_min = min(b[1] for b in bboxes_validos)
+        x_max = max(b[2] for b in bboxes_validos)
+        y_max = max(b[3] for b in bboxes_validos)
+
+        # Añadir margen de seguridad (5% de cada lado)
+        margin_x = img_width * CROP_MARGIN_PERCENT
+        margin_y = img_height * CROP_MARGIN_PERCENT
+
+        x_min = max(0, x_min - margin_x)
+        y_min = max(0, y_min - margin_y)
+        x_max = min(img_width, x_max + margin_x)
+        y_max = min(img_height, y_max + margin_y)
+
+        # Verificar que el crop tenga tamaño razonable (al menos 10% del área)
+        crop_area = (x_max - x_min) * (y_max - y_min)
+        full_area = img_width * img_height
+        if full_area > 0 and crop_area / full_area < 0.05:
+            return None  # Crop demasiado pequeño, probablemente ruido
+
+        return (int(x_min), int(y_min), int(x_max), int(y_max))
+
     def _identificar_paginas_comprobante(
         self,
         paginas_ocr: List[Dict[str, Any]],
@@ -1567,16 +1650,30 @@ class EscribanoFiel:
         pdf_path: str,
         paginas: List[int],
         dpi: int = 200,
+        paginas_ocr_dict: Optional[Dict[int, Dict[str, Any]]] = None,
     ) -> List[tuple]:
         """
         Renderiza páginas de un PDF como imágenes base64 PNG.
 
-        ADR-011: aplica downscale adaptativo (MAX_VLM_IMAGE_PX) para reducir
-        latencia VLM sin pérdida significativa de legibilidad.
+        ADR-011 Nivel 1: downscale adaptativo (MAX_VLM_IMAGE_PX).
+        ADR-011 Nivel 3: ROI crop usando bboxes OCR antes del downscale.
+
+        Si paginas_ocr_dict se proporciona, intenta hacer crop a la región
+        del comprobante antes de aplicar downscale. Si no hay bboxes útiles,
+        hace fallback a página completa con downscale.
         """
         resultado = []
+        self._ultimo_crop_stats = {
+            "pages_with_crop": 0,
+            "pages_full_page": 0,
+            "crop_area_ratios": [],
+        }
+
         try:
+            import io
+
             import fitz
+            from PIL import Image
 
             doc = fitz.open(pdf_path)
             zoom = dpi / 72.0
@@ -1587,41 +1684,68 @@ class EscribanoFiel:
                     continue
                 page = doc[page_num - 1]
                 pix = page.get_pixmap(matrix=matrix)
+                img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                original_w, original_h = pix.width, pix.height
+                cropped = False
 
-                # ADR-011: downscale si excede MAX_VLM_IMAGE_PX
-                max_side = max(pix.width, pix.height)
-                if max_side > MAX_VLM_IMAGE_PX:
-                    scale = MAX_VLM_IMAGE_PX / max_side
-                    new_w = int(pix.width * scale)
-                    new_h = int(pix.height * scale)
-                    try:
-                        import io
-
-                        from PIL import Image
-
-                        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-                        img = img.resize((new_w, new_h), Image.LANCZOS)
-                        buf = io.BytesIO()
-                        img.save(buf, format="PNG")
-                        img_bytes = buf.getvalue()
+                # ADR-011 Nivel 3: intentar ROI crop si hay datos OCR
+                if paginas_ocr_dict is not None:
+                    pag_data = paginas_ocr_dict.get(page_num, {})
+                    lineas = pag_data.get("lineas", [])
+                    roi = self._calcular_roi_desde_bboxes(lineas, pix.width, pix.height)
+                    if roi is not None:
+                        x_min, y_min, x_max, y_max = roi
+                        img = img.crop((x_min, y_min, x_max, y_max))
+                        crop_area = (x_max - x_min) * (y_max - y_min)
+                        full_area = original_w * original_h
+                        ratio = round(crop_area / full_area, 3) if full_area > 0 else 1.0
+                        self._ultimo_crop_stats["pages_with_crop"] += 1
+                        self._ultimo_crop_stats["crop_area_ratios"].append(ratio)
+                        cropped = True
                         self._logger.info(
-                            f"Downscale pág {page_num}: {pix.width}x{pix.height} → {new_w}x{new_h}",
+                            f"ROI crop pág {page_num}: {original_w}x{original_h} → "
+                            f"{img.width}x{img.height} (ratio={ratio})",
                             agent_id=AGENTE_ID,
                             operation="parseo_profundo",
                         )
-                    except ImportError:
-                        # Sin PIL, enviar original
-                        img_bytes = pix.tobytes("png")
-                else:
-                    img_bytes = pix.tobytes("png")
+                    else:
+                        self._ultimo_crop_stats["pages_full_page"] += 1
 
+                # ADR-011 Nivel 1: downscale si excede MAX_VLM_IMAGE_PX
+                max_side = max(img.width, img.height)
+                if max_side > MAX_VLM_IMAGE_PX:
+                    scale = MAX_VLM_IMAGE_PX / max_side
+                    new_w = int(img.width * scale)
+                    new_h = int(img.height * scale)
+                    img = img.resize((new_w, new_h), Image.LANCZOS)
+                    action = "Crop+downscale" if cropped else "Downscale"
+                    self._logger.info(
+                        f"{action} pág {page_num}: → {new_w}x{new_h}",
+                        agent_id=AGENTE_ID,
+                        operation="parseo_profundo",
+                    )
+
+                # Codificar a base64
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                img_bytes = buf.getvalue()
                 img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+                # Log dimensiones finales para auditoría de timeouts
+                b64_kb = len(img_b64) // 1024
+                self._logger.info(
+                    f"VLM input pág {page_num}: {img.width}x{img.height} "
+                    f"({b64_kb} KB b64, crop={'sí' if cropped else 'no'})",
+                    agent_id=AGENTE_ID,
+                    operation="parseo_profundo",
+                )
+
                 resultado.append((page_num, img_b64))
 
             doc.close()
         except ImportError:
             self._logger.warning(
-                "PyMuPDF no disponible para renderizar páginas",
+                "PyMuPDF/PIL no disponible para renderizar páginas",
                 agent_id=AGENTE_ID,
                 operation="parseo_profundo",
             )
