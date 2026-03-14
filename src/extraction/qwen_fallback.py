@@ -252,19 +252,48 @@ class QwenFallbackClient:
         trace_logger: Any = None,
     ):
         cfg = config or VLM_CONFIG
-        self.model = cfg.get("model", "qwen3-vl:8b")
-        self.fallback_model = cfg.get("fallback_model", "qwen2.5vl:7b")
+        self.model = cfg.get("model", "qwen2.5vl:7b")
+        self.fallback_model = cfg.get("fallback_model", None)
         self.ollama_url = cfg.get("ollama_url", "http://localhost:11434")
-        self.timeout = cfg.get("timeout_seconds", 120)
-        self.max_tokens = cfg.get("max_tokens", 16384)
+        self.timeout = cfg.get("timeout_seconds", 60)
+        self.max_tokens = cfg.get("max_tokens", 800)
         self.temperature = cfg.get("temperature", 0.1)
-        self.num_ctx = cfg.get("num_ctx", 16384)
+        self.num_ctx = cfg.get("num_ctx", 4096)
         self.max_retries = cfg.get("max_retries", 2)
+        self.keep_alive = cfg.get("keep_alive", "10m")
+        self.format_json = cfg.get("format", None)  # "json" para structured output
+        self.vlm_workers = cfg.get("vlm_workers", 2)
         self.trace_logger = trace_logger
+        self._telemetry: List[Dict[str, Any]] = []  # Telemetría por página
 
     # ------------------------------------------------------------------
     # Verificación de conectividad
     # ------------------------------------------------------------------
+
+    def get_telemetry(self) -> List[Dict[str, Any]]:
+        """Retorna telemetría detallada de todas las invocaciones."""
+        return list(self._telemetry)
+
+    def precargar_modelo(self) -> bool:
+        """Pre-carga el modelo en Ollama para evitar cold start."""
+        try:
+            payload = json.dumps(
+                {
+                    "model": self.model,
+                    "keep_alive": self.keep_alive,
+                }
+            ).encode("utf-8")
+            req = urllib.request.Request(
+                f"{self.ollama_url}/api/generate",
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                resp.read()
+            return True
+        except Exception:
+            return False
 
     def healthcheck(self) -> bool:
         """Verifica que Ollama esté corriendo y el modelo disponible."""
@@ -296,12 +325,15 @@ class QwenFallbackClient:
                 }
             ],
             "stream": False,
+            "keep_alive": self.keep_alive,
             "options": {
                 "temperature": self.temperature,
                 "num_predict": self.max_tokens,
                 "num_ctx": self.num_ctx,
             },
         }
+        if self.format_json:
+            payload["format"] = self.format_json
         payload_bytes = json.dumps(payload).encode("utf-8")
 
         for intento in range(1, self.max_retries + 1):
@@ -319,6 +351,21 @@ class QwenFallbackClient:
                 elapsed = time.time() - start
                 content = data.get("message", {}).get("content", "")
                 tokens = data.get("eval_count", 0)
+
+                # Telemetría detallada
+                self._telemetry.append(
+                    {
+                        "tipo": "vlm_imagen",
+                        "modelo": modelo,
+                        "intento": intento,
+                        "total_duration_ms": data.get("total_duration", 0) / 1e6,
+                        "load_duration_ms": data.get("load_duration", 0) / 1e6,
+                        "prompt_eval_duration_ms": data.get("prompt_eval_duration", 0) / 1e6,
+                        "prompt_eval_count": data.get("prompt_eval_count", 0),
+                        "eval_count": tokens,
+                        "elapsed_s": elapsed,
+                    }
+                )
 
                 # Extraer JSON de la respuesta (maneja thinking blocks)
                 parsed = self._extraer_json(content)
@@ -425,12 +472,15 @@ class QwenFallbackClient:
                 }
             ],
             "stream": False,
+            "keep_alive": self.keep_alive,
             "options": {
                 "temperature": self.temperature,
                 "num_predict": self.max_tokens,
                 "num_ctx": self.num_ctx,
             },
         }
+        if self.format_json:
+            payload["format"] = self.format_json
         payload_bytes = json.dumps(payload).encode("utf-8")
 
         for intento in range(1, self.max_retries + 1):
@@ -448,6 +498,21 @@ class QwenFallbackClient:
                 elapsed = time.time() - start
                 content = data.get("message", {}).get("content", "")
                 tokens = data.get("eval_count", 0)
+
+                # Telemetría detallada
+                self._telemetry.append(
+                    {
+                        "tipo": "llm_texto",
+                        "modelo": modelo,
+                        "intento": intento,
+                        "total_duration_ms": data.get("total_duration", 0) / 1e6,
+                        "load_duration_ms": data.get("load_duration", 0) / 1e6,
+                        "prompt_eval_duration_ms": data.get("prompt_eval_duration", 0) / 1e6,
+                        "prompt_eval_count": data.get("prompt_eval_count", 0),
+                        "eval_count": tokens,
+                        "elapsed_s": elapsed,
+                    }
+                )
 
                 parsed = self._extraer_json(content)
                 if parsed is not None:

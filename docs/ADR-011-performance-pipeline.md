@@ -33,7 +33,7 @@ Adoptar estrategia incremental en 5 niveles. Principio rector: evitar costo → 
 4. Métricas dispatcher: tiempo VLM, páginas por carril, tipos detectados
 5. Prompts diferenciados por tipo en qwen_fallback.py
 
-**Nivel 2 — OCR-first + score de suficiencia (SIGUIENTE PRIORIDAD):**
+**Nivel 2 — OCR-first + score de suficiencia (IMPLEMENTADO 2026-03-13):**
 6. Extracción regex por tipo: campos robustos primero (RUC, fecha, total). Proveedor/razón social NO como condición dura al inicio (campo inestable con OCR sucio)
 7. Score de suficiencia: `campos_encontrados / campos_esperados`
    - score >= 0.75 → resolver sin VLM
@@ -41,22 +41,56 @@ Adoptar estrategia incremental en 5 niveles. Principio rector: evitar costo → 
    - score < 0.50 → escalar a VLM
 8. Métricas nuevas: paginas_resueltas_sin_vlm, paginas_escaladas_vlm, score_promedio_ocr_por_tipo
 
-**Nivel 3 — ROI crop + downscale (solo para páginas que escalan a VLM):**
-9. Clustering de bboxes PaddleOCR → región dominante → crop con margen de seguridad
+**Nivel 3 — ROI crop + downscale + timeout audit (IMPLEMENTADO 2026-03-13):**
+9. Unión de bboxes PaddleOCR → región dominante → crop con 5% margen
 10. Downscale post-crop: reducir imagen cropeada a max 1200px
-11. Fallback: si no hay bboxes útiles, página completa con downscale directo
-12. Orden obligatorio: OCR → score → si falla: crop → downscale → VLM
+11. Fallback: si <3 bboxes válidos o crop <5% área, página completa con downscale
+12. Orden: OCR → score → si falla: crop → downscale → VLM
+13. Timeout audit: num_predict 16384→4096, num_ctx 16384→8192 (caps thinking tokens)
+14. Métricas: pages_with_crop, pages_full_page, crop_area_ratios, VLM input dimensions
 
-**Nivel 4 — Benchmark modelo especializado (requiere corpus):**
-13. Evaluar MonkeyOCR-pro-1.2B y PaddleOCR-VL contra corpus peruano real (30 facturas, 30 boletas, 30 boarding, 30 DJ)
-14. Si modelo especializado resuelve con <5s/pág → migrar
+**Nivel 4 — Benchmark modelo especializado (EVALUADO 2026-03-13):**
+13. MonkeyOCR-pro-1.2B: **DESCARTADO** para RTX 5090 (Blackwell sm_120)
+    - PyTorch 2.5.1 cu124 no soporta sm_120 (necesita nightly builds)
+    - Depende de PaddleX + PaddlePaddle + lmdeploy (stack pesado)
+    - Conflictos de dependencias: numpy<2, PyMuPDF<=1.24.14, transformers==4.51.0
+    - Reevaluar cuando PyTorch soporte sm_120 estable
+14. PaddleOCR-VL: pendiente de evaluar (alternativa)
+15. Benchmark qwen3-vl:8b solo (5 páginas imagen DIRI2026):
+    - Promedio: 28.4s/pág | 4/5 páginas extrajeron RUC+fecha
+    - Page 21: timeout (49.8s, 0 campos) — página sin estructura clara
+    - Conclusión: qwen3-vl:8b sigue siendo viable, cuello de botella son timeouts
 
 **Nivel 5 — Paralelismo (solo si Niveles 1-4 insuficientes):**
 15. Pipeline overlap CPU/GPU: OCR página N+1 en CPU mientras VLM procesa página N en GPU
 16. Migrar etapa VLM a vLLM con continuous batching (alternativa al overlap)
 17. Workers concurrentes (max 2) con scheduling de VRAM
 
-### Estimación de impacto combinado (Niveles 1-2)
+### Resultados reales E2E (DIRI2026-INT-0196314)
+
+| Métrica | v2.0 baseline | v3.0 OCR-first | v4.0 model swap | **v4.1 final** |
+|---|---|---|---|---|
+| Tiempo total | ~45 min | 43.6 min | 2.8 min | **2.7 min** |
+| VLM/pág promedio | 221s | 221s | 20s | **14.1s** |
+| Comprobantes | 19 | 19 | 19 | **19** |
+| Páginas VLM | 21 | 13 | 13 | **13** |
+| OCR-first resueltas | 0 | 8 | 8 | **8** |
+| JSON fallos | N/A | N/A | 1 | **0** |
+| Status | CRITICAL | WARNING | OK | **OK** |
+| Abstenciones | N/A | N/A | 1 | **0** |
+
+**Speedup total: 16x** (45 min → 2.7 min)
+
+Optimizaciones clave de v4.1:
+- qwen2.5vl:7b primario (sin fallback, sin thinking tokens)
+- format="json" (Ollama structured output, elimina JSON truncado)
+- keep_alive="10m" (evita cold start entre páginas)
+- num_predict=800, num_ctx=4096, timeout=60s
+- ThreadPoolExecutor(max_workers=2) para VLM paralelo
+- ROI crop (17.6% del área de la página imagen)
+- OCR-first con umbrales 0.60/0.40 (8/21 páginas sin VLM)
+
+### Estimación de impacto (proyección original)
 
 | Optimización | Antes | Después |
 |---|---|---|

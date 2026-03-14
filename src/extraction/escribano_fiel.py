@@ -4,7 +4,7 @@ Escribano Fiel — Orquestador del Pipeline de Extracción
 =========================================================
 Tarea #21 del Plan de Desarrollo (Fase 2: Contrato + Router)
 
-Pipeline completo: custodia → OCR → parseo → parseo profundo VLM → router → Excel.
+Pipeline completo: custodia → OCR → parseo → OCR-first + parseo profundo VLM → router → Excel.
 
 Opera como punto de entrada único para procesar un expediente completo.
 Cada paso del pipeline se ejecuta secuencialmente con trazabilidad JSONL
@@ -67,11 +67,13 @@ if _PROJECT_ROOT not in sys.path:
 
 from config.settings import (
     OUTPUT_DIR,
+    MetodoExtraccion,
     NaturalezaExpediente,
     Observacion,
 )
 from src.extraction.abstencion import (
     AbstencionPolicy,
+    CampoExtraido,
     UmbralesAbstencion,
 )
 from src.extraction.confidence_router import (
@@ -82,10 +84,15 @@ from src.extraction.confidence_router import (
 )
 from src.extraction.expediente_contract import (
     ArchivoFuente,
+    ComprobanteExtraido,
     DatosAnexo3,
+    DatosComprobante,
+    DatosEmisor,
     ExpedienteJSON,
     IntegridadExpediente,
+    MetadatosExtraccion,
     ResumenExtraccion,
+    TotalesTributos,
 )
 from src.ingestion.custody_chain import CustodyChain, CustodyRecord
 from src.ingestion.trace_logger import TraceLogger
@@ -94,8 +101,8 @@ from src.ingestion.trace_logger import TraceLogger
 # CONSTANTES
 # ==============================================================================
 
-VERSION_ESCRIBANO = "2.0.0"
-"""Versión del módulo escribano_fiel (2.0: parseo profundo VLM)."""
+VERSION_ESCRIBANO = "4.1.0"
+"""Versión del módulo escribano_fiel (4.1: overlap + keep_alive + JSON estricto)."""
 
 AGENTE_ID = "ESCRIBANO"
 """ID de agente para logging."""
@@ -153,6 +160,85 @@ PATRONES_TIPO_COMPROBANTE = {
 # Resolución máxima para VLM (ADR-011: downscale adaptativo)
 MAX_VLM_IMAGE_PX = 1200
 """Lado mayor máximo de imagen antes de enviar al VLM (px)."""
+
+# ==============================================================================
+# ADR-011 NIVEL 3 — ROI crop: Recorte inteligente antes del VLM
+# ==============================================================================
+
+MIN_BBOXES_FOR_CROP = 3
+"""Mínimo de líneas OCR con bbox para intentar crop."""
+
+MIN_BBOX_CONFIDENCE = 0.3
+"""Confianza mínima de una línea OCR para incluirla en el cálculo de ROI."""
+
+CROP_MARGIN_PERCENT = 0.05
+"""Margen de seguridad alrededor del ROI (5% de cada lado)."""
+
+# ==============================================================================
+# ADR-011 NIVEL 2 — OCR-first: Regex por tipo de comprobante
+# ==============================================================================
+
+# Campos núcleo para score de suficiencia (RUC + fecha + total)
+# score = campos_encontrados / campos_esperados
+# >=0.75 → sin VLM | 0.50-0.74 → con observación | <0.50 → escalar a VLM
+SCORE_UMBRAL_SIN_VLM = 0.60
+SCORE_UMBRAL_CON_OBS = 0.40
+
+# Regex robustos para extracción OCR-first por campo
+# Cada regex captura el valor en group(1) o group(0)
+# Ampliados para cubrir variantes OCR impreciso (espacios, puntos, mayúsculas)
+REGEX_RUC = re.compile(
+    r"R[\s.]?U[\s.]?C[\s.]?\s*[:.]?\s*(\d{11})"
+    r"|N[°o]\s*(?:de\s+)?RUC\s*[:.]?\s*(\d{11})",
+    re.IGNORECASE,
+)
+REGEX_FECHA_EMISION = re.compile(
+    r"(?:FECHA\s*(?:DE\s*)?EMISI[OÓ]N|F\.?\s*EMISI[OÓ]N|FECHA\s*DE\s*EMISION"
+    r"|FEC\.?\s*EMIS\.?|FECHA)\s*[:.]?\s*"
+    r"(\d{1,2}[/\-\.]\d{1,2}[/\-\.]\d{2,4})",
+    re.IGNORECASE,
+)
+REGEX_FECHA_GENERAL = re.compile(r"(\d{1,2}[/\-\.]\d{1,2}[/\-\.]\d{4})")
+REGEX_SERIE_NUMERO = re.compile(
+    r"([FBEP]\w{0,2}\d{2,4})\s*[-–—]\s*(\d{3,10})"
+    r"|(?:SERIE|NRO\.?|N[°o]\.?)\s*[:.]?\s*([FBEP]\w{0,2}\d{2,4})\s*[-–—]\s*(\d{3,10})",
+    re.IGNORECASE,
+)
+REGEX_TOTAL = re.compile(
+    r"(?:IMPORTE\s+TOTAL|TOTAL\s+(?:A\s+)?PAGAR|TOTAL\s+VENTA|TOTAL\s*S/?\.?"
+    r"|MONTO\s+TOTAL|PRECIO\s+TOTAL|TOTAL\s*:)"
+    r"\s*[:.]?\s*S/?\.?\s*([\d,]+\.\d{2})",
+    re.IGNORECASE,
+)
+REGEX_IGV = re.compile(
+    r"(?:I\.?G\.?V\.?|IMPUESTO\s*(?:GENERAL)?)\s*(?:\(\s*\d+\s*%?\s*\))?\s*"
+    r"[:.]?\s*S/?\.?\s*([\d,]+\.\d{2})",
+    re.IGNORECASE,
+)
+REGEX_SUBTOTAL = re.compile(
+    r"(?:SUB\s*TOTAL|OP\.?\s*GRAVADA|VALOR\s+(?:DE\s+)?VENTA|BASE\s+IMPONIBLE"
+    r"|GRAVADA|VALOR\s+VENTA)\s*"
+    r"[:.]?\s*S/?\.?\s*([\d,]+\.\d{2})",
+    re.IGNORECASE,
+)
+
+# RUCs conocidos del Estado peruano (filtrar como "pagador", no "emisor")
+RUCS_PAGADOR = {
+    "20131370998",  # MINEDU
+    "20304634781",  # MEF
+    "20380795907",  # PROGRAMA EDUCACION BASICA PARA TODOS
+    "20505855627",  # SUNAT
+}
+
+# Campos esperados por tipo de comprobante (para score)
+CAMPOS_ESPERADOS_POR_TIPO = {
+    "FACTURA": ["ruc_emisor", "fecha_emision", "serie_numero", "importe_total", "igv_monto"],
+    "BOLETA": ["ruc_emisor", "fecha_emision", "serie_numero", "importe_total"],
+    "RECIBO_HONORARIOS": ["ruc_emisor", "fecha_emision", "serie_numero", "importe_total"],
+    "BOARDING_PASS": ["fecha_emision"],  # Boarding pass tiene campos distintos
+    "DECLARACION_JURADA": ["fecha_emision"],
+    "ADMINISTRATIVO": ["fecha_emision"],
+}
 
 
 # ==============================================================================
@@ -880,7 +966,7 @@ class EscribanoFiel:
             )
             vlm_handler = VLMAbstencionHandler(trace_logger=self._logger)
 
-            # Healthcheck solo si hay páginas que procesar
+            # Healthcheck + pre-carga del modelo (keep_alive)
             if not vlm_client.healthcheck():
                 self._logger.warning(
                     "Ollama no disponible; parseo profundo omitido",
@@ -895,11 +981,19 @@ class EscribanoFiel:
                     datos={"paginas_analizadas": 0, "comprobantes_extraidos": 0},
                 )
 
+            # Pre-cargar modelo para evitar cold start en primera página
+            vlm_client.precargar_modelo()
+
             comprobantes = []
             n_digital = 0
             n_imagen = 0
             tiempo_vlm_total = 0.0
             tipos_detectados: Dict[str, int] = {}
+
+            # ADR-011 Nivel 2: OCR-first metrics
+            n_resueltas_ocr = 0
+            n_escaladas_vlm = 0
+            scores_ocr: List[float] = []
 
             # ADR-011: clasificar tipo de cada página comprobante
             paginas_ocr_dict = {p.get("pagina", 0): p for p in paginas_ocr}
@@ -915,57 +1009,202 @@ class EscribanoFiel:
                 operation="parseo_profundo",
             )
 
-            # --- Ruta 1: Páginas digitales → PyMuPDF texto → LLM texto (rápido) ---
+            # --- Ruta 1: Páginas digitales → OCR-first → LLM texto si necesario ---
+            digitales_pendientes_vlm = []
             for page_num, texto in digitales:
                 tipo = self._clasificar_tipo_comprobante(texto)
-                self._logger.info(
-                    f"LLM texto pág {page_num} [{tipo}] ({len(texto)} chars)",
-                    agent_id=AGENTE_ID,
-                    operation="parseo_profundo",
-                )
-                t0 = time.perf_counter()
-                comp = vlm_client.extraer_comprobante_texto(
-                    texto_pagina=texto,
+
+                # ADR-011 Nivel 2: intentar OCR-first con regex
+                comp_ocr = self._extraer_campos_ocr_por_tipo(
+                    texto_ocr=texto,
+                    tipo=tipo,
                     archivo=Path(pdf_path).name,
                     pagina=page_num,
                 )
-                tiempo_vlm_total += time.perf_counter() - t0
-                if comp is not None:
-                    comprobantes.append(comp)
-                    n_digital += 1
-                else:
-                    # LLM texto falló — generar abstención formal
-                    comp_abstencion = vlm_handler.generar_abstencion_vlm(
-                        archivo=Path(pdf_path).name,
-                        pagina=page_num,
-                    )
-                    comprobantes.append(comp_abstencion)
-
-            # --- Ruta 2: Páginas imagen → renderizar → VLM imagen (lento) ---
-            if imagenes_pg:
-                imagenes_b64 = self._renderizar_paginas_base64(
-                    pdf_path=pdf_path,
-                    paginas=imagenes_pg,
-                    dpi=self._config.dpi_vlm,
+                score, encontrados, esperados, faltantes = self._calcular_score_suficiencia(
+                    comp_ocr, tipo
                 )
-                for page_num, img_b64 in imagenes_b64:
-                    pag_data = paginas_ocr_dict.get(page_num, {})
-                    tipo = self._clasificar_tipo_comprobante(pag_data.get("texto", "") or "")
+                scores_ocr.append(score)
+
+                if score >= SCORE_UMBRAL_SIN_VLM:
+                    # OCR-first suficiente — skip VLM
+                    comp_ocr.grupo_k.confianza_global = "alta"
+                    comprobantes.append(comp_ocr)
+                    n_resueltas_ocr += 1
+                    n_digital += 1
                     self._logger.info(
-                        f"VLM imagen pág {page_num} [{tipo}]",
+                        f"OCR-first pág {page_num} [{tipo}] score={score:.2f} "
+                        f"({len(encontrados)}/{len(esperados)}) → SIN VLM",
                         agent_id=AGENTE_ID,
                         operation="parseo_profundo",
                     )
-                    t0 = time.perf_counter()
-                    comp = vlm_handler.extraer_o_abstener(
-                        client=vlm_client,
-                        image_b64=img_b64,
-                        archivo=Path(pdf_path).name,
-                        pagina=page_num,
+                elif score >= SCORE_UMBRAL_CON_OBS:
+                    # OCR-first parcial — resolver con observación
+                    comp_ocr.grupo_k.confianza_global = "media"
+                    comp_ocr.grupo_k.campos_no_encontrados = faltantes
+                    comprobantes.append(comp_ocr)
+                    n_resueltas_ocr += 1
+                    n_digital += 1
+                    self._logger.info(
+                        f"OCR-first pág {page_num} [{tipo}] score={score:.2f} "
+                        f"({len(encontrados)}/{len(esperados)}) → CON OBSERVACIÓN "
+                        f"(faltantes: {faltantes})",
+                        agent_id=AGENTE_ID,
+                        operation="parseo_profundo",
                     )
-                    tiempo_vlm_total += time.perf_counter() - t0
-                    comprobantes.append(comp)
-                    n_imagen += 1
+                else:
+                    # OCR-first insuficiente — acumular para LLM texto paralelo
+                    n_escaladas_vlm += 1
+                    digitales_pendientes_vlm.append((page_num, texto, tipo, faltantes))
+
+            # Procesar páginas digitales escaladas a LLM en paralelo
+            if digitales_pendientes_vlm:
+                from concurrent.futures import ThreadPoolExecutor, as_completed
+
+                def _procesar_texto_vlm(item):
+                    pg_num, txt, tp, flt = item
+                    t_start = time.perf_counter()
+                    c = vlm_client.extraer_comprobante_texto(
+                        texto_pagina=txt,
+                        archivo=Path(pdf_path).name,
+                        pagina=pg_num,
+                    )
+                    t_elapsed = time.perf_counter() - t_start
+                    return pg_num, c, t_elapsed, tp, flt
+
+                max_w = min(vlm_client.vlm_workers, len(digitales_pendientes_vlm))
+                self._logger.info(
+                    f"LLM texto paralelo: {len(digitales_pendientes_vlm)} págs con {max_w} workers",
+                    agent_id=AGENTE_ID,
+                    operation="parseo_profundo",
+                )
+
+                with ThreadPoolExecutor(max_workers=max_w) as executor:
+                    futures = {
+                        executor.submit(_procesar_texto_vlm, item): item[0]
+                        for item in digitales_pendientes_vlm
+                    }
+                    for future in as_completed(futures):
+                        pg_num, comp, t_elapsed, tipo, faltantes = future.result()
+                        tiempo_vlm_total += t_elapsed
+                        if comp is not None:
+                            comprobantes.append(comp)
+                            n_digital += 1
+                        else:
+                            comp_abstencion = vlm_handler.generar_abstencion_vlm(
+                                archivo=Path(pdf_path).name,
+                                pagina=pg_num,
+                                razon="LLM texto falló tras retries",
+                            )
+                            comprobantes.append(comp_abstencion)
+                        self._logger.info(
+                            f"LLM texto pág {pg_num} [{tipo}] {t_elapsed:.1f}s "
+                            f"(faltantes: {faltantes})",
+                            agent_id=AGENTE_ID,
+                            operation="parseo_profundo",
+                        )
+
+            # --- Ruta 2: Páginas imagen → OCR-first → VLM imagen si necesario ---
+            if imagenes_pg:
+                # Intentar OCR-first en páginas imagen también (tienen texto OCR)
+                imagenes_pendientes_vlm = []
+                for page_num in imagenes_pg:
+                    pag_data = paginas_ocr_dict.get(page_num, {})
+                    texto = pag_data.get("texto", "") or ""
+                    tipo = self._clasificar_tipo_comprobante(texto)
+
+                    if texto.strip():
+                        comp_ocr = self._extraer_campos_ocr_por_tipo(
+                            texto_ocr=texto,
+                            tipo=tipo,
+                            archivo=Path(pdf_path).name,
+                            pagina=page_num,
+                        )
+                        score, encontrados, esperados, faltantes = self._calcular_score_suficiencia(
+                            comp_ocr, tipo
+                        )
+                        scores_ocr.append(score)
+
+                        if score >= SCORE_UMBRAL_SIN_VLM:
+                            comp_ocr.grupo_k.confianza_global = "alta"
+                            comprobantes.append(comp_ocr)
+                            n_resueltas_ocr += 1
+                            n_imagen += 1
+                            self._logger.info(
+                                f"OCR-first imagen pág {page_num} [{tipo}] score={score:.2f} "
+                                f"→ SIN VLM",
+                                agent_id=AGENTE_ID,
+                                operation="parseo_profundo",
+                            )
+                            continue
+                        elif score >= SCORE_UMBRAL_CON_OBS:
+                            comp_ocr.grupo_k.confianza_global = "media"
+                            comp_ocr.grupo_k.campos_no_encontrados = faltantes
+                            comprobantes.append(comp_ocr)
+                            n_resueltas_ocr += 1
+                            n_imagen += 1
+                            self._logger.info(
+                                f"OCR-first imagen pág {page_num} [{tipo}] score={score:.2f} "
+                                f"→ CON OBSERVACIÓN",
+                                agent_id=AGENTE_ID,
+                                operation="parseo_profundo",
+                            )
+                            continue
+
+                    # Score insuficiente o sin texto → escalar a VLM
+                    imagenes_pendientes_vlm.append(page_num)
+                    n_escaladas_vlm += 1
+
+                # Solo renderizar y enviar al VLM las páginas que realmente lo necesitan
+                if imagenes_pendientes_vlm:
+                    imagenes_b64 = self._renderizar_paginas_base64(
+                        pdf_path=pdf_path,
+                        paginas=imagenes_pendientes_vlm,
+                        dpi=self._config.dpi_vlm,
+                        paginas_ocr_dict=paginas_ocr_dict,
+                    )
+
+                    # Paralelismo controlado: procesar páginas VLM concurrentemente
+                    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+                    def _procesar_imagen_vlm(page_img_tuple):
+                        pg_num, ib64 = page_img_tuple
+                        t_start = time.perf_counter()
+                        c = vlm_handler.extraer_o_abstener(
+                            client=vlm_client,
+                            image_b64=ib64,
+                            archivo=Path(pdf_path).name,
+                            pagina=pg_num,
+                        )
+                        t_elapsed = time.perf_counter() - t_start
+                        return pg_num, c, t_elapsed
+
+                    max_workers = min(vlm_client.vlm_workers, len(imagenes_b64))
+                    self._logger.info(
+                        f"VLM paralelo: {len(imagenes_b64)} páginas con {max_workers} workers",
+                        agent_id=AGENTE_ID,
+                        operation="parseo_profundo",
+                    )
+
+                    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                        futures = {
+                            executor.submit(_procesar_imagen_vlm, item): item[0]
+                            for item in imagenes_b64
+                        }
+                        for future in as_completed(futures):
+                            pg_num, comp, t_elapsed = future.result()
+                            tiempo_vlm_total += t_elapsed
+                            comprobantes.append(comp)
+                            n_imagen += 1
+                            pag_data = paginas_ocr_dict.get(pg_num, {})
+                            tipo = self._clasificar_tipo_comprobante(
+                                pag_data.get("texto", "") or ""
+                            )
+                            self._logger.info(
+                                f"VLM imagen pág {pg_num} [{tipo}] {t_elapsed:.1f}s",
+                                agent_id=AGENTE_ID,
+                                operation="parseo_profundo",
+                            )
 
             # Deduplicar por serie_numero
             antes = len(comprobantes)
@@ -990,9 +1229,15 @@ class EscribanoFiel:
 
             # ADR-011: métricas del dispatcher
             total_paginas = len(paginas_ocr)
+            paginas_enviadas_vlm = (n_digital + n_imagen) - n_resueltas_ocr
             tiempo_vlm_promedio = (
-                tiempo_vlm_total / (n_digital + n_imagen) if (n_digital + n_imagen) > 0 else 0.0
+                tiempo_vlm_total / paginas_enviadas_vlm if paginas_enviadas_vlm > 0 else 0.0
             )
+            score_promedio = sum(scores_ocr) / len(scores_ocr) if scores_ocr else 0.0
+
+            # Agregar métricas OCR-first al mensaje
+            if n_resueltas_ocr > 0:
+                msg += f" | OCR-first: {n_resueltas_ocr} resueltas sin VLM"
 
             return ResultadoPaso(
                 paso="parseo_profundo",
@@ -1012,12 +1257,23 @@ class EscribanoFiel:
                         "paginas_comprobante": len(paginas_comprobante),
                         "paginas_digitales": len(digitales),
                         "paginas_imagen": len(imagenes_pg),
-                        "paginas_enviadas_vlm": n_digital + n_imagen,
+                        "paginas_enviadas_vlm": paginas_enviadas_vlm,
                         "tipos_detectados": tipos_detectados,
                         "tiempo_vlm_total_s": round(tiempo_vlm_total, 1),
                         "tiempo_vlm_promedio_s": round(tiempo_vlm_promedio, 1),
                         "max_image_px": MAX_VLM_IMAGE_PX,
                     },
+                    # ADR-011 Nivel 2: métricas OCR-first
+                    "ocr_first": {
+                        "paginas_resueltas_sin_vlm": n_resueltas_ocr,
+                        "paginas_escaladas_vlm": n_escaladas_vlm,
+                        "score_promedio_ocr": round(score_promedio, 3),
+                        "scores_por_pagina": [round(s, 3) for s in scores_ocr],
+                    },
+                    # ADR-011 Nivel 3: métricas ROI crop
+                    "roi_crop": getattr(self, "_ultimo_crop_stats", {}),
+                    # Telemetría VLM detallada
+                    "telemetry": vlm_client.get_telemetry(),
                 },
             )
 
@@ -1047,6 +1303,337 @@ class EscribanoFiel:
                 duracion_ms=_elapsed_ms(inicio),
                 error=str(e),
             )
+
+    # ==========================================================================
+    # ADR-011 NIVEL 2 — OCR-first: Extracción regex antes de VLM
+    # ==========================================================================
+
+    def _extraer_campos_ocr_por_tipo(
+        self,
+        texto_ocr: str,
+        tipo: str,
+        archivo: str,
+        pagina: int,
+    ) -> ComprobanteExtraido:
+        """
+        Extrae campos de un comprobante usando regex sobre texto OCR.
+
+        ADR-011 Nivel 2: intenta resolver campos robustos (RUC, fecha, total,
+        serie/numero, IGV) sin VLM. Para cada campo encontrado, crea un
+        CampoExtraido con metodo=REGEX y confianza basada en OCR.
+
+        Parameters
+        ----------
+        texto_ocr : str
+            Texto OCR de la página.
+        tipo : str
+            Tipo de comprobante (FACTURA, BOLETA, etc.).
+        archivo : str
+            Nombre del archivo fuente.
+        pagina : int
+            Número de página (1-indexed).
+
+        Returns
+        -------
+        ComprobanteExtraido
+            Comprobante con los campos extraídos por regex.
+        """
+        comp = ComprobanteExtraido()
+
+        # --- RUC emisor ---
+        rucs_raw = REGEX_RUC.findall(texto_ocr)
+        # findall returns tuples with alternation; flatten to non-empty matches
+        rucs = []
+        for match in rucs_raw:
+            if isinstance(match, tuple):
+                rucs.extend(m for m in match if m)
+            elif match:
+                rucs.append(match)
+        # Filtrar RUCs del pagador/Estado
+        rucs_emisor = [r for r in rucs if r not in RUCS_PAGADOR]
+        if rucs_emisor:
+            ruc_val = rucs_emisor[0]
+            # Buscar snippet alrededor del RUC
+            idx = texto_ocr.find(ruc_val)
+            snippet = texto_ocr[max(0, idx - 30) : idx + 30] if idx >= 0 else ""
+            comp.grupo_a.ruc_emisor = CampoExtraido(
+                nombre_campo="ruc_emisor",
+                valor=ruc_val,
+                archivo=archivo,
+                pagina=pagina,
+                confianza=0.8,
+                metodo=MetodoExtraccion.REGEX,
+                snippet=snippet.strip(),
+                regla_aplicada="OCR_FIRST_RUC",
+                tipo_campo="ruc",
+            )
+
+        # --- Fecha de emisión ---
+        m_fecha = REGEX_FECHA_EMISION.search(texto_ocr)
+        if m_fecha:
+            fecha_val = m_fecha.group(1)
+            comp.grupo_b.fecha_emision = CampoExtraido(
+                nombre_campo="fecha_emision",
+                valor=fecha_val,
+                archivo=archivo,
+                pagina=pagina,
+                confianza=0.85,
+                metodo=MetodoExtraccion.REGEX,
+                snippet=m_fecha.group(0)[:100],
+                regla_aplicada="OCR_FIRST_FECHA_EMISION",
+                tipo_campo="fecha",
+            )
+        else:
+            # Fallback: primera fecha con formato dd/mm/yyyy
+            m_fecha_gen = REGEX_FECHA_GENERAL.search(texto_ocr)
+            if m_fecha_gen:
+                comp.grupo_b.fecha_emision = CampoExtraido(
+                    nombre_campo="fecha_emision",
+                    valor=m_fecha_gen.group(1),
+                    archivo=archivo,
+                    pagina=pagina,
+                    confianza=0.6,
+                    metodo=MetodoExtraccion.REGEX,
+                    snippet=texto_ocr[
+                        max(0, m_fecha_gen.start() - 20) : m_fecha_gen.end() + 20
+                    ].strip(),
+                    regla_aplicada="OCR_FIRST_FECHA_GENERAL",
+                    tipo_campo="fecha",
+                )
+
+        # --- Serie y número ---
+        m_serie = REGEX_SERIE_NUMERO.search(texto_ocr)
+        if m_serie:
+            # Alternation: groups 1,2 or 3,4
+            serie_val = (m_serie.group(1) or m_serie.group(3) or "").upper()
+            numero_val = m_serie.group(2) or m_serie.group(4) or ""
+            comp.grupo_b.serie = CampoExtraido(
+                nombre_campo="serie",
+                valor=serie_val,
+                archivo=archivo,
+                pagina=pagina,
+                confianza=0.85,
+                metodo=MetodoExtraccion.REGEX,
+                snippet=m_serie.group(0),
+                regla_aplicada="OCR_FIRST_SERIE",
+                tipo_campo="serie",
+            )
+            comp.grupo_b.numero = CampoExtraido(
+                nombre_campo="numero",
+                valor=numero_val,
+                archivo=archivo,
+                pagina=pagina,
+                confianza=0.85,
+                metodo=MetodoExtraccion.REGEX,
+                snippet=m_serie.group(0),
+                regla_aplicada="OCR_FIRST_NUMERO",
+                tipo_campo="numero",
+            )
+
+        # --- Tipo de comprobante ---
+        comp.grupo_b.tipo_comprobante = CampoExtraido(
+            nombre_campo="tipo_comprobante",
+            valor=tipo,
+            archivo=archivo,
+            pagina=pagina,
+            confianza=0.9,
+            metodo=MetodoExtraccion.REGEX,
+            snippet="",
+            regla_aplicada="OCR_FIRST_TIPO",
+            tipo_campo="tipo",
+        )
+
+        # --- Importe total ---
+        m_total = REGEX_TOTAL.search(texto_ocr)
+        if m_total:
+            total_val = m_total.group(1).replace(",", "")
+            comp.grupo_f.importe_total = CampoExtraido(
+                nombre_campo="importe_total",
+                valor=total_val,
+                archivo=archivo,
+                pagina=pagina,
+                confianza=0.8,
+                metodo=MetodoExtraccion.REGEX,
+                snippet=m_total.group(0)[:100],
+                regla_aplicada="OCR_FIRST_TOTAL",
+                tipo_campo="monto",
+            )
+
+        # --- IGV ---
+        m_igv = REGEX_IGV.search(texto_ocr)
+        if m_igv:
+            igv_val = m_igv.group(1).replace(",", "")
+            comp.grupo_f.igv_monto = CampoExtraido(
+                nombre_campo="igv_monto",
+                valor=igv_val,
+                archivo=archivo,
+                pagina=pagina,
+                confianza=0.8,
+                metodo=MetodoExtraccion.REGEX,
+                snippet=m_igv.group(0)[:100],
+                regla_aplicada="OCR_FIRST_IGV",
+                tipo_campo="monto",
+            )
+
+        # --- Subtotal ---
+        m_sub = REGEX_SUBTOTAL.search(texto_ocr)
+        if m_sub:
+            sub_val = m_sub.group(1).replace(",", "")
+            comp.grupo_f.subtotal = CampoExtraido(
+                nombre_campo="subtotal",
+                valor=sub_val,
+                archivo=archivo,
+                pagina=pagina,
+                confianza=0.8,
+                metodo=MetodoExtraccion.REGEX,
+                snippet=m_sub.group(0)[:100],
+                regla_aplicada="OCR_FIRST_SUBTOTAL",
+                tipo_campo="monto",
+            )
+
+        # --- Metadatos ---
+        import datetime
+
+        comp.grupo_k = MetadatosExtraccion(
+            pagina_origen=pagina,
+            metodo_extraccion="OCR_FIRST_REGEX",
+            confianza_global="media",
+            timestamp_extraccion=datetime.datetime.now().isoformat(),
+        )
+
+        return comp
+
+    def _calcular_score_suficiencia(
+        self,
+        comprobante: ComprobanteExtraido,
+        tipo: str,
+    ) -> tuple:
+        """
+        Calcula score de suficiencia: campos_encontrados / campos_esperados.
+
+        ADR-011 Nivel 2: determina si el comprobante tiene suficientes campos
+        extraídos por OCR-first para evitar llamar al VLM.
+
+        Parameters
+        ----------
+        comprobante : ComprobanteExtraido
+            Comprobante con campos extraídos por regex.
+        tipo : str
+            Tipo de comprobante.
+
+        Returns
+        -------
+        (score, campos_encontrados, campos_esperados, campos_faltantes)
+        """
+        esperados = CAMPOS_ESPERADOS_POR_TIPO.get(tipo, ["fecha_emision"])
+        encontrados = []
+        faltantes = []
+
+        for campo in esperados:
+            if campo == "ruc_emisor":
+                if comprobante.grupo_a.ruc_emisor and comprobante.grupo_a.ruc_emisor.valor:
+                    encontrados.append(campo)
+                else:
+                    faltantes.append(campo)
+            elif campo == "fecha_emision":
+                if comprobante.grupo_b.fecha_emision and comprobante.grupo_b.fecha_emision.valor:
+                    encontrados.append(campo)
+                else:
+                    faltantes.append(campo)
+            elif campo == "serie_numero":
+                if (
+                    comprobante.grupo_b.serie
+                    and comprobante.grupo_b.serie.valor
+                    and comprobante.grupo_b.numero
+                    and comprobante.grupo_b.numero.valor
+                ):
+                    encontrados.append(campo)
+                else:
+                    faltantes.append(campo)
+            elif campo == "importe_total":
+                if comprobante.grupo_f.importe_total and comprobante.grupo_f.importe_total.valor:
+                    encontrados.append(campo)
+                else:
+                    faltantes.append(campo)
+            elif campo == "igv_monto":
+                if comprobante.grupo_f.igv_monto and comprobante.grupo_f.igv_monto.valor:
+                    encontrados.append(campo)
+                else:
+                    faltantes.append(campo)
+            else:
+                faltantes.append(campo)
+
+        n_esperados = len(esperados)
+        score = len(encontrados) / n_esperados if n_esperados > 0 else 0.0
+
+        return score, encontrados, esperados, faltantes
+
+    # ==========================================================================
+    # ADR-011 NIVEL 3 — ROI crop: Recorte inteligente antes del VLM
+    # ==========================================================================
+
+    def _calcular_roi_desde_bboxes(
+        self,
+        lineas: List[Dict[str, Any]],
+        img_width: int,
+        img_height: int,
+    ) -> Optional[tuple]:
+        """
+        Calcula la región de interés (ROI) desde bboxes de OCR.
+
+        ADR-011 Nivel 3: usa la unión de bboxes de PaddleOCR para
+        determinar la región dominante del comprobante. Añade margen
+        de seguridad y clampea a los límites de la imagen.
+
+        Parameters
+        ----------
+        lineas : list
+            Lista de dicts con bbox y confianza (de LineaOCR.to_dict()).
+        img_width : int
+            Ancho de la imagen en píxeles.
+        img_height : int
+            Alto de la imagen en píxeles.
+
+        Returns
+        -------
+        (x_min, y_min, x_max, y_max) o None si no hay suficientes bboxes.
+        """
+        # Filtrar líneas con bbox válido y confianza mínima
+        bboxes_validos = []
+        for linea in lineas:
+            bbox = linea.get("bbox")
+            conf = linea.get("confianza")
+            if bbox is None or len(bbox) < 4:
+                continue
+            if conf is not None and conf < MIN_BBOX_CONFIDENCE:
+                continue
+            bboxes_validos.append(bbox)
+
+        if len(bboxes_validos) < MIN_BBOXES_FOR_CROP:
+            return None
+
+        # Unión de todos los bboxes
+        x_min = min(b[0] for b in bboxes_validos)
+        y_min = min(b[1] for b in bboxes_validos)
+        x_max = max(b[2] for b in bboxes_validos)
+        y_max = max(b[3] for b in bboxes_validos)
+
+        # Añadir margen de seguridad (5% de cada lado)
+        margin_x = img_width * CROP_MARGIN_PERCENT
+        margin_y = img_height * CROP_MARGIN_PERCENT
+
+        x_min = max(0, x_min - margin_x)
+        y_min = max(0, y_min - margin_y)
+        x_max = min(img_width, x_max + margin_x)
+        y_max = min(img_height, y_max + margin_y)
+
+        # Verificar que el crop tenga tamaño razonable (al menos 10% del área)
+        crop_area = (x_max - x_min) * (y_max - y_min)
+        full_area = img_width * img_height
+        if full_area > 0 and crop_area / full_area < 0.05:
+            return None  # Crop demasiado pequeño, probablemente ruido
+
+        return (int(x_min), int(y_min), int(x_max), int(y_max))
 
     def _identificar_paginas_comprobante(
         self,
@@ -1135,16 +1722,30 @@ class EscribanoFiel:
         pdf_path: str,
         paginas: List[int],
         dpi: int = 200,
+        paginas_ocr_dict: Optional[Dict[int, Dict[str, Any]]] = None,
     ) -> List[tuple]:
         """
         Renderiza páginas de un PDF como imágenes base64 PNG.
 
-        ADR-011: aplica downscale adaptativo (MAX_VLM_IMAGE_PX) para reducir
-        latencia VLM sin pérdida significativa de legibilidad.
+        ADR-011 Nivel 1: downscale adaptativo (MAX_VLM_IMAGE_PX).
+        ADR-011 Nivel 3: ROI crop usando bboxes OCR antes del downscale.
+
+        Si paginas_ocr_dict se proporciona, intenta hacer crop a la región
+        del comprobante antes de aplicar downscale. Si no hay bboxes útiles,
+        hace fallback a página completa con downscale.
         """
         resultado = []
+        self._ultimo_crop_stats = {
+            "pages_with_crop": 0,
+            "pages_full_page": 0,
+            "crop_area_ratios": [],
+        }
+
         try:
+            import io
+
             import fitz
+            from PIL import Image
 
             doc = fitz.open(pdf_path)
             zoom = dpi / 72.0
@@ -1155,41 +1756,68 @@ class EscribanoFiel:
                     continue
                 page = doc[page_num - 1]
                 pix = page.get_pixmap(matrix=matrix)
+                img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                original_w, original_h = pix.width, pix.height
+                cropped = False
 
-                # ADR-011: downscale si excede MAX_VLM_IMAGE_PX
-                max_side = max(pix.width, pix.height)
-                if max_side > MAX_VLM_IMAGE_PX:
-                    scale = MAX_VLM_IMAGE_PX / max_side
-                    new_w = int(pix.width * scale)
-                    new_h = int(pix.height * scale)
-                    try:
-                        import io
-
-                        from PIL import Image
-
-                        img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-                        img = img.resize((new_w, new_h), Image.LANCZOS)
-                        buf = io.BytesIO()
-                        img.save(buf, format="PNG")
-                        img_bytes = buf.getvalue()
+                # ADR-011 Nivel 3: intentar ROI crop si hay datos OCR
+                if paginas_ocr_dict is not None:
+                    pag_data = paginas_ocr_dict.get(page_num, {})
+                    lineas = pag_data.get("lineas", [])
+                    roi = self._calcular_roi_desde_bboxes(lineas, pix.width, pix.height)
+                    if roi is not None:
+                        x_min, y_min, x_max, y_max = roi
+                        img = img.crop((x_min, y_min, x_max, y_max))
+                        crop_area = (x_max - x_min) * (y_max - y_min)
+                        full_area = original_w * original_h
+                        ratio = round(crop_area / full_area, 3) if full_area > 0 else 1.0
+                        self._ultimo_crop_stats["pages_with_crop"] += 1
+                        self._ultimo_crop_stats["crop_area_ratios"].append(ratio)
+                        cropped = True
                         self._logger.info(
-                            f"Downscale pág {page_num}: {pix.width}x{pix.height} → {new_w}x{new_h}",
+                            f"ROI crop pág {page_num}: {original_w}x{original_h} → "
+                            f"{img.width}x{img.height} (ratio={ratio})",
                             agent_id=AGENTE_ID,
                             operation="parseo_profundo",
                         )
-                    except ImportError:
-                        # Sin PIL, enviar original
-                        img_bytes = pix.tobytes("png")
-                else:
-                    img_bytes = pix.tobytes("png")
+                    else:
+                        self._ultimo_crop_stats["pages_full_page"] += 1
 
+                # ADR-011 Nivel 1: downscale si excede MAX_VLM_IMAGE_PX
+                max_side = max(img.width, img.height)
+                if max_side > MAX_VLM_IMAGE_PX:
+                    scale = MAX_VLM_IMAGE_PX / max_side
+                    new_w = int(img.width * scale)
+                    new_h = int(img.height * scale)
+                    img = img.resize((new_w, new_h), Image.LANCZOS)
+                    action = "Crop+downscale" if cropped else "Downscale"
+                    self._logger.info(
+                        f"{action} pág {page_num}: → {new_w}x{new_h}",
+                        agent_id=AGENTE_ID,
+                        operation="parseo_profundo",
+                    )
+
+                # Codificar a base64
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                img_bytes = buf.getvalue()
                 img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+
+                # Log dimensiones finales para auditoría de timeouts
+                b64_kb = len(img_b64) // 1024
+                self._logger.info(
+                    f"VLM input pág {page_num}: {img.width}x{img.height} "
+                    f"({b64_kb} KB b64, crop={'sí' if cropped else 'no'})",
+                    agent_id=AGENTE_ID,
+                    operation="parseo_profundo",
+                )
+
                 resultado.append((page_num, img_b64))
 
             doc.close()
         except ImportError:
             self._logger.warning(
-                "PyMuPDF no disponible para renderizar páginas",
+                "PyMuPDF/PIL no disponible para renderizar páginas",
                 agent_id=AGENTE_ID,
                 operation="parseo_profundo",
             )

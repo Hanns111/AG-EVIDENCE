@@ -9,13 +9,13 @@
 
 | Indicador | Valor |
 |---|---|
-| **Pipeline** | 7 pasos: custodia → OCR → parseo → profundo VLM → evaluación → validación → Excel |
-| **Fases completadas** | 0-4 (28/42 tareas = 66.7%) |
+| **Pipeline** | 7 pasos: custodia → OCR → parseo → OCR-first + VLM → evaluación → validación → Excel |
+| **Fases completadas** | 0-4 (28/42 tareas = 66.7%) + ADR-011 Niveles 1-2 + Nivel 4 benchmark |
 | **Fase siguiente** | Fase 5: Evaluación + Legal prep |
-| **Tests** | 1284 passed, 0 failed |
+| **Tests** | 1355 passed, 0 failed |
 | **GPU** | RTX 5090 24GB VRAM |
 | **Orquestador** | src/extraction/escribano_fiel.py |
-| **Última actualización** | 2026-03-13 |
+| **Última actualización** | 2026-03-14 |
 
 ---
 
@@ -36,13 +36,14 @@
 
 ## Última Tarea Completada
 
-- **Tarea #29** — reporte_hallazgos.py + ADR-011 Performance + Pipeline improvements (Fase 4, ÚLTIMA)
-- src/validation/reporte_hallazgos.py: 532 líneas, EscritorHallazgos, hoja HALLAZGOS semáforo
-- src/extraction/escribano_fiel.py: pipeline 7 pasos, gating por tipo, downscale VLM, métricas dispatcher
-- docs/ADR-011-performance-pipeline.md: estrategia incremental 4 niveles para páginas escaneadas
-- PATRONES_TIPO_COMPROBANTE: clasificación FACTURA/BOLETA/BOARDING_PASS/DJ/RECIBO_HONORARIOS/ADMINISTRATIVO
-- MAX_VLM_IMAGE_PX = 1200: downscale adaptativo antes de VLM
-- Tests: 1284 passed, 0 failures
+- **Pipeline v4.1.0** — Performance optimizado: 2.7 min/expediente (sesión 2026-03-13/14)
+- escribano_fiel.py v4.1.0: overlap + keep_alive + JSON estricto + telemetría
+- qwen2.5vl:7b primario (sin fallback), format="json", keep_alive="10m"
+- num_predict=800, num_ctx=4096, timeout=60s, vlm_workers=2
+- OCR-first (8/21 sin VLM), ROI crop (17.6% área), ThreadPoolExecutor paralelo
+- E2E DIRI2026: **2.7 min** (16x speedup vs 45 min), 19 comprobantes, 0 fallos JSON
+- MonkeyOCR-pro-1.2B descartado (sm_120 incompatible PyTorch cu124)
+- Tests: 1355 passed, 0 failures
 - **Fase 4 COMPLETADA** (3/3 tareas: #27 ✅ #28 ✅ #29 ✅)
 - **Fase 3 COMPLETADA** (5/5 tareas: #22 ✅ #23 ✅ #24 ✅ #25 ✅ #26 ✅)
 
@@ -225,32 +226,37 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 - Auditoría multi-AI: ChatGPT + Gemini + Opus → consolidado, ADR-011 ajustado
 - Commits: 490dacd, a2bb4c1, fa456c5 — 1284 tests, 0 failures
 
-### Próxima sesión — Plan consolidado (aprobado por Hans 2026-03-13):
+### Completado sesión 2026-03-13 (tarde/noche):
+- **ADR-011 Nivel 2 IMPLEMENTADO:** OCR-first + score suficiencia (commit 380dc71)
+  - _extraer_campos_ocr_por_tipo(): RUC, fecha, serie/numero, total, IGV, subtotal
+  - Score: campos_encontrados/campos_esperados, umbrales 0.75/0.50
+  - 37 tests nuevos, 1322 total, escribano_fiel.py v3.0.0
+- **E2E DIRI2026-INT-0196314:** 8/21 páginas sin VLM (38% reducción), 19 comprobantes (commit 40a9637)
+- **ADR-011 Nivel 3 SALTADO:** Hans decidió saltar ROI crop, ir directo a Nivel 4
+- **ADR-011 Nivel 4 EVALUADO:** MonkeyOCR-pro-1.2B **DESCARTADO**
+  - RTX 5090 sm_120 incompatible con PyTorch 2.5.1 cu124
+  - Stack pesado: PyTorch + PaddlePaddle + lmdeploy + paddlex
+  - qwen3-vl:8b benchmarked: 28.4s/pág promedio, 4/5 páginas extrajeron campos
 
-**BLOQUE 1 — ADR-011 Nivel 2: OCR-first + score suficiencia**
-- Implementar `_extraer_campos_ocr_por_tipo()` en escribano_fiel.py
-- Score: `campos_encontrados / campos_esperados` (RUC + fecha + total como núcleo, proveedor opcional)
-- Umbrales: ≥0.75 resolver sin VLM, 0.50-0.74 resolver con observación, <0.50 escalar a VLM
-- Métricas nuevas: paginas_resueltas_sin_vlm, paginas_escaladas_vlm, score_promedio_ocr_por_tipo
-- PPStructure (PaddleOCR layout integrado) como sub-paso para mejorar clustering bboxes
-- Impacto esperado: eliminar 60-70% llamadas VLM en expedientes de viáticos
+### Próxima sesión — Plan actualizado:
 
-**BLOQUE 2 — ADR-011 Nivel 3: ROI crop real**
-- Clustering de bboxes PaddleOCR → región dominante → crop con margen
-- Downscale post-crop a max 1200px
-- Orden obligatorio: OCR → score → si falla: crop → downscale → VLM
-- Fallback: si no hay bboxes útiles, página completa con downscale directo
-
-**BLOQUE 3 — Procesamiento expedientes**
-- Procesar DIRI2026-INT-0068815 y DIRI2026-INT-0196314 con pipeline optimizado
+**BLOQUE 1 — Procesamiento expedientes con pipeline v3.0.0**
+- Procesar DIRI2026-INT-0068815 con pipeline OCR-first
 - Reprocesar Caja Chica N.3 con pipeline formal
-- Medir impacto real de OCR-first (antes vs después)
+- Medir impacto real OCR-first en expedientes variados
 
-**BLOQUE 4 — Fase 5 inicio**
+**BLOQUE 2 — Fase 5 inicio**
 - Tarea #30: Golden dataset (expected.json por expediente)
 - Tarea #16: Re-generar Excel con pipeline formal
 
-**BLOQUE 5 — Pendientes menores**
+**BLOQUE 3 — Optimización VLM (cuello de botella confirmado)**
+- **ACCIÓN URGENTE:** Cambiar qwen2.5vl:7b como modelo primario (qwen3-vl:8b produce JSON corrupto con num_predict=4096)
+- qwen2.5vl:7b: ~25-30s/pág, ~730 tokens, 0 fallos en 13 páginas
+- qwen3-vl:8b: JSON corrupto en ~80% de páginas, forzando 2x120s retry antes de fallback
+- Impacto esperado: de 49 min → ~10-15 min (elimina retry overhead)
+- Evaluar vLLM como alternativa a Ollama para continuous batching
+
+**BLOQUE 4 — Pendientes menores**
 - Branch protection — Hans configura en GitHub UI
 - Convertir las 15 preguntas de ChatGPT en checklist de métricas automáticas por expediente
 
@@ -261,7 +267,7 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 
 ### Vigilancia tecnológica:
 10. **AI Stack Sentinel** — Ejecutar `python3 scripts/tech_monitor.py` semanalmente (lunes)
-11. **TRIAL:** MonkeyOCR-pro-1.2B — evaluar como reemplazo potencial PaddleOCR+VLM
+11. **DESCARTADO:** MonkeyOCR-pro-1.2B — incompatible RTX 5090 sm_120 (PyTorch cu124 no soporta Blackwell). Reevaluar cuando PyTorch nightly soporte sm_120.
 12. **WATCH:** Qwen3.5 multimodal — esperar fix GGUF en Ollama
 
 ### Investigacion Pendiente — TensorRT (pedido por Hans 2026-02-17)
@@ -613,3 +619,40 @@ data/
 ---
 
 *Actualizado: 2026-02-26 por Claude Code*
+
+## Reglas de Sesión Obligatorias
+
+### Fuente de verdad
+- origin/main es LA ÚNICA fuente de verdad del proyecto
+- Notion y Obsidian son herramientas de CONSULTA y APRENDIZAJE del usuario, NO bases del proyecto
+- NUNCA tomar decisiones basándose en lo que dice Notion u Obsidian
+- SIEMPRE verificar contra origin/main antes de cualquier diagnóstico
+
+### Al INICIAR cada sesión:
+1. git fetch && git pull origin main (SIEMPRE primero)
+2. git log --oneline -5 (verificar estado real)
+3. pytest --co -q 2>/dev/null | tail -3 (conteo de tests)
+
+### Al COMPLETAR cada tarea:
+1. git add -A && git commit -m "feat: descripción"
+2. git push origin main (INMEDIATAMENTE)
+3. Mostrar output completo del push
+4. git log origin/main --oneline -1 (VERIFICAR que llegó al remoto)
+
+### Después de push exitoso, PROPAGAR a:
+1. Notion Checkpoint (321b188d-be2e-81fe-a4fd-eff56dc82cdb) — actualizar estado
+2. Notion Dashboard — actualizar conteo tareas y tests
+3. Notion Bitácora — agregar entrada de la tarea completada
+4. Obsidian Tablero, Bitácora y archivo de Fase correspondiente
+
+### PROHIBIDO:
+- Usar worktrees o ramas temporales — todo va directo a main
+- Decir "pusheado" sin mostrar el output real del push
+- Diagnosticar estado del repo sin hacer git fetch primero
+- Tomar Notion u Obsidian como base para decisiones
+- Hacer preguntas al usuario — tomar decisiones y ejecutar
+- Continuar con la siguiente tarea si el push falla
+
+### Si el push falla:
+- Reportar el error completo inmediatamente
+- NO continuar hasta resolver
