@@ -91,11 +91,11 @@ class TestVLMConfig:
         assert VLM_CONFIG is not None
         assert isinstance(VLM_CONFIG, dict)
 
-    def test_modelo_es_qwen3_vl_8b(self):
-        assert VLM_CONFIG["model"] == "qwen3-vl:8b"
+    def test_modelo_primario(self):
+        assert VLM_CONFIG["model"] == "qwen2.5vl:7b"
 
-    def test_fallback_model_existe(self):
-        assert VLM_CONFIG["fallback_model"] == "qwen2.5vl:7b"
+    def test_fallback_model_none(self):
+        assert VLM_CONFIG["fallback_model"] is None
 
     def test_ollama_url(self):
         assert VLM_CONFIG["ollama_url"] == "http://localhost:11434"
@@ -105,7 +105,7 @@ class TestVLMConfig:
         assert VLM_CONFIG["timeout_seconds"] >= 60
 
     def test_max_tokens(self):
-        assert VLM_CONFIG["max_tokens"] >= 4096
+        assert VLM_CONFIG["max_tokens"] >= 200
 
     def test_temperature_baja(self):
         """Temperature baja para extracción determinista."""

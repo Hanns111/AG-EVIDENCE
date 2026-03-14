@@ -388,16 +388,16 @@ VISION_CONFIG = {
 # ==============================================================================
 VLM_CONFIG = {
     "enabled": True,
-    "model": "qwen3-vl:8b",  # Migrado de qwen2.5vl:7b (2026-03-10)
-    "fallback_model": "qwen2.5vl:7b",  # Mantenido como fallback
+    "model": "qwen2.5vl:7b",  # Primario: fiable, ~25-30s/pág, 0 fallos (2026-03-13)
+    "fallback_model": None,  # Sin fallback: qwen2.5vl:7b es estable
     "ollama_url": "http://localhost:11434",
-    "timeout_seconds": 120,  # Ampliado: qwen3-vl tiene latencia 3-5x por thinking
-    "max_tokens": 4096,  # Reducido de 16384: JSON output ~900 tokens, evita timeouts por thinking
+    "timeout_seconds": 60,  # Reducido: qwen2.5vl:7b no necesita thinking, responde <30s
+    "max_tokens": 200,  # JSON comprobante ~150-180 tokens, sin thinking overhead
     "temperature": 0.1,
-    "num_ctx": 8192,  # Reducido de 16384: comprobante típico < 2K tokens prompt
-    "no_think": False,  # NOTA: /no_think en content causa respuesta vacía. Dejar thinking activo, extraer de content.
+    "num_ctx": 4096,  # Comprobante prompt + imagen < 2K tokens
+    "no_think": False,
     "dpi_render": 200,  # DPI para renderizar PDF a imagen para VLM
-    "max_retries": 2,  # Retry en JSON corrupto (dato Viáticos AI: 10-30% fallan)
+    "max_retries": 2,  # Retry en JSON corrupto
 }
 
 # ==============================================================================

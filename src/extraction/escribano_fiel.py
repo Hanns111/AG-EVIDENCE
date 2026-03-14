@@ -101,8 +101,8 @@ from src.ingestion.trace_logger import TraceLogger
 # CONSTANTES
 # ==============================================================================
 
-VERSION_ESCRIBANO = "3.1.0"
-"""Versión del módulo escribano_fiel (3.1: ROI crop ADR-011 Nivel 3)."""
+VERSION_ESCRIBANO = "4.0.0"
+"""Versión del módulo escribano_fiel (4.0: performance <3min target)."""
 
 AGENTE_ID = "ESCRIBANO"
 """ID de agente para logging."""
@@ -181,33 +181,43 @@ CROP_MARGIN_PERCENT = 0.05
 # Campos núcleo para score de suficiencia (RUC + fecha + total)
 # score = campos_encontrados / campos_esperados
 # >=0.75 → sin VLM | 0.50-0.74 → con observación | <0.50 → escalar a VLM
-SCORE_UMBRAL_SIN_VLM = 0.75
-SCORE_UMBRAL_CON_OBS = 0.50
+SCORE_UMBRAL_SIN_VLM = 0.60
+SCORE_UMBRAL_CON_OBS = 0.40
 
 # Regex robustos para extracción OCR-first por campo
 # Cada regex captura el valor en group(1) o group(0)
-REGEX_RUC = re.compile(r"R\.?U\.?C\.?\s*[:.]?\s*(\d{11})")
+# Ampliados para cubrir variantes OCR impreciso (espacios, puntos, mayúsculas)
+REGEX_RUC = re.compile(
+    r"R[\s.]?U[\s.]?C[\s.]?\s*[:.]?\s*(\d{11})"
+    r"|N[°o]\s*(?:de\s+)?RUC\s*[:.]?\s*(\d{11})",
+    re.IGNORECASE,
+)
 REGEX_FECHA_EMISION = re.compile(
-    r"(?:FECHA\s*(?:DE\s*)?EMISI[OÓ]N|F\.?\s*EMISI[OÓ]N|FECHA)\s*[:.]?\s*"
+    r"(?:FECHA\s*(?:DE\s*)?EMISI[OÓ]N|F\.?\s*EMISI[OÓ]N|FECHA\s*DE\s*EMISION"
+    r"|FEC\.?\s*EMIS\.?|FECHA)\s*[:.]?\s*"
     r"(\d{1,2}[/\-\.]\d{1,2}[/\-\.]\d{2,4})",
     re.IGNORECASE,
 )
 REGEX_FECHA_GENERAL = re.compile(r"(\d{1,2}[/\-\.]\d{1,2}[/\-\.]\d{4})")
 REGEX_SERIE_NUMERO = re.compile(
-    r"([FBEP]\w{0,2}\d{2,3})\s*[-–]\s*(\d{3,10})",
+    r"([FBEP]\w{0,2}\d{2,4})\s*[-–—]\s*(\d{3,10})"
+    r"|(?:SERIE|NRO\.?|N[°o]\.?)\s*[:.]?\s*([FBEP]\w{0,2}\d{2,4})\s*[-–—]\s*(\d{3,10})",
     re.IGNORECASE,
 )
 REGEX_TOTAL = re.compile(
-    r"(?:IMPORTE\s+TOTAL|TOTAL\s+(?:A\s+)?PAGAR|TOTAL\s+VENTA|TOTAL\s*S/?\.?)\s*"
-    r"[:.]?\s*S/?\.?\s*([\d,]+\.\d{2})",
+    r"(?:IMPORTE\s+TOTAL|TOTAL\s+(?:A\s+)?PAGAR|TOTAL\s+VENTA|TOTAL\s*S/?\.?"
+    r"|MONTO\s+TOTAL|PRECIO\s+TOTAL|TOTAL\s*:)"
+    r"\s*[:.]?\s*S/?\.?\s*([\d,]+\.\d{2})",
     re.IGNORECASE,
 )
 REGEX_IGV = re.compile(
-    r"(?:I\.?G\.?V\.?|IMPUESTO)\s*(?:\(\s*\d+%?\s*\))?\s*[:.]?\s*S/?\.?\s*([\d,]+\.\d{2})",
+    r"(?:I\.?G\.?V\.?|IMPUESTO\s*(?:GENERAL)?)\s*(?:\(\s*\d+\s*%?\s*\))?\s*"
+    r"[:.]?\s*S/?\.?\s*([\d,]+\.\d{2})",
     re.IGNORECASE,
 )
 REGEX_SUBTOTAL = re.compile(
-    r"(?:SUB\s*TOTAL|OP\.?\s*GRAVADA|VALOR\s+(?:DE\s+)?VENTA|BASE\s+IMPONIBLE)\s*"
+    r"(?:SUB\s*TOTAL|OP\.?\s*GRAVADA|VALOR\s+(?:DE\s+)?VENTA|BASE\s+IMPONIBLE"
+    r"|GRAVADA|VALOR\s+VENTA)\s*"
     r"[:.]?\s*S/?\.?\s*([\d,]+\.\d{2})",
     re.IGNORECASE,
 )
@@ -997,6 +1007,7 @@ class EscribanoFiel:
             )
 
             # --- Ruta 1: Páginas digitales → OCR-first → LLM texto si necesario ---
+            digitales_pendientes_vlm = []
             for page_num, texto in digitales:
                 tipo = self._clasificar_tipo_comprobante(texto)
 
@@ -1039,32 +1050,55 @@ class EscribanoFiel:
                         operation="parseo_profundo",
                     )
                 else:
-                    # OCR-first insuficiente — escalar a LLM texto
+                    # OCR-first insuficiente — acumular para LLM texto paralelo
                     n_escaladas_vlm += 1
-                    self._logger.info(
-                        f"OCR-first pág {page_num} [{tipo}] score={score:.2f} "
-                        f"({len(encontrados)}/{len(esperados)}) → ESCALAR A LLM "
-                        f"(faltantes: {faltantes})",
-                        agent_id=AGENTE_ID,
-                        operation="parseo_profundo",
-                    )
-                    t0 = time.perf_counter()
-                    comp = vlm_client.extraer_comprobante_texto(
-                        texto_pagina=texto,
+                    digitales_pendientes_vlm.append((page_num, texto, tipo, faltantes))
+
+            # Procesar páginas digitales escaladas a LLM en paralelo
+            if digitales_pendientes_vlm:
+                from concurrent.futures import ThreadPoolExecutor, as_completed
+
+                def _procesar_texto_vlm(item):
+                    pg_num, txt, tp, flt = item
+                    t_start = time.perf_counter()
+                    c = vlm_client.extraer_comprobante_texto(
+                        texto_pagina=txt,
                         archivo=Path(pdf_path).name,
-                        pagina=page_num,
+                        pagina=pg_num,
                     )
-                    tiempo_vlm_total += time.perf_counter() - t0
-                    if comp is not None:
-                        comprobantes.append(comp)
-                        n_digital += 1
-                    else:
-                        # LLM texto falló — generar abstención formal
-                        comp_abstencion = vlm_handler.generar_abstencion_vlm(
-                            archivo=Path(pdf_path).name,
-                            pagina=page_num,
+                    t_elapsed = time.perf_counter() - t_start
+                    return pg_num, c, t_elapsed, tp, flt
+
+                max_w = min(3, len(digitales_pendientes_vlm))
+                self._logger.info(
+                    f"LLM texto paralelo: {len(digitales_pendientes_vlm)} págs con {max_w} workers",
+                    agent_id=AGENTE_ID,
+                    operation="parseo_profundo",
+                )
+
+                with ThreadPoolExecutor(max_workers=max_w) as executor:
+                    futures = {
+                        executor.submit(_procesar_texto_vlm, item): item[0]
+                        for item in digitales_pendientes_vlm
+                    }
+                    for future in as_completed(futures):
+                        pg_num, comp, t_elapsed, tipo, faltantes = future.result()
+                        tiempo_vlm_total += t_elapsed
+                        if comp is not None:
+                            comprobantes.append(comp)
+                            n_digital += 1
+                        else:
+                            comp_abstencion = vlm_handler.generar_abstencion_vlm(
+                                archivo=Path(pdf_path).name,
+                                pagina=pg_num,
+                            )
+                            comprobantes.append(comp_abstencion)
+                        self._logger.info(
+                            f"LLM texto pág {pg_num} [{tipo}] {t_elapsed:.1f}s "
+                            f"(faltantes: {faltantes})",
+                            agent_id=AGENTE_ID,
+                            operation="parseo_profundo",
                         )
-                        comprobantes.append(comp_abstencion)
 
             # --- Ruta 2: Páginas imagen → OCR-first → VLM imagen si necesario ---
             if imagenes_pg:
@@ -1125,24 +1159,48 @@ class EscribanoFiel:
                         dpi=self._config.dpi_vlm,
                         paginas_ocr_dict=paginas_ocr_dict,
                     )
-                    for page_num, img_b64 in imagenes_b64:
-                        pag_data = paginas_ocr_dict.get(page_num, {})
-                        tipo = self._clasificar_tipo_comprobante(pag_data.get("texto", "") or "")
-                        self._logger.info(
-                            f"VLM imagen pág {page_num} [{tipo}]",
-                            agent_id=AGENTE_ID,
-                            operation="parseo_profundo",
-                        )
-                        t0 = time.perf_counter()
-                        comp = vlm_handler.extraer_o_abstener(
+
+                    # Paralelismo controlado: procesar páginas VLM concurrentemente
+                    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+                    def _procesar_imagen_vlm(page_img_tuple):
+                        pg_num, ib64 = page_img_tuple
+                        t_start = time.perf_counter()
+                        c = vlm_handler.extraer_o_abstener(
                             client=vlm_client,
-                            image_b64=img_b64,
+                            image_b64=ib64,
                             archivo=Path(pdf_path).name,
-                            pagina=page_num,
+                            pagina=pg_num,
                         )
-                        tiempo_vlm_total += time.perf_counter() - t0
-                        comprobantes.append(comp)
-                        n_imagen += 1
+                        t_elapsed = time.perf_counter() - t_start
+                        return pg_num, c, t_elapsed
+
+                    max_workers = min(3, len(imagenes_b64))
+                    self._logger.info(
+                        f"VLM paralelo: {len(imagenes_b64)} páginas con {max_workers} workers",
+                        agent_id=AGENTE_ID,
+                        operation="parseo_profundo",
+                    )
+
+                    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                        futures = {
+                            executor.submit(_procesar_imagen_vlm, item): item[0]
+                            for item in imagenes_b64
+                        }
+                        for future in as_completed(futures):
+                            pg_num, comp, t_elapsed = future.result()
+                            tiempo_vlm_total += t_elapsed
+                            comprobantes.append(comp)
+                            n_imagen += 1
+                            pag_data = paginas_ocr_dict.get(pg_num, {})
+                            tipo = self._clasificar_tipo_comprobante(
+                                pag_data.get("texto", "") or ""
+                            )
+                            self._logger.info(
+                                f"VLM imagen pág {pg_num} [{tipo}] {t_elapsed:.1f}s",
+                                agent_id=AGENTE_ID,
+                                operation="parseo_profundo",
+                            )
 
             # Deduplicar por serie_numero
             antes = len(comprobantes)
@@ -1277,7 +1335,14 @@ class EscribanoFiel:
         comp = ComprobanteExtraido()
 
         # --- RUC emisor ---
-        rucs = REGEX_RUC.findall(texto_ocr)
+        rucs_raw = REGEX_RUC.findall(texto_ocr)
+        # findall returns tuples with alternation; flatten to non-empty matches
+        rucs = []
+        for match in rucs_raw:
+            if isinstance(match, tuple):
+                rucs.extend(m for m in match if m)
+            elif match:
+                rucs.append(match)
         # Filtrar RUCs del pagador/Estado
         rucs_emisor = [r for r in rucs if r not in RUCS_PAGADOR]
         if rucs_emisor:
@@ -1333,8 +1398,9 @@ class EscribanoFiel:
         # --- Serie y número ---
         m_serie = REGEX_SERIE_NUMERO.search(texto_ocr)
         if m_serie:
-            serie_val = m_serie.group(1).upper()
-            numero_val = m_serie.group(2)
+            # Alternation: groups 1,2 or 3,4
+            serie_val = (m_serie.group(1) or m_serie.group(3) or "").upper()
+            numero_val = m_serie.group(2) or m_serie.group(4) or ""
             comp.grupo_b.serie = CampoExtraido(
                 nombre_campo="serie",
                 valor=serie_val,

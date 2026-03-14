@@ -122,7 +122,7 @@ class TestConstantes:
     """Tests para constantes y metadatos del módulo."""
 
     def test_version_definida(self):
-        assert VERSION_ESCRIBANO == "3.1.0"
+        assert VERSION_ESCRIBANO == "4.0.0"
 
     def test_agente_id_definido(self):
         assert AGENTE_ID == "ESCRIBANO"
@@ -255,7 +255,7 @@ class TestEscribanoFielInit:
 
     def test_instanciacion_default(self, config_test):
         escribano = EscribanoFiel(config=config_test)
-        assert escribano.version == "3.1.0"
+        assert escribano.version == "4.0.0"
         assert escribano.config is config_test
 
     def test_instanciacion_sin_config(self):
@@ -300,7 +300,7 @@ class TestEscribanoFielInit:
 
     def test_get_stats(self, escribano_basico):
         stats = escribano_basico.get_stats()
-        assert stats["version"] == "3.1.0"
+        assert stats["version"] == "4.0.0"
         assert "config" in stats
 
 
@@ -1029,19 +1029,29 @@ from src.extraction.escribano_fiel import (
 class TestRegexOCRFirst:
     """Tests para los regex de extracción OCR-first."""
 
+    def _flatten_ruc_matches(self, raw_matches):
+        """Flatten RUC regex tuple matches to list of strings."""
+        result = []
+        for match in raw_matches:
+            if isinstance(match, tuple):
+                result.extend(m for m in match if m)
+            elif match:
+                result.append(match)
+        return result
+
     def test_regex_ruc_basico(self):
         texto = "R.U.C.: 20610827171 RESTAURANTE EL CHALAN"
-        m = REGEX_RUC.findall(texto)
+        m = self._flatten_ruc_matches(REGEX_RUC.findall(texto))
         assert "20610827171" in m
 
     def test_regex_ruc_sin_puntos(self):
         texto = "RUC: 20604955498"
-        m = REGEX_RUC.findall(texto)
+        m = self._flatten_ruc_matches(REGEX_RUC.findall(texto))
         assert "20604955498" in m
 
     def test_regex_ruc_multiple(self):
         texto = "RUC: 20131370998 MINEDU\nRUC: 20610827171 PROVEEDOR"
-        m = REGEX_RUC.findall(texto)
+        m = self._flatten_ruc_matches(REGEX_RUC.findall(texto))
         assert len(m) == 2
         assert "20131370998" in m
         assert "20610827171" in m
@@ -1154,8 +1164,8 @@ class TestConstantesOCRFirst:
     """Tests para constantes OCR-first."""
 
     def test_umbrales_definidos(self):
-        assert SCORE_UMBRAL_SIN_VLM == 0.75
-        assert SCORE_UMBRAL_CON_OBS == 0.50
+        assert SCORE_UMBRAL_SIN_VLM == 0.60
+        assert SCORE_UMBRAL_CON_OBS == 0.40
 
     def test_campos_esperados_factura(self):
         campos = CAMPOS_ESPERADOS_POR_TIPO["FACTURA"]
@@ -1406,18 +1416,18 @@ class TestCalcularScoreSuficiencia:
         assert score >= SCORE_UMBRAL_SIN_VLM
 
     def test_score_umbral_con_obs(self, escribano):
-        """Score 0.50-0.74 should resolve with observation."""
+        """Score in [0.40, 0.60) should resolve with observation."""
         texto = """
         RUC: 20610827171
         FECHA DE EMISIÓN: 06/02/2026
-        IMPORTE TOTAL S/. 125.50
         """
         comp = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "t.pdf", 1)
         score, _, _, _ = escribano._calcular_score_suficiencia(comp, "FACTURA")
+        # 2/5 = 0.4 which is at the CON_OBS boundary
         assert SCORE_UMBRAL_CON_OBS <= score < SCORE_UMBRAL_SIN_VLM
 
     def test_score_bajo_escalar_vlm(self, escribano):
-        """Score < 0.50 should escalate to VLM."""
+        """Score < 0.40 should escalate to VLM."""
         texto = """
         RUC: 20610827171
         """

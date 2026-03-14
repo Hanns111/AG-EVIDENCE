@@ -670,34 +670,13 @@ class TestExtraerComprobante:
         assert isinstance(comp.grupo_j, ValidacionesAritmeticas)
 
     @patch("src.extraction.qwen_fallback.urllib.request.urlopen")
-    def test_fallback_model_en_fallo(self, mock_urlopen, client):
-        """Si modelo principal falla (URLError retorna inmediato), intenta fallback."""
+    def test_sin_fallback_retorna_none(self, mock_urlopen, client):
+        """Sin fallback_model, fallo del primario retorna None."""
         import urllib.error
 
-        call_count = [0]
-        resp_ok = MagicMock()
-        resp_ok.__enter__ = MagicMock(return_value=resp_ok)
-        resp_ok.__exit__ = MagicMock(return_value=False)
-        resp_ok.read.return_value = json.dumps(
-            {
-                "message": {"content": '{"grupo_b_comprobante": {"serie": "F001", "numero": "1"}}'},
-                "eval_count": 50,
-            }
-        ).encode("utf-8")
-
-        def side_effect(*args, **kwargs):
-            call_count[0] += 1
-            # URLError causa retorno inmediato (sin retry), así que:
-            # call 1 = modelo principal → falla
-            # call 2 = fallback → éxito
-            if call_count[0] <= 1:
-                raise urllib.error.URLError("fail")
-            return resp_ok
-
-        mock_urlopen.side_effect = side_effect
-
+        mock_urlopen.side_effect = urllib.error.URLError("fail")
         comp = client.extraer_comprobante("base64", archivo="test.pdf", pagina=1)
-        assert comp is not None
+        assert comp is None
 
     @patch("src.extraction.qwen_fallback.urllib.request.urlopen")
     def test_retorna_none_en_fallo_total(self, mock_urlopen, client):
@@ -809,7 +788,7 @@ class TestHealthcheck:
         resp = MagicMock()
         resp.__enter__ = MagicMock(return_value=resp)
         resp.__exit__ = MagicMock(return_value=False)
-        resp.read.return_value = json.dumps({"models": [{"name": "qwen3-vl:8b"}]}).encode("utf-8")
+        resp.read.return_value = json.dumps({"models": [{"name": "qwen2.5vl:7b"}]}).encode("utf-8")
         mock_urlopen.return_value = resp
 
         assert client.healthcheck() is True
