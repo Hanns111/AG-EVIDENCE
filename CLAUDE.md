@@ -645,6 +645,11 @@ data/
 3. Notion Bitácora — agregar entrada de la tarea completada
 4. Obsidian Tablero, Bitácora y archivo de Fase correspondiente
 
+### Sincronización automática Cursor (Windows)
+- Después de cada push a origin/main, ejecutar automáticamente:
+  `git -C /mnt/c/Users/Hans/Proyectos/AG-EVIDENCE pull origin main`
+- Esto mantiene la copia de Windows (Cursor) sincronizada sin que Hans haga nada manual
+
 ### PROHIBIDO:
 - Usar worktrees o ramas temporales — todo va directo a main
 - Decir "pusheado" sin mostrar el output real del push
