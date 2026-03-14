@@ -12,7 +12,7 @@
 | **Pipeline** | 7 pasos: custodia → OCR → parseo → OCR-first + VLM → evaluación → validación → Excel |
 | **Fases completadas** | 0-4 (28/42 tareas = 66.7%) + ADR-011 Niveles 1-2 + Nivel 4 benchmark |
 | **Fase siguiente** | Fase 5: Evaluación + Legal prep |
-| **Tests** | 1322 passed, 0 failed |
+| **Tests** | 1341 passed, 0 failed |
 | **GPU** | RTX 5090 24GB VRAM |
 | **Orquestador** | src/extraction/escribano_fiel.py |
 | **Última actualización** | 2026-03-13 |
@@ -36,15 +36,17 @@
 
 ## Última Tarea Completada
 
-- **ADR-011 Nivel 2 + Nivel 4** — OCR-first + benchmark MonkeyOCR (sesión 2026-03-13)
-- escribano_fiel.py v3.0.0: OCR-first con regex antes de VLM, score suficiencia
-- `_extraer_campos_ocr_por_tipo()`: RUC, fecha, serie/numero, total, IGV, subtotal
-- Score: campos_encontrados / campos_esperados (≥0.75 sin VLM, 0.50-0.74 con obs, <0.50 VLM)
-- Filtro RUCs del Estado: MINEDU, MEF, SUNAT, PROGRAMA EDUCACION
-- E2E DIRI2026-INT-0196314: 8/21 páginas resueltas sin VLM (38% reducción)
-- MonkeyOCR-pro-1.2B: **DESCARTADO** para RTX 5090 (sm_120 incompatible con PyTorch cu124)
-- 37 tests nuevos: 1322 passed, 0 failures
-- Commits: 380dc71 (OCR-first), 40a9637 (E2E benchmark)
+- **ADR-011 Niveles 2+3+4** — OCR-first + ROI crop + benchmark + timeout audit (sesión 2026-03-13)
+- escribano_fiel.py v3.1.0: OCR-first + ROI crop + auditoría timeouts VLM
+- Nivel 2: `_extraer_campos_ocr_por_tipo()` — regex RUC, fecha, serie, total, IGV, subtotal
+- Nivel 3: `_calcular_roi_desde_bboxes()` — unión bboxes + 5% margen, crop antes de VLM
+- Nivel 4: MonkeyOCR-pro-1.2B **DESCARTADO** (sm_120 incompatible PyTorch cu124)
+- Timeout audit: num_predict 16384→4096, num_ctx 16384→8192
+- E2E DIRI2026: 8/21 sin VLM, ROI crop 1 pág (17.6% área), status OK
+- **Hallazgo crítico:** qwen3-vl:8b produce JSON corrupto con num_predict=4096 → qwen2.5vl:7b funciona perfecto como fallback (~25-30s/pág)
+- **Recomendación:** cambiar qwen2.5vl:7b como modelo primario (elimina 2x120s retry overhead)
+- 50 tests nuevos: 1341 passed, 0 failures
+- Commits: 380dc71, 40a9637, cd08bf9, 5d53935, 3fa7431
 - **Fase 4 COMPLETADA** (3/3 tareas: #27 ✅ #28 ✅ #29 ✅)
 - **Fase 3 COMPLETADA** (5/5 tareas: #22 ✅ #23 ✅ #24 ✅ #25 ✅ #26 ✅)
 
@@ -250,9 +252,11 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 - Tarea #30: Golden dataset (expected.json por expediente)
 - Tarea #16: Re-generar Excel con pipeline formal
 
-**BLOQUE 3 — Optimización VLM (cuello de botella actual)**
-- Investigar por qué qwen3-vl:8b tiene timeouts frecuentes (120s)
-- Evaluar qwen2.5vl:7b como primario (sin timeouts, 12-13s/pág)
+**BLOQUE 3 — Optimización VLM (cuello de botella confirmado)**
+- **ACCIÓN URGENTE:** Cambiar qwen2.5vl:7b como modelo primario (qwen3-vl:8b produce JSON corrupto con num_predict=4096)
+- qwen2.5vl:7b: ~25-30s/pág, ~730 tokens, 0 fallos en 13 páginas
+- qwen3-vl:8b: JSON corrupto en ~80% de páginas, forzando 2x120s retry antes de fallback
+- Impacto esperado: de 49 min → ~10-15 min (elimina retry overhead)
 - Evaluar vLLM como alternativa a Ollama para continuous batching
 
 **BLOQUE 4 — Pendientes menores**
