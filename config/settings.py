@@ -391,13 +391,16 @@ VLM_CONFIG = {
     "model": "qwen2.5vl:7b",  # Primario: fiable, ~25-30s/pág, 0 fallos (2026-03-13)
     "fallback_model": None,  # Sin fallback: qwen2.5vl:7b es estable
     "ollama_url": "http://localhost:11434",
-    "timeout_seconds": 60,  # Reducido: qwen2.5vl:7b no necesita thinking, responde <30s
-    "max_tokens": 800,  # JSON comprobante ~600-700 tokens, sin thinking overhead
+    "timeout_seconds": 60,  # qwen2.5vl:7b responde <30s
+    "max_tokens": 800,  # JSON comprobante ~600-700 tokens
     "temperature": 0.1,
     "num_ctx": 4096,  # Comprobante prompt + imagen < 2K tokens
     "no_think": False,
     "dpi_render": 200,  # DPI para renderizar PDF a imagen para VLM
     "max_retries": 2,  # Retry en JSON corrupto
+    "keep_alive": "10m",  # Mantener modelo cargado durante toda la corrida
+    "format": "json",  # Forzar salida JSON estricta (Ollama structured output)
+    "vlm_workers": 2,  # Workers paralelos VLM (2 es más estable que 3 con GPU única)
 }
 
 # ==============================================================================

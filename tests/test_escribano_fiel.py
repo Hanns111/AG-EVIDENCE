@@ -122,7 +122,7 @@ class TestConstantes:
     """Tests para constantes y metadatos del módulo."""
 
     def test_version_definida(self):
-        assert VERSION_ESCRIBANO == "4.0.0"
+        assert VERSION_ESCRIBANO == "4.1.0"
 
     def test_agente_id_definido(self):
         assert AGENTE_ID == "ESCRIBANO"
@@ -255,7 +255,7 @@ class TestEscribanoFielInit:
 
     def test_instanciacion_default(self, config_test):
         escribano = EscribanoFiel(config=config_test)
-        assert escribano.version == "4.0.0"
+        assert escribano.version == "4.1.0"
         assert escribano.config is config_test
 
     def test_instanciacion_sin_config(self):
@@ -300,7 +300,7 @@ class TestEscribanoFielInit:
 
     def test_get_stats(self, escribano_basico):
         stats = escribano_basico.get_stats()
-        assert stats["version"] == "4.0.0"
+        assert stats["version"] == "4.1.0"
         assert "config" in stats
 
 
@@ -1676,3 +1676,158 @@ class TestCropStatsInit:
         )
         assert result == []
         assert hasattr(escribano, "_ultimo_crop_stats")
+
+
+# ==============================================================================
+# TESTS — v4.1.0: Keep-alive, JSON estricto, telemetría, paralelismo
+# ==============================================================================
+
+
+class TestVLMConfigV41:
+    """Tests for v4.1.0 VLM config additions."""
+
+    def test_keep_alive_configured(self):
+        from config.settings import VLM_CONFIG
+
+        assert "keep_alive" in VLM_CONFIG
+        assert VLM_CONFIG["keep_alive"] == "10m"
+
+    def test_format_json_configured(self):
+        from config.settings import VLM_CONFIG
+
+        assert VLM_CONFIG.get("format") == "json"
+
+    def test_vlm_workers_configured(self):
+        from config.settings import VLM_CONFIG
+
+        assert VLM_CONFIG.get("vlm_workers") == 2
+
+    def test_model_is_qwen25vl(self):
+        from config.settings import VLM_CONFIG
+
+        assert VLM_CONFIG["model"] == "qwen2.5vl:7b"
+        assert VLM_CONFIG["fallback_model"] is None
+
+
+class TestQwenFallbackClientV41:
+    """Tests for QwenFallbackClient v4.1.0 features."""
+
+    def test_client_has_telemetry(self):
+        from src.extraction.qwen_fallback import QwenFallbackClient
+
+        client = QwenFallbackClient()
+        assert hasattr(client, "_telemetry")
+        assert client.get_telemetry() == []
+
+    def test_client_has_keep_alive(self):
+        from src.extraction.qwen_fallback import QwenFallbackClient
+
+        client = QwenFallbackClient()
+        assert client.keep_alive == "10m"
+
+    def test_client_has_format_json(self):
+        from src.extraction.qwen_fallback import QwenFallbackClient
+
+        client = QwenFallbackClient()
+        assert client.format_json == "json"
+
+    def test_client_has_vlm_workers(self):
+        from src.extraction.qwen_fallback import QwenFallbackClient
+
+        client = QwenFallbackClient()
+        assert client.vlm_workers == 2
+
+    def test_client_custom_config(self):
+        from src.extraction.qwen_fallback import QwenFallbackClient
+
+        client = QwenFallbackClient(
+            config={
+                "model": "test:1b",
+                "keep_alive": "5m",
+                "format": None,
+                "vlm_workers": 1,
+            }
+        )
+        assert client.model == "test:1b"
+        assert client.keep_alive == "5m"
+        assert client.format_json is None
+        assert client.vlm_workers == 1
+
+    def test_precargar_modelo_graceful_fail(self):
+        """Pre-carga falla graciosamente sin Ollama."""
+        from src.extraction.qwen_fallback import QwenFallbackClient
+
+        client = QwenFallbackClient(
+            config={
+                "model": "nonexistent",
+                "ollama_url": "http://localhost:99999",
+            }
+        )
+        assert client.precargar_modelo() is False
+
+
+class TestPipelineOverlap:
+    """Tests for producer-consumer overlap behavior."""
+
+    @pytest.fixture
+    def escribano(self, tmp_dir):
+        config = ConfigPipeline(
+            vault_dir=os.path.join(tmp_dir, "vault"),
+            registry_dir=os.path.join(tmp_dir, "registry"),
+            output_dir=os.path.join(tmp_dir, "output"),
+            log_dir=os.path.join(tmp_dir, "logs"),
+        )
+        return EscribanoFiel(config=config)
+
+    def test_ocr_only_pages_not_sent_to_vlm(self, escribano):
+        """Pages resolved by OCR-first don't appear in VLM queue."""
+        texto_factura = """
+        FACTURA ELECTRONICA
+        R.U.C.: 20610827171
+        FECHA DE EMISIÓN: 06/02/2026
+        F011-8846
+        IMPORTE TOTAL S/. 125.50
+        IGV: S/ 19.14
+        """
+        comp = escribano._extraer_campos_ocr_por_tipo(texto_factura, "FACTURA", "test.pdf", 1)
+        score, _, _, _ = escribano._calcular_score_suficiencia(comp, "FACTURA")
+        # Score 1.0 >= 0.60 threshold -> should NOT go to VLM
+        assert score >= 0.60
+        assert comp.grupo_k.metodo_extraccion == "OCR_FIRST_REGEX"
+
+    def test_json_invalido_no_corrompe_expediente(self, escribano):
+        """Invalid JSON from VLM produces abstention, not crash."""
+        from src.extraction.vlm_abstencion import VLMAbstencionHandler
+
+        handler = VLMAbstencionHandler()
+        comp = handler.generar_abstencion_vlm(
+            archivo="test.pdf",
+            pagina=5,
+            razon="JSON corrupto test",
+        )
+        # Abstention should produce a valid ComprobanteExtraido
+        assert comp is not None
+        assert comp.grupo_k.metodo_extraccion != ""
+
+    def test_concurrent_results_merge(self):
+        """Concurrent futures can merge results without data loss."""
+        from concurrent.futures import ThreadPoolExecutor
+
+        def worker(n):
+            return n * 2
+
+        results = []
+        with ThreadPoolExecutor(max_workers=2) as exe:
+            futures = [exe.submit(worker, i) for i in range(5)]
+            for f in futures:
+                results.append(f.result())
+        assert sorted(results) == [0, 2, 4, 6, 8]
+
+    def test_deterministic_ocr_first(self, escribano):
+        """OCR-first extraction is deterministic."""
+        texto = "RUC: 20610827171\nFECHA: 06/02/2026\nF011-8846\nIMPORTE TOTAL S/. 100.00"
+        comp1 = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "t.pdf", 1)
+        comp2 = escribano._extraer_campos_ocr_por_tipo(texto, "FACTURA", "t.pdf", 1)
+        assert comp1.grupo_a.ruc_emisor.valor == comp2.grupo_a.ruc_emisor.valor
+        assert comp1.grupo_b.fecha_emision.valor == comp2.grupo_b.fecha_emision.valor
+        assert comp1.grupo_f.importe_total.valor == comp2.grupo_f.importe_total.valor

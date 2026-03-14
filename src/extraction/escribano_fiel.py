@@ -101,8 +101,8 @@ from src.ingestion.trace_logger import TraceLogger
 # CONSTANTES
 # ==============================================================================
 
-VERSION_ESCRIBANO = "4.0.0"
-"""Versión del módulo escribano_fiel (4.0: performance <3min target)."""
+VERSION_ESCRIBANO = "4.1.0"
+"""Versión del módulo escribano_fiel (4.1: overlap + keep_alive + JSON estricto)."""
 
 AGENTE_ID = "ESCRIBANO"
 """ID de agente para logging."""
@@ -966,7 +966,7 @@ class EscribanoFiel:
             )
             vlm_handler = VLMAbstencionHandler(trace_logger=self._logger)
 
-            # Healthcheck solo si hay páginas que procesar
+            # Healthcheck + pre-carga del modelo (keep_alive)
             if not vlm_client.healthcheck():
                 self._logger.warning(
                     "Ollama no disponible; parseo profundo omitido",
@@ -980,6 +980,9 @@ class EscribanoFiel:
                     mensaje="Ollama no disponible; parseo profundo omitido",
                     datos={"paginas_analizadas": 0, "comprobantes_extraidos": 0},
                 )
+
+            # Pre-cargar modelo para evitar cold start en primera página
+            vlm_client.precargar_modelo()
 
             comprobantes = []
             n_digital = 0
@@ -1069,7 +1072,7 @@ class EscribanoFiel:
                     t_elapsed = time.perf_counter() - t_start
                     return pg_num, c, t_elapsed, tp, flt
 
-                max_w = min(3, len(digitales_pendientes_vlm))
+                max_w = min(vlm_client.vlm_workers, len(digitales_pendientes_vlm))
                 self._logger.info(
                     f"LLM texto paralelo: {len(digitales_pendientes_vlm)} págs con {max_w} workers",
                     agent_id=AGENTE_ID,
@@ -1176,7 +1179,7 @@ class EscribanoFiel:
                         t_elapsed = time.perf_counter() - t_start
                         return pg_num, c, t_elapsed
 
-                    max_workers = min(3, len(imagenes_b64))
+                    max_workers = min(vlm_client.vlm_workers, len(imagenes_b64))
                     self._logger.info(
                         f"VLM paralelo: {len(imagenes_b64)} páginas con {max_workers} workers",
                         agent_id=AGENTE_ID,
@@ -1269,6 +1272,8 @@ class EscribanoFiel:
                     },
                     # ADR-011 Nivel 3: métricas ROI crop
                     "roi_crop": getattr(self, "_ultimo_crop_stats", {}),
+                    # Telemetría VLM detallada
+                    "telemetry": vlm_client.get_telemetry(),
                 },
             )
 
