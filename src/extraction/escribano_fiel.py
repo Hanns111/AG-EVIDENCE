@@ -597,6 +597,7 @@ class EscribanoFiel:
                 paso_excel = self._paso_excel(
                     sinad=sinad,
                     decision=resultado.decision,
+                    expediente=resultado.expediente,
                     ruta_excel=ruta_excel,
                     observaciones_validacion=obs_validacion,
                 )
@@ -1989,14 +1990,15 @@ class EscribanoFiel:
         self,
         sinad: str,
         decision: DecisionCheckpoint,
+        expediente: Optional[ExpedienteJSON] = None,
         ruta_excel: Optional[str] = None,
         observaciones_validacion: Optional[List[Observacion]] = None,
     ) -> ResultadoPaso:
         """
-        Paso 7: Generar Excel con hojas DIAGNOSTICO + HALLAZGOS.
+        Paso 7: Generar Excel con hojas DIAGNOSTICO + HALLAZGOS + ANEXO_3 + COMPROBANTES.
 
-        Crea un workbook nuevo con DIAGNOSTICO (router) y HALLAZGOS
-        (validaciones Fase 4). La ruta se genera automáticamente.
+        Crea un workbook nuevo con todas las hojas.
+        ANEXO_3 y COMPROBANTES muestran datos extraídos sin alucinaciones.
         """
         inicio = time.perf_counter()
         self._logger.info(
@@ -2047,6 +2049,19 @@ class EscribanoFiel:
                     )
                 except ImportError:
                     pass  # Módulo no disponible, omitir hoja
+
+            # Escribir hojas ANEXO_3 y COMPROBANTES (datos extraídos, sin alucinaciones)
+            if expediente:
+                try:
+                    from src.extraction.excel_writer import (
+                        escribir_anexo3,
+                        escribir_comprobantes,
+                    )
+
+                    escribir_anexo3(wb, expediente.anexo3, sinad=sinad)
+                    escribir_comprobantes(wb, expediente.comprobantes)
+                except ImportError:
+                    pass
 
             wb.save(ruta_excel)
 

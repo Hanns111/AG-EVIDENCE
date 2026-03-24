@@ -50,7 +50,7 @@ Fecha: 2026-02-23
 import os
 import sys
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 # Asegurar que el directorio raíz del proyecto esté en el path
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -830,3 +830,163 @@ def escribir_diagnostico(
     """
     escritor = EscritorDiagnostico(nombre_hoja=nombre_hoja)
     return escritor.escribir_hoja_diagnostico(wb, decision)
+
+
+# ==============================================================================
+# HOJAS ANEXO_3 Y COMPROBANTES — Datos extraídos sin alucinaciones
+# ==============================================================================
+
+
+def _valor_campo(c: Optional[Any]) -> str:
+    """
+    Extrae valor de CampoExtraido sin alucinar.
+    Vacío si None, abstención o valor ausente.
+    """
+    if c is None:
+        return ""
+    if hasattr(c, "valor"):
+        v = getattr(c, "valor", None)
+        return str(v).strip() if v is not None else ""
+    return ""
+
+
+def escribir_anexo3(
+    wb: "Workbook",
+    anexo3: Optional[Any],
+    sinad: str = "",
+) -> Optional["Worksheet"]:
+    """
+    Escribe hoja ANEXO_3 con datos del Anexo 3 de rendición.
+    Solo valores extraídos; vacío si no consta (anti-alucinación).
+    """
+    if not OPENPYXL_DISPONIBLE:
+        return None
+    from src.extraction.expediente_contract import DatosAnexo3, ItemAnexo3
+
+    nombre = "ANEXO_3"
+    if nombre in wb.sheetnames:
+        del wb[nombre]
+    ws = wb.create_sheet(title=nombre)
+    ws.page_setup.orientation = "landscape"
+
+    # Header
+    ws.cell(1, 1, "ANEXO 3 — Resumen de gastos (datos extraídos, sin inferencias)")
+    ws.cell(1, 1).font = Font(bold=True, size=11)
+    ws.merge_cells("A1:H1")
+    fila = 3
+
+    if anexo3 is None or not isinstance(anexo3, DatosAnexo3):
+        ws.cell(fila, 1, "(Sin datos de Anexo 3 extraídos)")
+        return ws
+
+    # Campos cabecera
+    cabecera = [
+        ("SINAD", anexo3.sinad),
+        ("Comisionado", anexo3.comisionado),
+        ("DNI", anexo3.dni),
+        ("Destino", anexo3.destino),
+        ("Fecha salida", anexo3.fecha_salida),
+        ("Fecha regreso", anexo3.fecha_regreso),
+        ("Viático otorgado", anexo3.viatico_otorgado),
+        ("Total gastado", anexo3.total_gastado),
+        ("Devolución", anexo3.devolucion),
+    ]
+    for etiq, campo in cabecera:
+        v = _valor_campo(campo)
+        ws.cell(fila, 1, etiq)
+        ws.cell(fila, 2, v if v else "")
+        fila += 1
+
+    # Tabla de ítems
+    items = getattr(anexo3, "items", []) or []
+    if items:
+        fila += 1
+        headers = ["Nº", "Fecha", "Tipo doc", "Razón social", "Nº comprobante", "Concepto", "Importe"]
+        for col, h in enumerate(headers, 1):
+            ws.cell(fila, col, h)
+            ws.cell(fila, col).font = Font(bold=True)
+        fila += 1
+        for item in items:
+            ws.cell(fila, 1, _valor_campo(getattr(item, "nro", None)))
+            ws.cell(fila, 2, _valor_campo(getattr(item, "fecha", None)))
+            ws.cell(fila, 3, _valor_campo(getattr(item, "tipo_documento", None)))
+            ws.cell(fila, 4, _valor_campo(getattr(item, "razon_social", None)))
+            ws.cell(fila, 5, _valor_campo(getattr(item, "numero_comprobante", None)))
+            ws.cell(fila, 6, _valor_campo(getattr(item, "concepto", None)))
+            ws.cell(fila, 7, _valor_campo(getattr(item, "importe", None)))
+            fila += 1
+
+    for c in range(1, 8):
+        ws.column_dimensions[get_column_letter(c)].width = 16
+    return ws
+
+
+def escribir_comprobantes(
+    wb: "Workbook",
+    comprobantes: Optional[list],
+) -> Optional["Worksheet"]:
+    """
+    Escribe hoja COMPROBANTES con datos extraídos de cada comprobante.
+    Solo valores extraídos; vacío si no consta (anti-alucinación).
+    """
+    if not OPENPYXL_DISPONIBLE:
+        return None
+
+    nombre = "COMPROBANTES"
+    if nombre in wb.sheetnames:
+        del wb[nombre]
+    ws = wb.create_sheet(title=nombre)
+    ws.page_setup.orientation = "landscape"
+
+    ws.cell(1, 1, "COMPROBANTES — Datos extraídos (sin inferencias)")
+    ws.cell(1, 1).font = Font(bold=True, size=11)
+    ws.merge_cells("A1:J1")
+    fila = 3
+
+    comps = comprobantes or []
+    if not comps:
+        ws.cell(fila, 1, "(Sin comprobantes extraídos)")
+        return ws
+
+    headers = [
+        "Tipo", "Serie", "Número", "RUC emisor", "Razón social",
+        "Fecha emisión", "Importe total", "IGV", "Motor", "Página",
+    ]
+    for col, h in enumerate(headers, 1):
+        ws.cell(fila, col, h)
+        ws.cell(fila, col).font = Font(bold=True)
+    fila += 1
+
+    for comp in comps:
+        gb = getattr(comp, "grupo_b", None)
+        ga = getattr(comp, "grupo_a", None)
+        gf = getattr(comp, "grupo_f", None)
+        gk = getattr(comp, "grupo_k", None)
+
+        tipo = _valor_campo(getattr(gb, "tipo_comprobante", None) if gb else None)
+        serie = _valor_campo(getattr(gb, "serie", None) if gb else None)
+        numero = _valor_campo(getattr(gb, "numero", None) if gb else None)
+        ruc = _valor_campo(getattr(ga, "ruc_emisor", None) if ga else None)
+        razon = _valor_campo(getattr(ga, "razon_social", None) if ga else None)
+        fecha = _valor_campo(getattr(gb, "fecha_emision", None) if gb else None)
+        total = _valor_campo(getattr(gf, "importe_total", None) if gf else None)
+        igv = _valor_campo(getattr(gf, "igv_monto", None) if gf else None)
+        motor = getattr(gk, "metodo_extraccion", "") or "" if gk else ""
+        pag = getattr(gk, "pagina_origen", 0) or 0 if gk else 0
+        arch_pag = str(pag) if pag else ""
+
+        ws.cell(fila, 1, tipo)
+        ws.cell(fila, 2, serie)
+        ws.cell(fila, 3, numero)
+        ws.cell(fila, 4, ruc)
+        ws.cell(fila, 5, razon)
+        ws.cell(fila, 6, fecha)
+        ws.cell(fila, 7, total)
+        ws.cell(fila, 8, igv)
+        ws.cell(fila, 9, motor)
+        ws.cell(fila, 10, arch_pag)
+        fila += 1
+
+    for c in range(1, 11):
+        ws.column_dimensions[get_column_letter(c)].width = 14
+    return ws

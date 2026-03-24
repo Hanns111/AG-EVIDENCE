@@ -59,11 +59,21 @@ from src.extraction.excel_writer import (
     EscritorDiagnostico,
     _color_por_confianza,
     _color_por_status,
+    _valor_campo,
+    escribir_anexo3,
+    escribir_comprobantes,
     escribir_diagnostico,
 )
 from src.extraction.expediente_contract import (
+    ComprobanteExtraido,
     ConfianzaGlobal,
+    DatosAnexo3,
+    DatosComprobante,
+    DatosEmisor,
     IntegridadStatus,
+    ItemAnexo3,
+    MetadatosExtraccion,
+    TotalesTributos,
 )
 
 # ==============================================================================
@@ -932,3 +942,106 @@ class TestIntegracionConExistentes:
             EvidenceStatus.INCOMPLETO,
             EvidenceStatus.ILEGIBLE,
         )
+
+
+# ==============================================================================
+# TESTS HOJAS ANEXO_3 Y COMPROBANTES (anti-alucinación)
+# ==============================================================================
+
+
+@pytest.mark.skipif(not OPENPYXL_DISPONIBLE, reason="openpyxl no instalado")
+class TestHojasAnexoComprobantes:
+    """Tests para escribir_anexo3 y escribir_comprobantes."""
+
+    def test_valor_campo_none(self):
+        """_valor_campo retorna vacío para None."""
+        assert _valor_campo(None) == ""
+
+    def test_valor_campo_abstencion(self, campo_abstencion):
+        """_valor_campo retorna vacío para abstención (valor=None)."""
+        assert _valor_campo(campo_abstencion) == ""
+
+    def test_valor_campo_legible(self, campo_legible):
+        """_valor_campo retorna valor para campo legible."""
+        assert _valor_campo(campo_legible) == "20123456789"
+
+    def test_escribir_anexo3_vacio(self):
+        """escribir_anexo3 crea hoja con mensaje si anexo3 vacío."""
+        wb = Workbook()
+        ws = escribir_anexo3(wb, None, sinad="TEST")
+        assert ws is not None
+        assert "ANEXO_3" in wb.sheetnames
+        assert "Sin datos" in str(ws.cell(3, 1).value or "")
+
+    def test_escribir_anexo3_con_datos(self, campo_legible):
+        """escribir_anexo3 escribe cabecera y items."""
+        anexo = DatosAnexo3(
+            sinad=campo_legible,
+            comisionado=CampoExtraido(
+                nombre_campo="comisionado",
+                valor="JUAN PEREZ",
+                archivo="x.pdf",
+                pagina=1,
+                confianza=0.9,
+                metodo=MetodoExtraccion.OCR,
+            ),
+            items=[
+                ItemAnexo3(
+                    nro=CampoExtraido("nro", "1", "x.pdf", 2, 0.9, MetodoExtraccion.OCR),
+                    importe=CampoExtraido("importe", "150.00", "x.pdf", 2, 0.9, MetodoExtraccion.OCR),
+                ),
+            ],
+        )
+        wb = Workbook()
+        ws = escribir_anexo3(wb, anexo, sinad="TEST")
+        assert ws is not None
+        assert "ANEXO_3" in wb.sheetnames
+        # Cabecera
+        assert "Comisionado" in str(ws.cell(4, 1).value or "")
+        assert "JUAN PEREZ" in str(ws.cell(4, 2).value or "")
+        # Items: debe existir fila con 150.00 en columna importe (col 7)
+        found = False
+        for r in range(1, ws.max_row + 1):
+            if str(ws.cell(r, 7).value or "").strip() == "150.00":
+                found = True
+                assert str(ws.cell(r, 1).value or "").strip() == "1"
+                break
+        assert found, "Debe existir item con importe 150.00"
+
+    def test_escribir_comprobantes_vacio(self):
+        """escribir_comprobantes crea hoja con mensaje si sin comprobantes."""
+        wb = Workbook()
+        ws = escribir_comprobantes(wb, [])
+        assert ws is not None
+        assert "COMPROBANTES" in wb.sheetnames
+        assert "Sin comprobantes" in str(ws.cell(3, 1).value or "")
+
+    def test_escribir_comprobantes_con_datos(self, campo_legible):
+        """escribir_comprobantes escribe tabla de comprobantes."""
+        comp = ComprobanteExtraido(
+            grupo_a=DatosEmisor(
+                ruc_emisor=campo_legible,
+                razon_social=CampoExtraido(
+                    "razon", "RESTAURANTE XYZ", "x.pdf", 5, 0.9, MetodoExtraccion.OCR
+                ),
+            ),
+            grupo_b=DatosComprobante(
+                tipo_comprobante=CampoExtraido("tipo", "FACTURA", "x.pdf", 5, 0.9, MetodoExtraccion.OCR),
+                serie=CampoExtraido("serie", "F001", "x.pdf", 5, 0.9, MetodoExtraccion.OCR),
+                numero=CampoExtraido("numero", "12345", "x.pdf", 5, 0.9, MetodoExtraccion.OCR),
+                fecha_emision=CampoExtraido("fecha", "2026-03-01", "x.pdf", 5, 0.9, MetodoExtraccion.OCR),
+            ),
+            grupo_f=TotalesTributos(
+                importe_total=CampoExtraido("total", "118.00", "x.pdf", 5, 0.9, MetodoExtraccion.OCR),
+            ),
+            grupo_k=MetadatosExtraccion(metodo_extraccion="qwen_vl", pagina_origen=5),
+        )
+        wb = Workbook()
+        ws = escribir_comprobantes(wb, [comp])
+        assert ws is not None
+        assert "COMPROBANTES" in wb.sheetnames
+        assert "FACTURA" in str(ws.cell(4, 1).value or "")
+        assert "F001" in str(ws.cell(4, 2).value or "")
+        assert "12345" in str(ws.cell(4, 3).value or "")
+        assert "20123456789" in str(ws.cell(4, 4).value or "")
+        assert "118.00" in str(ws.cell(4, 7).value or "")
