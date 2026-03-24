@@ -10,12 +10,13 @@
 | Indicador | Valor |
 |---|---|
 | **Pipeline** | 7 pasos: custodia → OCR → parseo → OCR-first + VLM → evaluación → validación → Excel |
-| **Fases completadas** | 0-4 (28/42 tareas = 66.7%) + ADR-011 Niveles 1-2 + Nivel 4 benchmark |
-| **Fase siguiente** | Fase 5: Evaluación + Legal prep |
+| **Fases completadas** | 0-4 (28/42 tareas = 66.7%) + ADR-011 Niveles 1-3 + ADR-012 parcial |
+| **Fase siguiente** | Fase 5: Evaluación + Legal prep + ADR-012 benchmark VLM |
 | **Tests** | 1355 passed, 0 failed |
-| **GPU** | RTX 5090 24GB VRAM |
+| **GPU** | RTX 5090 24GB VRAM (Laptop) |
 | **Orquestador** | src/extraction/escribano_fiel.py |
-| **Última actualización** | 2026-03-14 |
+| **ADR-012** | PaddleOCR-VL-1.5 benchmark EN PROGRESO — nativo BROKEN, pendiente vLLM |
+| **Última actualización** | 2026-03-24 |
 
 ---
 
@@ -35,6 +36,16 @@
 ---
 
 ## Última Tarea Completada
+
+- **Sesión 2026-03-24** — ADR-012 benchmark + herramientas de descarga
+  - `src/tools/descargador_expedientes.py`: Playwright CDP para descargar PDFs del MINEDU
+  - `src/tools/watchdog_expedientes.py`: Monitor carpeta incoming + notif Telegram
+  - `src/extraction/excel_writer.py`: Hojas ANEXO_3 + COMPROBANTES (anti-alucinación)
+  - `docs/ADR-012.md`: Benchmark PaddleOCR-VL-1.5 (resultado: nativo BROKEN en RTX 5090)
+  - `scripts/benchmark_paddleocr_vl.py`: Script de benchmark formal
+  - `.env.example`: Variables Telegram + CDP
+  - vLLM 0.18.0 instalado en WSL2 (pendiente ejecutar benchmark con backend vLLM)
+  - Commits: `c34bf1e` (tools + excel), pendiente commit ADR-012
 
 - **Pipeline v4.1.0** — Performance optimizado: 2.7 min/expediente (sesión 2026-03-13/14)
 - escribano_fiel.py v4.1.0: overlap + keep_alive + JSON estricto + telemetría
@@ -216,7 +227,37 @@ o zoom. Qwen2.5-VL-7B a 500 DPI no los detecta. Se prosigue, queda pendiente par
 - **Impacto en settings.py:** Agregar CONVENIO_INTERINSTITUCIONAL a NaturalezaExpediente
 - **Ejemplo práctico:** Expedientes con RENIEC u otra entidad pública
 
-## Siguiente Sesión — Pendientes
+## Siguiente Sesión — Pendientes (actualizado 2026-03-24)
+
+### BLOQUE INMEDIATO (próxima sesión)
+
+**1. ADR-012: Completar benchmark PaddleOCR-VL-1.5**
+- PaddlePaddle nativo BROKEN en RTX 5090 sm_120 (output vacío, 766s/page en PDF)
+- vLLM 0.18.0 ya instalado — ejecutar: `paddleocr genai_server --model_name PaddleOCR-VL-1.5-0.9B --backend vllm --port 8118`
+- GGUF disponible en [PaddlePaddle/PaddleOCR-VL-1.5-GGUF](https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.5-GGUF) como alternativa
+- Si vLLM funciona → benchmark contra DIRI2026-INT-0196314, campos y tiempo
+- Si ni vLLM ni GGUF funcionan → probar MonkeyOCR-pro-1.2B o descartar y seguir con qwen2.5vl:7b
+- **ATENCIÓN:** vLLM instaló nvidia-cublas diferentes, verificar que PaddleOCR GPU sigue funcionando
+
+**2. Telegram bot setup (manual por Hans)**
+- Crear bot con @BotFather
+- Agregar TELEGRAM_BOT_TOKEN y TELEGRAM_CHAT_ID a .env
+- Probar: `python -m src.tools.watchdog_expedientes`
+
+**3. Fase 5 inicio**
+- Tarea #30: Golden dataset (expected.json)
+- Tarea #16: Re-generar Excel con pipeline formal
+- Tarea #31: test_flywheel.py
+
+### BLOQUE SEMANA 2
+- Tech Sentinel (scripts/tech_sentinel.py)
+- Procesamiento de expedientes reales con pipeline v4.1.0
+- Inicio diseño legal (Tareas #33-34)
+
+### BLOQUE SEMANA 3-5 (Deadline Premio BPG: 4 mayo 2026)
+- Frontend MVP con v0.dev
+- Video demo (3-5 min)
+- Documento de postulación
 
 ### Completado sesión 2026-03-13:
 - Tarea #29 (reporte_hallazgos.py) — 49 tests, commit 490dacd
