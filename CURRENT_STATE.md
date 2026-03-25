@@ -1,7 +1,7 @@
 # AG-EVIDENCE — Estado Actual del Proyecto
 
 > Última actualización: 2026-03-25 (documentación fallback OCR-first + Problema 3)
-> Último commit documentación continuidad: (ver `git log -1`)
+> Último commit documentación continuidad: `42dd78a`
 
 ---
 
