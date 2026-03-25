@@ -1,7 +1,21 @@
 # AG-EVIDENCE — Estado Actual del Proyecto
 
-> Última actualización: 2026-03-24 (sesión Claude Code)
-> Commit: e42aadc + pendiente push de esta actualización
+> Última actualización: 2026-03-24 (cierre sesión — documentación + Fase 5 pipeline)
+> Commit: ver `git log -1` tras push de continuidad
+
+---
+
+## 🔵 Estado actualizado (2026-03-24)
+
+- **Problema 1 (SUNAT):** RESUELTO — `page_classifier` con scoring auditable; páginas de validez no entran al extractor de comprobantes.
+- **Problema 2 (multi-comprobante):** RESUELTO — `page_segmenter` segmentación dinámica por layout OCR (N regiones, sin k fijo); integrado en `escribano_fiel` (ruta digital e imagen/VLM por recorte).
+- **Pipeline actual:**
+  - `page_classifier` (scoring auditable)
+  - `page_segmenter` (segmentación dinámica por layout OCR)
+- **Estado del sistema:** estable; validado contra golden **DIRI2026-INT-0196314** en tests unitarios de clasificación y segmentación.
+- **Próximo problema:**  
+  - 🔴 Problema 3: extracción de montos (alucinación crítica, ej. p37 real 25.00 vs pipeline 236.00).
+- **Nota:** el sistema ya **clasifica** páginas y **segmenta** comprobantes antes de la extracción profunda (OCR-first / VLM).
 
 ---
 
@@ -11,10 +25,10 @@
 |---|---|
 | **Versión pipeline** | v4.1.0 (7 pasos) |
 | **Fases completadas** | 0, 1 (parcial), 2, 3, 4 = 28/42 tareas (66.7%) |
-| **Fase en progreso** | 5 (Evaluación + Legal prep) — NO INICIADA |
-| **Tests** | 1,355 passed, 0 failures |
-| **Commits** | 142 en main |
-| **Último commit** | `e42aadc` — ADR-012 benchmark + session docs |
+| **Fase en progreso** | 5 (Evaluación + Legal prep) — en curso (clasificación + segmentación) |
+| **Tests** | ~1,400 passed (sin contar integración Ollama local) |
+| **Commits** | ver `git rev-list --count main` |
+| **Último hito Fase 5** | `page_classifier` + `page_segmenter` + tests golden DIRI2026 |
 | **Remote** | origin/main sincronizado |
 | **GPU** | RTX 5090 Laptop 24GB VRAM (sm_120 Blackwell) |
 | **OCR Engine** | PaddleOCR 3.4.0 PP-OCRv5 GPU |
