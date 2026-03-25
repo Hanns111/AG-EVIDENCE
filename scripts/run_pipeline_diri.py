@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config.settings import VLM_CONFIG, NaturalezaExpediente
 from src.extraction.escribano_fiel import VERSION_ESCRIBANO, ConfigPipeline, EscribanoFiel
 
-PDF = "data/expedientes/pruebas/viaticos_2026/DIRI2026-INT-0196314/2026031211199PV0086JOSEADRIANZENRENDICION.pdf"
+PDF = "data/expedientes/pruebas/viaticos_2026/DIRI2026-INT-0196314_12.03.2026/2026031211199PV0086JOSEADRIANZENRENDICION.pdf"
 SINAD = "DIRI2026-INT-0196314"
 
 # Baseline: v4.0.0 (2026-03-13, antes de keep_alive + format=json)

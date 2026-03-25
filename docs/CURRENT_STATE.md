@@ -1,23 +1,23 @@
 # ESTADO ACTUAL DEL PROYECTO — AG-EVIDENCE
 
 ## Fecha de Corte
-2026-03-12
+2026-03-24
 
 ---
 
 ## 1. Estado General
 
-**v2.0 — Fase 2 completada (Contrato + Router) + Gobernanza Transversal**
+**v2.0 — Fase 4 completada + Pipeline v4.1.0 + Golden Dataset**
 
-El proyecto completo su reestructuracion de v1.0 (prototipo con 9 agentes monoliticos)
-a v2.0 (arquitectura modular por dominios). Todo el codigo legacy fue eliminado.
-Se implemento el patron de 3 capas (Extraccion/Validacion/Analisis) como diseno
-estructural transversal.
+Pipeline v4.1.0 operativo: OCR-first + qwen2.5vl:7b (sin fallback) + keep_alive + JSON estricto.
+Benchmark formal contra golden dataset completado (DIRI2026-INT-0196314).
+ADR-012: PaddleOCR-VL-1.5 evaluado y descartado — proyecto sigue con qwen2.5vl:7b.
 
 **OCR Engine:** PaddleOCR 3.4.0 PP-OCRv5 server (GPU RTX 5090 via CUDA 12.9)
-**VLM Engine:** Ollama 0.16.2 + qwen3-vl:8b (Q4_K_M, 6.1GB, 8.7GB VRAM) — ADR-009 actualizado
-**VLM Anterior:** qwen2.5vl:7b (mantenido como fallback)
-**Expedientes procesados E2E:** 5 (ODI-0139051, DEBEDSAR-0146130, DIGC-072851, OTIC-086866, DIGC-073285)
+**VLM Engine:** Ollama 0.16.2 + qwen2.5vl:7b (Q4_K_M, 6.0GB) — modelo primario sin fallback
+**Pipeline:** v4.1.0 — 2.7 min/expediente, 0 fallos JSON, OCR-first (38% paginas sin VLM)
+**Tests:** 1355 passed, 0 failures
+**Expedientes procesados E2E:** 6 (ODI-0139051, DEBEDSAR-0146130, DIGC-072851, OTIC-086866, DIGC-073285, DIRI2026-INT-0196314)
 
 ---
 
@@ -77,21 +77,55 @@ estructural transversal.
 | Benchmark A/B Tesseract vs PaddleOCR | Fase 1 (#15) | Completado (ADR-008) |
 | Re-generar Excel + validacion visual | Fase 1 (#16) | En progreso (4 expedientes procesados) |
 | Reprocesar Caja Chica N.3 con pipeline formal | Pre-Fase 2 | Pendiente (proxima sesion) |
-| Contrato de expediente (JSON tipado) | Fase 2 (#17) | ✅ Completado (1161 líneas, 84 tests) |
-| Router multi-agente + Integrity Checkpoint | Fase 2 (#18) | ✅ Completado (1424 líneas, 86 tests) |
-| Calibrar umbrales con distribucion real | Fase 2 (#19) | ✅ Completado (500 lineas, 84 tests, 3 perfiles) |
-| Hoja DIAGNOSTICO en Excel | Fase 2 (#20) | ✅ Completado (850 lineas, 59 tests) |
-| Blindaje de Seguridad (4 capas) | Transversal (#41) | ✅ Completado (8 archivos, ACTA aprobada 2026-02-25) |
-| Integrar router en escribano_fiel.py | Fase 2 (#21) | ✅ Completado (1027 líneas, 44 tests) |
-| Qwen fallback LLM (motor para Capa C) | Fase 3 (#22-26) | Pendiente |
-| Validaciones cruzadas | Fase 4 (#27-29) | Pendiente |
+| Contrato de expediente (JSON tipado) | Fase 2 (#17) | ✅ Completado |
+| Router + Integrity Checkpoint | Fase 2 (#18) | ✅ Completado |
+| Calibrar umbrales | Fase 2 (#19) | ✅ Completado |
+| Hoja DIAGNOSTICO en Excel | Fase 2 (#20) | ✅ Completado |
+| Integrar router en escribano_fiel.py | Fase 2 (#21) | ✅ Completado |
+| Parseo profundo Qwen-VL | Fase 3 (#22-26) | ✅ Completado |
+| Validaciones + Hallazgos | Fase 4 (#27-29) | ✅ Completado |
+| Golden dataset DIRI2026 | Fase 5 (#30) | ✅ Completado |
+| ADR-012 PaddleOCR-VL-1.5 | Transversal | ✅ Evaluado y descartado |
+| Blindaje de Seguridad (4 capas) | Transversal (#41) | ✅ Completado |
+| test_flywheel.py | Fase 5 (#31) | Pendiente |
 | Motor legal | Fase 6 (#35-40) | Pendiente |
 
 ---
 
-## 5. Tests
+## 5. Benchmark Pipeline v4.1.0 vs Golden Dataset (2026-03-24)
 
-- **Total:** 885 passed, 2 skipped, 0 failures (2026-02-25)
+**Expediente:** DIRI2026-INT-0196314 (Ucayali, 44 paginas, 12 comprobantes reales)
+
+### Precision por campo (9 comprobantes detectados de 12)
+
+| Campo | Correcto | Porcentaje |
+|-------|----------|------------|
+| Serie/Numero | 9/9 | **100%** |
+| RUC emisor | 9/9 | **100%** |
+| Fecha emision | 8/9 | **89%** |
+| Monto total | 2/9 | **22%** (cuello de botella critico) |
+
+### Metricas de deteccion
+
+| Metrica | Valor |
+|---------|-------|
+| Recall comprobantes | 75% (9/12) |
+| Precision comprobantes | 47% (9/19, 10 falsos positivos SUNAT) |
+| Tiempo total | 162s (2.7 min) |
+| VLM promedio/pag | 13.2s |
+| JSON fallos | 0 |
+
+### 3 Problemas criticos identificados
+
+1. **Falsos positivos SUNAT:** 10 paginas de validacion SUNAT detectadas como comprobantes
+2. **Paginas dobles:** p21 y p34 tienen 2 comprobantes cada una, pipeline solo detecta 1 (3 comprobantes perdidos)
+3. **Monto 22%:** Mayoria de totales salen como 0.00 o "?". p37 alucino 236.00 vs real 25.00
+
+---
+
+## 6. Tests
+
+- **Total:** 1355 passed, 0 failures (2026-03-24)
 - 14 test suites cubriendo todos los modulos activos
 - Tests de seguridad: bloqueo de campos probatorios en Capa C
 - Tests de backward compatibility: CampoExtraido sin nuevos campos
@@ -100,7 +134,7 @@ estructural transversal.
 
 ---
 
-## 6. Directiva Vigente
+## 7. Directiva Vigente
 
 - **FUENTE PRINCIPAL:** Nueva Directiva de Viaticos RGS 023-2026-MINEDU
 - **DEROGADA (solo contexto):** Directiva de Viaticos 011-2020
@@ -108,23 +142,19 @@ estructural transversal.
 
 ---
 
-## 7. Decisiones Recientes
+## 8. Decisiones Recientes
 
-- **ADR-009 (actualizado 2026-03-10):** Migración qwen2.5vl:7b → qwen3-vl:8b. Benchmark: Virgen Carmen confianza baja→alta, latencia 3-5x mayor por thinking tokens. Estrategia mixta PyMuPDF + Qwen-VL se mantiene
+- **ADR-012 (2026-03-24):** PaddleOCR-VL-1.5 evaluado — nativo BROKEN en RTX 5090 sm_120, Docker vLLM funciona (5.8x mas rapido, 3x menos VRAM) pero campo extraction inferior a qwen2.5vl:7b. Descartado.
+- **Golden Dataset (#30, 2026-03-24):** `data/evaluacion/expected_DIRI2026-INT-0196314.json` — 12 comprobantes ground truth verificados manualmente
+- **Pipeline v4.1.0 (2026-03-14):** OCR-first + qwen2.5vl:7b sin fallback + keep_alive=10m + format=json. 2.7 min/expediente (16x speedup vs v1)
+- **ADR-009:** qwen2.5vl:7b como modelo primario (qwen3-vl:8b descartado por JSON corrupto)
 - **ADR-008:** PaddleOCR PP-OCRv5 GPU restaurado (RTX 5090 via CUDA 12.9 cu129)
 - **Benchmark OCR:** PP-OCRv5 GPU 42.0% vs PaddleOCR 2.9.1 CPU 36.2% vs Tesseract 20.3%
-- **Expediente DEBEDSAR2026 procesado:** 17 comprobantes, 500 DPI, estrategia mixta
-- **Regla de Literalidad Forense:** IA extrae literalmente, Python valida aritmeticamente
-- **NULL vs Blank:** NULL = motor no leyo campo existente; Blank = campo no aplicable
-- **DuckDB 1.4.4** instalado como base analitica (padron RUC futuro)
-- Patron de 3 capas formalizado (Regla 8 en Gobernanza Transversal)
-- PDFs de directivas removidos del tracking git (~35 MB liberados)
-- Commit incremental obligatorio (ver governance/SESSION_PROTOCOL.md)
-- **Blindaje de Seguridad (#41):** 4 capas defense-in-depth implementadas, ACTA aprobada 2026-02-25
+- **Blindaje de Seguridad (#41):** 4 capas defense-in-depth, ACTA aprobada 2026-02-25
 
 ---
 
-## 8. Scripts que violan Regla 1 (hardcode)
+## 9. Scripts que violan Regla 1 (hardcode)
 
 | Script | Violacion |
 |--------|-----------|
@@ -138,7 +168,7 @@ estructural transversal.
 
 ---
 
-## 9. Stack de Herramientas (instalado en WSL2)
+## 10. Stack de Herramientas (instalado en WSL2)
 
 | Herramienta | Version | Estado | Uso |
 |-------------|---------|--------|-----|
@@ -146,8 +176,8 @@ estructural transversal.
 | PaddlePaddle | 3.3.0 GPU cu129 | Operativo | Backend PaddleOCR (CUDA 12.9, sm_120) |
 | Tesseract | 5.x | Operativo | Motor OCR fallback |
 | DuckDB | 1.4.4 | Instalado | Base analitica (padron RUC) |
-| Qwen3-VL-8B | Q4_K_M, 6.1GB, 8.7GB VRAM | Operativo (Ollama 0.16.2) | Motor VLM primario (ADR-009 actualizado) |
-| Qwen2.5-VL-7B | Q4_K_M, 6GB | Fallback | Motor VLM anterior (mantenido) |
+| Qwen2.5-VL-7B | Q4_K_M, 6.0GB | Operativo (Ollama 0.16.2) | Motor VLM primario (sin fallback) |
+| Qwen3-VL-8B | Q4_K_M, 6.1GB | Disponible | Descartado como primario (JSON corrupto) |
 | PyMuPDF | 1.x | Operativo | Renderizado PDF + extraccion texto digital |
 
 **RTX 5090 GPU:** Operativo con PaddlePaddle cu129. Requiere
@@ -155,17 +185,24 @@ estructural transversal.
 
 ---
 
-## 10. Proximos Pasos
+## 11. Proximos Pasos
 
-1. **Fase 3** — Tareas #22-26: parseo profundo comprobantes, grupos A-K (Qwen3-VL + regex)
-   - Hallazgos Viáticos AI absorbidos: prompt forense, chunking overlap, retry JSON, dedup, validaciones RUC/IGV
-   - Opción A (local) como principal, Opción B (cloud) como fallback documentado
-2. **Tarea #16** — Re-generar Excel con pipeline formal (5 expedientes procesados E2E)
-3. Procesar expediente DIRI2026-INT-0068815 completo
-4. Reprocesar Caja Chica N.3 con pipeline formal
-5. Investigar herramienta de lectura fina para errores VLM (crop+zoom, modelo mayor)
-6. **Fase 4** — Absorber validación RUC (dígito verificador SUNAT) + validación IGV (Amazonía + recargo) de Viáticos AI
+### Problemas criticos a resolver (siguiente sesion)
+1. **Falsos positivos SUNAT** — Filtrar paginas de validacion SUNAT (detectadas como comprobantes)
+2. **Paginas dobles** — Detectar paginas con 2 comprobantes (p21, p34 en DIRI2026)
+3. **Monto 22%** — Mejorar extraccion de montos (mayoria sale 0.00 o "?", p37 alucino 236.00)
+
+### Fase 5 en progreso
+- Tarea #30: Golden dataset ✅ (expected.json DIRI2026-INT-0196314)
+- Tarea #16: Re-generar Excel con pipeline formal
+- Tarea #31: test_flywheel.py
+
+### Pendiente
+- apiperu.dev: Validacion CPE automatizada (100 queries gratis/mes, Hans debe registrarse)
+- Tech Sentinel (scripts/tech_sentinel.py)
+- Frontend MVP con v0.dev (post Fase 5)
+- Deadline Premio BPG: 4 mayo 2026
 
 ---
 
-**Ultima actualizacion:** 2026-03-12 por Claude Code
+**Ultima actualizacion:** 2026-03-24 por Claude Code

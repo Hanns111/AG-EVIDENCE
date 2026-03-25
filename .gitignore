@@ -75,6 +75,7 @@ desktop.ini
 nul
 .vscode/
 .idea/
+.obsidian/
 .claude/*
 !.claude/settings.json
 *.swp
