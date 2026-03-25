@@ -1,7 +1,7 @@
 # AG-EVIDENCE — Estado Actual del Proyecto
 
 > Última actualización: 2026-03-24 (cierre sesión — documentación + Fase 5 pipeline)
-> Commit: ver `git log -1` tras push de continuidad
+> Último commit documentación continuidad: `51cd3f9`
 
 ---
 
