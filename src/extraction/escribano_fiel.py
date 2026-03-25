@@ -475,8 +475,9 @@ class EscribanoFiel:
         """
         Materializa un ComprobanteExtraido solo con OCR del bloque (sin VLM).
 
-        Requiere score_comprobante >= 2 en el clasificador de página. Usa
-        _extraer_campos_ocr_por_tipo (regex determinísticos + abstención).
+        Requiere score_comprobante >= 2 (Region de segmentación si existe;
+        si no, clasificar_pagina sobre el bloque). Extrae campos solo vía
+        _extraer_campos_ocr_por_tipo (regex + abstención existente).
         """
         if not (texto_bloque or "").strip():
             return None
