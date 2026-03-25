@@ -58,7 +58,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 # Asegurar que el directorio raíz del proyecto esté en el path
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -95,8 +95,10 @@ from src.extraction.expediente_contract import (
     TotalesTributos,
 )
 from src.extraction.page_classifier import TipoPagina, clasificar_pagina
+from src.extraction.page_segmenter import Region, segmentar_pagina
 from src.ingestion.custody_chain import CustodyChain, CustodyRecord
 from src.ingestion.trace_logger import TraceLogger
+from src.ocr.core import LineaOCR
 
 # ==============================================================================
 # CONSTANTES
@@ -997,67 +999,61 @@ class EscribanoFiel:
             n_escaladas_vlm = 0
             scores_ocr: List[float] = []
 
-            # ADR-011: clasificar tipo de cada página comprobante
             paginas_ocr_dict = {p.get("pagina", 0): p for p in paginas_ocr}
-            for pg_num in paginas_comprobante:
-                pag_data = paginas_ocr_dict.get(pg_num, {})
-                texto_ocr = pag_data.get("texto", "") or ""
-                tipo = self._clasificar_tipo_comprobante(texto_ocr)
-                tipos_detectados[tipo] = tipos_detectados.get(tipo, 0) + 1
-
-            self._logger.info(
-                f"Tipos detectados: {tipos_detectados}",
-                agent_id=AGENTE_ID,
-                operation="parseo_profundo",
-            )
 
             # --- Ruta 1: Páginas digitales → OCR-first → LLM texto si necesario ---
             digitales_pendientes_vlm = []
             for page_num, texto in digitales:
-                tipo = self._clasificar_tipo_comprobante(texto)
+                pag_data = paginas_ocr_dict.get(page_num, {})
+                bloques = self._bloques_extraccion_pagina(pag_data, texto_digital=texto)
+                if not bloques:
+                    continue
+                for region_opt, txt_bloque in bloques:
+                    tipo = self._clasificar_tipo_comprobante(txt_bloque)
+                    tipos_detectados[tipo] = tipos_detectados.get(tipo, 0) + 1
+                    reg_suf = f" reg={region_opt.id}" if region_opt is not None else ""
 
-                # ADR-011 Nivel 2: intentar OCR-first con regex
-                comp_ocr = self._extraer_campos_ocr_por_tipo(
-                    texto_ocr=texto,
-                    tipo=tipo,
-                    archivo=Path(pdf_path).name,
-                    pagina=page_num,
-                )
-                score, encontrados, esperados, faltantes = self._calcular_score_suficiencia(
-                    comp_ocr, tipo
-                )
-                scores_ocr.append(score)
+                    comp_ocr = self._extraer_campos_ocr_por_tipo(
+                        texto_ocr=txt_bloque,
+                        tipo=tipo,
+                        archivo=Path(pdf_path).name,
+                        pagina=page_num,
+                    )
+                    score, encontrados, esperados, faltantes = self._calcular_score_suficiencia(
+                        comp_ocr, tipo
+                    )
+                    scores_ocr.append(score)
 
-                if score >= SCORE_UMBRAL_SIN_VLM:
-                    # OCR-first suficiente — skip VLM
-                    comp_ocr.grupo_k.confianza_global = "alta"
-                    comprobantes.append(comp_ocr)
-                    n_resueltas_ocr += 1
-                    n_digital += 1
-                    self._logger.info(
-                        f"OCR-first pág {page_num} [{tipo}] score={score:.2f} "
-                        f"({len(encontrados)}/{len(esperados)}) → SIN VLM",
-                        agent_id=AGENTE_ID,
-                        operation="parseo_profundo",
-                    )
-                elif score >= SCORE_UMBRAL_CON_OBS:
-                    # OCR-first parcial — resolver con observación
-                    comp_ocr.grupo_k.confianza_global = "media"
-                    comp_ocr.grupo_k.campos_no_encontrados = faltantes
-                    comprobantes.append(comp_ocr)
-                    n_resueltas_ocr += 1
-                    n_digital += 1
-                    self._logger.info(
-                        f"OCR-first pág {page_num} [{tipo}] score={score:.2f} "
-                        f"({len(encontrados)}/{len(esperados)}) → CON OBSERVACIÓN "
-                        f"(faltantes: {faltantes})",
-                        agent_id=AGENTE_ID,
-                        operation="parseo_profundo",
-                    )
-                else:
-                    # OCR-first insuficiente — acumular para LLM texto paralelo
-                    n_escaladas_vlm += 1
-                    digitales_pendientes_vlm.append((page_num, texto, tipo, faltantes))
+                    if score >= SCORE_UMBRAL_SIN_VLM:
+                        # OCR-first suficiente — skip VLM
+                        comp_ocr.grupo_k.confianza_global = "alta"
+                        comprobantes.append(comp_ocr)
+                        n_resueltas_ocr += 1
+                        n_digital += 1
+                        self._logger.info(
+                            f"OCR-first pág {page_num}{reg_suf} [{tipo}] score={score:.2f} "
+                            f"({len(encontrados)}/{len(esperados)}) → SIN VLM",
+                            agent_id=AGENTE_ID,
+                            operation="parseo_profundo",
+                        )
+                    elif score >= SCORE_UMBRAL_CON_OBS:
+                        # OCR-first parcial — resolver con observación
+                        comp_ocr.grupo_k.confianza_global = "media"
+                        comp_ocr.grupo_k.campos_no_encontrados = faltantes
+                        comprobantes.append(comp_ocr)
+                        n_resueltas_ocr += 1
+                        n_digital += 1
+                        self._logger.info(
+                            f"OCR-first pág {page_num}{reg_suf} [{tipo}] score={score:.2f} "
+                            f"({len(encontrados)}/{len(esperados)}) → CON OBSERVACIÓN "
+                            f"(faltantes: {faltantes})",
+                            agent_id=AGENTE_ID,
+                            operation="parseo_profundo",
+                        )
+                    else:
+                        # OCR-first insuficiente — acumular para LLM texto paralelo
+                        n_escaladas_vlm += 1
+                        digitales_pendientes_vlm.append((page_num, txt_bloque, tipo, faltantes))
 
             # Procesar páginas digitales escaladas a LLM en paralelo
             if digitales_pendientes_vlm:
@@ -1108,69 +1104,79 @@ class EscribanoFiel:
 
             # --- Ruta 2: Páginas imagen → OCR-first → VLM imagen si necesario ---
             if imagenes_pg:
-                # Intentar OCR-first en páginas imagen también (tienen texto OCR)
-                imagenes_pendientes_vlm = []
+                imagenes_pendientes_vlm: List[
+                    Tuple[int, Optional[Tuple[int, int, int, int]], List[Dict[str, Any]]]
+                ] = []
                 for page_num in imagenes_pg:
                     pag_data = paginas_ocr_dict.get(page_num, {})
-                    texto = pag_data.get("texto", "") or ""
-                    tipo = self._clasificar_tipo_comprobante(texto)
+                    bloques = self._bloques_extraccion_pagina(pag_data, texto_digital=None)
+                    if not bloques:
+                        continue
+                    lineas_full: List[Dict[str, Any]] = pag_data.get("lineas") or []
 
-                    if texto.strip():
-                        comp_ocr = self._extraer_campos_ocr_por_tipo(
-                            texto_ocr=texto,
-                            tipo=tipo,
-                            archivo=Path(pdf_path).name,
-                            pagina=page_num,
-                        )
-                        score, encontrados, esperados, faltantes = self._calcular_score_suficiencia(
-                            comp_ocr, tipo
-                        )
-                        scores_ocr.append(score)
+                    for region_opt, txt_bloque in bloques:
+                        tipo = self._clasificar_tipo_comprobante(txt_bloque)
+                        tipos_detectados[tipo] = tipos_detectados.get(tipo, 0) + 1
+                        reg_suf = f" reg={region_opt.id}" if region_opt is not None else ""
 
-                        if score >= SCORE_UMBRAL_SIN_VLM:
-                            comp_ocr.grupo_k.confianza_global = "alta"
-                            comprobantes.append(comp_ocr)
-                            n_resueltas_ocr += 1
-                            n_imagen += 1
-                            self._logger.info(
-                                f"OCR-first imagen pág {page_num} [{tipo}] score={score:.2f} "
-                                f"→ SIN VLM",
-                                agent_id=AGENTE_ID,
-                                operation="parseo_profundo",
+                        if txt_bloque.strip():
+                            comp_ocr = self._extraer_campos_ocr_por_tipo(
+                                texto_ocr=txt_bloque,
+                                tipo=tipo,
+                                archivo=Path(pdf_path).name,
+                                pagina=page_num,
                             )
-                            continue
-                        elif score >= SCORE_UMBRAL_CON_OBS:
-                            comp_ocr.grupo_k.confianza_global = "media"
-                            comp_ocr.grupo_k.campos_no_encontrados = faltantes
-                            comprobantes.append(comp_ocr)
-                            n_resueltas_ocr += 1
-                            n_imagen += 1
-                            self._logger.info(
-                                f"OCR-first imagen pág {page_num} [{tipo}] score={score:.2f} "
-                                f"→ CON OBSERVACIÓN",
-                                agent_id=AGENTE_ID,
-                                operation="parseo_profundo",
+                            score, encontrados, esperados, faltantes = (
+                                self._calcular_score_suficiencia(comp_ocr, tipo)
                             )
-                            continue
+                            scores_ocr.append(score)
 
-                    # Score insuficiente o sin texto → escalar a VLM
-                    imagenes_pendientes_vlm.append(page_num)
-                    n_escaladas_vlm += 1
+                            if score >= SCORE_UMBRAL_SIN_VLM:
+                                comp_ocr.grupo_k.confianza_global = "alta"
+                                comprobantes.append(comp_ocr)
+                                n_resueltas_ocr += 1
+                                n_imagen += 1
+                                self._logger.info(
+                                    f"OCR-first imagen pág {page_num}{reg_suf} [{tipo}] "
+                                    f"score={score:.2f} → SIN VLM",
+                                    agent_id=AGENTE_ID,
+                                    operation="parseo_profundo",
+                                )
+                                continue
+                            if score >= SCORE_UMBRAL_CON_OBS:
+                                comp_ocr.grupo_k.confianza_global = "media"
+                                comp_ocr.grupo_k.campos_no_encontrados = faltantes
+                                comprobantes.append(comp_ocr)
+                                n_resueltas_ocr += 1
+                                n_imagen += 1
+                                self._logger.info(
+                                    f"OCR-first imagen pág {page_num}{reg_suf} [{tipo}] "
+                                    f"score={score:.2f} → CON OBSERVACIÓN",
+                                    agent_id=AGENTE_ID,
+                                    operation="parseo_profundo",
+                                )
+                                continue
 
-                # Solo renderizar y enviar al VLM las páginas que realmente lo necesitan
+                        if region_opt is not None:
+                            bbox_px = tuple(max(0, int(round(x))) for x in region_opt.bbox)
+                            lineas_roi = [ln.to_dict() for ln in region_opt.lineas]
+                        else:
+                            bbox_px = None
+                            lineas_roi = lineas_full
+                        imagenes_pendientes_vlm.append((page_num, bbox_px, lineas_roi))
+                        n_escaladas_vlm += 1
+
                 if imagenes_pendientes_vlm:
-                    imagenes_b64 = self._renderizar_paginas_base64(
+                    imagenes_b64 = self._renderizar_vlm_recortes(
                         pdf_path=pdf_path,
-                        paginas=imagenes_pendientes_vlm,
+                        jobs=imagenes_pendientes_vlm,
                         dpi=self._config.dpi_vlm,
-                        paginas_ocr_dict=paginas_ocr_dict,
                     )
 
-                    # Paralelismo controlado: procesar páginas VLM concurrentemente
                     from concurrent.futures import ThreadPoolExecutor, as_completed
 
-                    def _procesar_imagen_vlm(page_img_tuple):
-                        pg_num, ib64 = page_img_tuple
+                    def _procesar_imagen_vlm(job_tuple):
+                        job_idx, pg_num, ib64 = job_tuple
                         t_start = time.perf_counter()
                         c = vlm_handler.extraer_o_abstener(
                             client=vlm_client,
@@ -1179,11 +1185,11 @@ class EscribanoFiel:
                             pagina=pg_num,
                         )
                         t_elapsed = time.perf_counter() - t_start
-                        return pg_num, c, t_elapsed
+                        return job_idx, pg_num, c, t_elapsed
 
                     max_workers = min(vlm_client.vlm_workers, len(imagenes_b64))
                     self._logger.info(
-                        f"VLM paralelo: {len(imagenes_b64)} páginas con {max_workers} workers",
+                        f"VLM paralelo: {len(imagenes_b64)} recortes con {max_workers} workers",
                         agent_id=AGENTE_ID,
                         operation="parseo_profundo",
                     )
@@ -1194,7 +1200,7 @@ class EscribanoFiel:
                             for item in imagenes_b64
                         }
                         for future in as_completed(futures):
-                            pg_num, comp, t_elapsed = future.result()
+                            _job_ix, pg_num, comp, t_elapsed = future.result()
                             tiempo_vlm_total += t_elapsed
                             comprobantes.append(comp)
                             n_imagen += 1
@@ -1207,6 +1213,12 @@ class EscribanoFiel:
                                 agent_id=AGENTE_ID,
                                 operation="parseo_profundo",
                             )
+
+            self._logger.info(
+                f"Tipos detectados: {tipos_detectados}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
 
             # Deduplicar por serie_numero
             antes = len(comprobantes)
@@ -1722,6 +1734,150 @@ class EscribanoFiel:
             imagenes = list(paginas_comprobante)
 
         return digitales, imagenes
+
+    def _lineas_dict_a_ocr(self, raw: List[Any]) -> List[LineaOCR]:
+        """Convierte lista de dicts OCR a LineaOCR (silencia entradas inválidas)."""
+        out: List[LineaOCR] = []
+        for item in raw or []:
+            if isinstance(item, LineaOCR):
+                out.append(item)
+            elif isinstance(item, dict):
+                try:
+                    out.append(LineaOCR.from_dict(item))
+                except (TypeError, KeyError, ValueError):
+                    continue
+        return out
+
+    def _texto_desde_lineas_ordenado(self, lineas: List[LineaOCR]) -> str:
+        ordered = sorted(
+            lineas,
+            key=lambda ln: (ln.bbox[1] if ln.bbox else 0.0, ln.bbox[0] if ln.bbox else 0.0),
+        )
+        return "\n".join(ln.texto for ln in ordered if (ln.texto or "").strip())
+
+    def _bloques_extraccion_pagina(
+        self,
+        pag_data: Dict[str, Any],
+        texto_digital: Optional[str] = None,
+    ) -> List[Tuple[Optional[Region], str]]:
+        """
+        Parte una página en 0..N bloques de texto según layout OCR + page_classifier.
+
+        SUNAT_VALIDACION → []. Sin regiones tras segmentar → una tupla (None, texto fallback).
+        """
+        texto_ocr = (pag_data.get("texto") or "").strip()
+        texto_fb = texto_digital if texto_digital is not None else texto_ocr
+        ref_clasif = texto_ocr if texto_ocr else (texto_fb or "")
+        cl = clasificar_pagina(ref_clasif)
+        if cl.tipo == TipoPagina.SUNAT_VALIDACION:
+            return []
+        lineas = self._lineas_dict_a_ocr(pag_data.get("lineas") or [])
+        regiones: List[Region] = []
+        if cl.tipo == TipoPagina.COMPROBANTE and lineas:
+            regiones = segmentar_pagina(lineas)
+        if not regiones:
+            t = texto_fb if (texto_fb or "").strip() else texto_ocr
+            return [(None, t)]
+        bloques: List[Tuple[Optional[Region], str]] = []
+        for r in regiones:
+            txt = self._texto_desde_lineas_ordenado(r.lineas)
+            if not txt.strip():
+                txt = texto_fb or texto_ocr
+            bloques.append((r, txt))
+        return bloques
+
+    def _renderizar_vlm_recortes(
+        self,
+        pdf_path: str,
+        jobs: List[Tuple[int, Optional[Tuple[int, int, int, int]], List[Dict[str, Any]]]],
+        dpi: int = 200,
+    ) -> List[Tuple[int, int, str]]:
+        """
+        Renderiza recortes VLM por trabajo: (página, bbox opcional en px, líneas ROI fallback).
+
+        Devuelve lista de (job_index, page_num, base64_png).
+        """
+        resultado: List[Tuple[int, int, str]] = []
+        self._ultimo_crop_stats = {
+            "pages_with_crop": 0,
+            "pages_full_page": 0,
+            "crop_area_ratios": [],
+        }
+        try:
+            import io
+
+            import fitz
+            from PIL import Image
+
+            doc = fitz.open(pdf_path)
+            zoom = dpi / 72.0
+            matrix = fitz.Matrix(zoom, zoom)
+
+            for job_idx, (page_num, bbox_px, lineas_roi) in enumerate(jobs):
+                if page_num < 1 or page_num > len(doc):
+                    continue
+                page = doc[page_num - 1]
+                pix = page.get_pixmap(matrix=matrix)
+                img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+                original_w, original_h = pix.width, pix.height
+                cropped = False
+
+                if bbox_px is not None:
+                    x0, y0, x1, y1 = bbox_px
+                    mw = max(3.0, (x1 - x0) * CROP_MARGIN_PERCENT)
+                    mh = max(3.0, (y1 - y0) * CROP_MARGIN_PERCENT)
+                    x0i = max(0, int(x0 - mw))
+                    y0i = max(0, int(y0 - mh))
+                    x1i = min(original_w, int(x1 + mw))
+                    y1i = min(original_h, int(y1 + mh))
+                    if x1i > x0i and y1i > y0i:
+                        img = img.crop((x0i, y0i, x1i, y1i))
+                        cropped = True
+                        self._ultimo_crop_stats["pages_with_crop"] += 1
+                else:
+                    roi = self._calcular_roi_desde_bboxes(lineas_roi, pix.width, pix.height)
+                    if roi is not None:
+                        x_min, y_min, x_max, y_max = roi
+                        img = img.crop((x_min, y_min, x_max, y_max))
+                        cropped = True
+                        self._ultimo_crop_stats["pages_with_crop"] += 1
+                    else:
+                        self._ultimo_crop_stats["pages_full_page"] += 1
+
+                max_side = max(img.width, img.height)
+                if max_side > MAX_VLM_IMAGE_PX:
+                    scale = MAX_VLM_IMAGE_PX / max_side
+                    new_w = int(img.width * scale)
+                    new_h = int(img.height * scale)
+                    img = img.resize((new_w, new_h), Image.LANCZOS)
+
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+                resultado.append((job_idx, page_num, img_b64))
+
+                self._logger.info(
+                    f"VLM recorte job {job_idx} pág {page_num}: {img.width}x{img.height} "
+                    f"(crop={'sí' if cropped else 'no'})",
+                    agent_id=AGENTE_ID,
+                    operation="parseo_profundo",
+                )
+
+            doc.close()
+        except ImportError:
+            self._logger.warning(
+                "PyMuPDF/PIL no disponible para renderizar recortes VLM",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
+        except Exception as e:
+            self._logger.error(
+                f"Error renderizando recortes VLM: {e}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+                error=str(e),
+            )
+        return resultado
 
     def _renderizar_paginas_base64(
         self,
