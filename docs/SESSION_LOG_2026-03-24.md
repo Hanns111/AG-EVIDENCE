@@ -14,3 +14,21 @@
 ## Qué sigue
 
 - **Problema 3:** extractor determinístico de montos (etiquetas + aritmética, sin depender del VLM para decidir total; NULL si duda).
+
+## Implementación fallback OCR-first
+
+- Se eliminó early return en `parseo_profundo` cuando Ollama no está disponible
+- Se implementó `_parseo_profundo_fallback_sin_vlm`
+- Se creó `construir_comprobante_minimo` (regex + abstención)
+- Se reutilizó segmentación existente (sin duplicar lógica)
+- Se mantuvo deduplicación y contratos sin cambios
+
+### Resultado
+
+El sistema ahora genera comprobantes sin depender del VLM.
+
+### Cambio arquitectónico
+
+**De:** VLM-gated pipeline
+
+**A:** OCR-first robusto con VLM opcional

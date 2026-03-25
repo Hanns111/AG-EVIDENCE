@@ -5,20 +5,20 @@
 - El sistema ya clasifica páginas correctamente
 - El sistema ya segmenta múltiples comprobantes por página
 
-## Problema actual
+## 🔴 Problema 3: extracción de montos
 
-- Error en extracción de montos
-- Ejemplo:
-  - p37 → real: 25.00
-  - pipeline: 236.00
+**Estado actual:**
 
-## Objetivo
+- ✔ Pipeline ya genera comprobantes sin VLM (fallback OCR-first implementado)
+- ❌ Error persiste en extracción de montos (ej: 25 → 236)
 
-Implementar extractor de montos determinístico:
+**Siguiente objetivo:**
 
-- basado en etiquetas (TOTAL, IMPORTE, etc.)
-- sin depender del VLM
-- con validación aritmética
+Implementar extractor determinístico de montos basado en:
+
+- etiquetas (TOTAL, IMPORTE)
+- validación aritmética
+- sin dependencia de VLM
 
 ## Restricción
 
@@ -27,7 +27,7 @@ Implementar extractor de montos determinístico:
 
 ## Estado
 
-LISTO PARA IMPLEMENTAR
+LISTO PARA IMPLEMENTAR (fase montos; comprobantes sin VLM ya cubierto)
 
 ---
 

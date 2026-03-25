@@ -1,7 +1,7 @@
 # AG-EVIDENCE — Estado Actual del Proyecto
 
-> Última actualización: 2026-03-24 (cierre sesión — documentación + Fase 5 pipeline)
-> Último commit documentación continuidad: `51cd3f9`
+> Última actualización: 2026-03-25 (documentación fallback OCR-first + Problema 3)
+> Último commit documentación continuidad: (ver `git log -1`)
 
 ---
 
@@ -13,13 +13,43 @@
   - `page_classifier` (scoring auditable)
   - `page_segmenter` (segmentación dinámica por layout OCR)
 - **Estado del sistema:** estable; validado contra golden **DIRI2026-INT-0196314** en tests unitarios de clasificación y segmentación.
-- **Próximo problema:**  
-  - 🔴 Problema 3: extracción de montos (alucinación crítica, ej. p37 real 25.00 vs pipeline 236.00).
+- **Problema 3 (parcial):** fallback OCR-first sin VLM implementado (comprobantes se materializan sin Ollama); **siguiente:** extracción de montos (alucinación crítica, ej. p37 real 25.00 vs pipeline 236.00).
 - **Nota:** el sistema ya **clasifica** páginas y **segmenta** comprobantes antes de la extracción profunda (OCR-first / VLM).
 - **Próximas capas del sistema:**
   - Clasificación de expediente (rendición vs reembolso) — **CAPA CORE** — ver `docs/NEXT_STEP.md` (sección clasificación de expediente)
   - Validación externa SUNAT (pendiente) — ver `docs/SUNAT_VALIDATION.md` y `docs/NEXT_STEP.md`
 - **Nota:** el sistema evolucionará hacia verificación cruzada contra fuentes oficiales.
+
+## 🔵 Resolución Problema 3 (parcial) — fallback OCR-first
+
+### Problema detectado
+
+El pipeline no generaba comprobantes cuando Ollama no estaba disponible, debido a un early return en `parseo_profundo`.
+
+### Causa raíz
+
+Dependencia implícita del VLM para materializar comprobantes, a pesar de contar con OCR, clasificación y segmentación funcionales.
+
+### Solución implementada
+
+Se implementó un fallback OCR-first determinístico:
+
+- Activado cuando `ollama_no_disponible`
+- Usa `_bloques_extraccion_pagina` + segmentación existente
+- Genera comprobantes mediante `construir_comprobante_minimo`
+- Umbral: `score_comprobante >= 2`
+- Extracción vía `_extraer_campos_ocr_por_tipo`
+- Campos no encontrados → NULL (abstención)
+
+### Resultado
+
+- El sistema ahora genera comprobantes sin depender del VLM
+- Se elimina el bloqueo crítico del pipeline
+- Se mantiene trazabilidad, contratos y deduplicación
+
+### Impacto arquitectónico
+
+El sistema pasa de ser VLM-gated a OCR-first robusto con VLM como mejora opcional
 
 ---
 
