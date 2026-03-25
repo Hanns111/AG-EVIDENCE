@@ -31,6 +31,53 @@ LISTO PARA IMPLEMENTAR
 
 ---
 
+## 🔴 CAPA FUTURA DEL CORE — CLASIFICACIÓN DE EXPEDIENTE
+
+### Problema detectado
+
+Expedientes que aparentan ser rendición de viáticos pero contienen solicitudes de reembolso.
+
+### Impacto
+
+Clasificación incorrecta implica:
+
+- aplicación de reglas equivocadas
+- validación normativa incorrecta
+- conclusiones erróneas
+
+### Objetivo
+
+Clasificar el tipo de expediente ANTES del procesamiento de comprobantes.
+
+### Tipos
+
+- RENDICION
+- REEMBOLSO
+- OTRO
+
+### Reglas iniciales
+
+- “solicitud de reembolso” → REEMBOLSO
+- “rendición de viáticos” → RENDICION
+- Si ambos → REEMBOLSO (prioridad)
+
+### Ubicación futura
+
+`src/classification/expediente_classifier.py`
+
+### Rol en pipeline
+
+Se ejecuta antes de:
+
+- extracción
+- validación
+
+### Estado
+
+PENDIENTE (CORE)
+
+---
+
 ## 🔵 FUTURA CAPA — VALIDACIÓN EXTERNA SUNAT
 
 ### Objetivo

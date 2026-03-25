@@ -17,6 +17,7 @@
   - 🔴 Problema 3: extracción de montos (alucinación crítica, ej. p37 real 25.00 vs pipeline 236.00).
 - **Nota:** el sistema ya **clasifica** páginas y **segmenta** comprobantes antes de la extracción profunda (OCR-first / VLM).
 - **Próximas capas del sistema:**
+  - Clasificación de expediente (rendición vs reembolso) — **CAPA CORE** — ver `docs/NEXT_STEP.md` (sección clasificación de expediente)
   - Validación externa SUNAT (pendiente) — ver `docs/SUNAT_VALIDATION.md` y `docs/NEXT_STEP.md`
 - **Nota:** el sistema evolucionará hacia verificación cruzada contra fuentes oficiales.
 
