@@ -94,6 +94,7 @@ from src.extraction.expediente_contract import (
     ResumenExtraccion,
     TotalesTributos,
 )
+from src.extraction.page_classifier import TipoPagina, clasificar_pagina
 from src.ingestion.custody_chain import CustodyChain, CustodyRecord
 from src.ingestion.trace_logger import TraceLogger
 
@@ -102,7 +103,7 @@ from src.ingestion.trace_logger import TraceLogger
 # ==============================================================================
 
 VERSION_ESCRIBANO = "4.1.0"
-"""Versión del módulo escribano_fiel (4.1: overlap + keep_alive + JSON estricto)."""
+"""Versión del módulo escribano_fiel (4.1: overlap + keep_alive + JSON estricto + gating SUNAT)."""
 
 AGENTE_ID = "ESCRIBANO"
 """ID de agente para logging."""
@@ -1644,9 +1645,13 @@ class EscribanoFiel:
         """Identifica páginas que probablemente contienen comprobantes de pago."""
         paginas = []
         for pag in paginas_ocr:
-            texto = (pag.get("texto", "") or "").upper()
-            if not texto:
+            texto_raw = pag.get("texto", "") or ""
+            if not texto_raw.strip():
                 continue
+            cl = clasificar_pagina(texto_raw)
+            if cl.tipo == TipoPagina.SUNAT_VALIDACION:
+                continue
+            texto = texto_raw.upper()
             matches = sum(1 for kw in KEYWORDS_COMPROBANTE if re.search(kw, texto, re.IGNORECASE))
             if matches >= min_keywords:
                 paginas.append(pag.get("pagina", 0))
