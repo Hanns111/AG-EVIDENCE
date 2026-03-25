@@ -420,6 +420,51 @@ class EscribanoFiel:
         """Configuración actual del pipeline."""
         return self._config
 
+    def _diag_snap_serie_numero(self, comp: ComprobanteExtraido) -> str:
+        """Resumen serie/número para logs de diagnóstico (no altera datos)."""
+        try:
+            gb = comp.grupo_b
+            if not gb:
+                return "serie=? numero=?"
+            sv = (gb.serie.valor or "") if gb.serie else ""
+            nv = (gb.numero.valor or "") if gb.numero else ""
+            return f"serie={sv!r} numero={nv!r}"
+        except Exception:
+            return "serie=? numero=?"
+
+    def _diag_log_comp_creado(
+        self,
+        *,
+        etapa: str,
+        page_num: int,
+        reg_suf: str,
+        tipo: str,
+        score: float,
+        comp: ComprobanteExtraido,
+    ) -> None:
+        self._logger.info(
+            f"[DIAG] comp_ocr creado ({etapa}) pág={page_num}{reg_suf} tipo={tipo} "
+            f"score={score:.2f} {self._diag_snap_serie_numero(comp)}",
+            agent_id=AGENTE_ID,
+            operation="parseo_profundo",
+        )
+
+    def _diag_append_comprobante(
+        self,
+        comprobantes: List[ComprobanteExtraido],
+        comp: ComprobanteExtraido,
+        *,
+        etiqueta: str,
+        page_num: int,
+    ) -> None:
+        comprobantes.append(comp)
+        self._logger.info(
+            f"[DIAG] append({etiqueta}) pág={page_num} -> len(comprobantes)={len(comprobantes)} "
+            f"{self._diag_snap_serie_numero(comp)}",
+            agent_id=AGENTE_ID,
+            operation="parseo_profundo",
+        )
+
     # ==========================================================================
     # PIPELINE PRINCIPAL
     # ==========================================================================
@@ -919,6 +964,10 @@ class EscribanoFiel:
         inicio = time.perf_counter()
 
         if not self._config.vlm_enabled:
+            print(
+                f"[DIAG escribano] parseo_profundo EARLY: vlm_disabled PDF={Path(pdf_path).name}",
+                flush=True,
+            )
             return ResultadoPaso(
                 paso="parseo_profundo",
                 exito=True,
@@ -943,6 +992,11 @@ class EscribanoFiel:
             )
 
             if not paginas_comprobante:
+                print(
+                    f"[DIAG escribano] parseo_profundo EARLY: paginas_comprobante=0 "
+                    f"PDF={Path(pdf_path).name}",
+                    flush=True,
+                )
                 return ResultadoPaso(
                     paso="parseo_profundo",
                     exito=True,
@@ -977,6 +1031,11 @@ class EscribanoFiel:
                     agent_id=AGENTE_ID,
                     operation="parseo_profundo",
                 )
+                print(
+                    f"[DIAG escribano] parseo_profundo EARLY: ollama_no_disponible "
+                    f"PDF={Path(pdf_path).name}",
+                    flush=True,
+                )
                 return ResultadoPaso(
                     paso="parseo_profundo",
                     exito=True,
@@ -1006,54 +1065,76 @@ class EscribanoFiel:
             for page_num, texto in digitales:
                 pag_data = paginas_ocr_dict.get(page_num, {})
                 bloques = self._bloques_extraccion_pagina(pag_data, texto_digital=texto)
-                if not bloques:
-                    continue
-                for region_opt, txt_bloque in bloques:
-                    tipo = self._clasificar_tipo_comprobante(txt_bloque)
-                    tipos_detectados[tipo] = tipos_detectados.get(tipo, 0) + 1
-                    reg_suf = f" reg={region_opt.id}" if region_opt is not None else ""
+                if bloques:
+                    for region_opt, txt_bloque in bloques:
+                        tipo = self._clasificar_tipo_comprobante(txt_bloque)
+                        tipos_detectados[tipo] = tipos_detectados.get(tipo, 0) + 1
+                        reg_suf = f" reg={region_opt.id}" if region_opt is not None else ""
 
-                    comp_ocr = self._extraer_campos_ocr_por_tipo(
-                        texto_ocr=txt_bloque,
-                        tipo=tipo,
-                        archivo=Path(pdf_path).name,
-                        pagina=page_num,
-                    )
-                    score, encontrados, esperados, faltantes = self._calcular_score_suficiencia(
-                        comp_ocr, tipo
-                    )
-                    scores_ocr.append(score)
+                        comp_ocr = self._extraer_campos_ocr_por_tipo(
+                            texto_ocr=txt_bloque,
+                            tipo=tipo,
+                            archivo=Path(pdf_path).name,
+                            pagina=page_num,
+                        )
+                        score, encontrados, esperados, faltantes = self._calcular_score_suficiencia(
+                            comp_ocr, tipo
+                        )
+                        scores_ocr.append(score)
+                        self._diag_log_comp_creado(
+                            etapa="digital",
+                            page_num=page_num,
+                            reg_suf=reg_suf,
+                            tipo=tipo,
+                            score=score,
+                            comp=comp_ocr,
+                        )
 
-                    if score >= SCORE_UMBRAL_SIN_VLM:
-                        # OCR-first suficiente — skip VLM
-                        comp_ocr.grupo_k.confianza_global = "alta"
-                        comprobantes.append(comp_ocr)
-                        n_resueltas_ocr += 1
-                        n_digital += 1
-                        self._logger.info(
-                            f"OCR-first pág {page_num}{reg_suf} [{tipo}] score={score:.2f} "
-                            f"({len(encontrados)}/{len(esperados)}) → SIN VLM",
-                            agent_id=AGENTE_ID,
-                            operation="parseo_profundo",
-                        )
-                    elif score >= SCORE_UMBRAL_CON_OBS:
-                        # OCR-first parcial — resolver con observación
-                        comp_ocr.grupo_k.confianza_global = "media"
-                        comp_ocr.grupo_k.campos_no_encontrados = faltantes
-                        comprobantes.append(comp_ocr)
-                        n_resueltas_ocr += 1
-                        n_digital += 1
-                        self._logger.info(
-                            f"OCR-first pág {page_num}{reg_suf} [{tipo}] score={score:.2f} "
-                            f"({len(encontrados)}/{len(esperados)}) → CON OBSERVACIÓN "
-                            f"(faltantes: {faltantes})",
-                            agent_id=AGENTE_ID,
-                            operation="parseo_profundo",
-                        )
-                    else:
-                        # OCR-first insuficiente — acumular para LLM texto paralelo
-                        n_escaladas_vlm += 1
-                        digitales_pendientes_vlm.append((page_num, txt_bloque, tipo, faltantes))
+                        if score >= SCORE_UMBRAL_SIN_VLM:
+                            # OCR-first suficiente — skip VLM
+                            comp_ocr.grupo_k.confianza_global = "alta"
+                            self._diag_append_comprobante(
+                                comprobantes,
+                                comp_ocr,
+                                etiqueta="ocr_first_digital_sin_vlm",
+                                page_num=page_num,
+                            )
+                            n_resueltas_ocr += 1
+                            n_digital += 1
+                            self._logger.info(
+                                f"OCR-first pág {page_num}{reg_suf} [{tipo}] score={score:.2f} "
+                                f"({len(encontrados)}/{len(esperados)}) → SIN VLM",
+                                agent_id=AGENTE_ID,
+                                operation="parseo_profundo",
+                            )
+                        elif score >= SCORE_UMBRAL_CON_OBS:
+                            # OCR-first parcial — resolver con observación
+                            comp_ocr.grupo_k.confianza_global = "media"
+                            comp_ocr.grupo_k.campos_no_encontrados = faltantes
+                            self._diag_append_comprobante(
+                                comprobantes,
+                                comp_ocr,
+                                etiqueta="ocr_first_digital_con_obs",
+                                page_num=page_num,
+                            )
+                            n_resueltas_ocr += 1
+                            n_digital += 1
+                            self._logger.info(
+                                f"OCR-first pág {page_num}{reg_suf} [{tipo}] score={score:.2f} "
+                                f"({len(encontrados)}/{len(esperados)}) → CON OBSERVACIÓN "
+                                f"(faltantes: {faltantes})",
+                                agent_id=AGENTE_ID,
+                                operation="parseo_profundo",
+                            )
+                        else:
+                            # OCR-first insuficiente — acumular para LLM texto paralelo
+                            n_escaladas_vlm += 1
+                            digitales_pendientes_vlm.append((page_num, txt_bloque, tipo, faltantes))
+                self._logger.info(
+                    f"[DIAG] post-página digital {page_num} len(comprobantes)={len(comprobantes)}",
+                    agent_id=AGENTE_ID,
+                    operation="parseo_profundo",
+                )
 
             # Procesar páginas digitales escaladas a LLM en paralelo
             if digitales_pendientes_vlm:
@@ -1086,7 +1167,12 @@ class EscribanoFiel:
                         pg_num, comp, t_elapsed, tipo, faltantes = future.result()
                         tiempo_vlm_total += t_elapsed
                         if comp is not None:
-                            comprobantes.append(comp)
+                            self._diag_append_comprobante(
+                                comprobantes,
+                                comp,
+                                etiqueta="llm_texto",
+                                page_num=pg_num,
+                            )
                             n_digital += 1
                         else:
                             comp_abstencion = vlm_handler.generar_abstencion_vlm(
@@ -1094,13 +1180,23 @@ class EscribanoFiel:
                                 pagina=pg_num,
                                 razon="LLM texto falló tras retries",
                             )
-                            comprobantes.append(comp_abstencion)
+                            self._diag_append_comprobante(
+                                comprobantes,
+                                comp_abstencion,
+                                etiqueta="llm_texto_abstencion",
+                                page_num=pg_num,
+                            )
                         self._logger.info(
                             f"LLM texto pág {pg_num} [{tipo}] {t_elapsed:.1f}s "
                             f"(faltantes: {faltantes})",
                             agent_id=AGENTE_ID,
                             operation="parseo_profundo",
                         )
+                self._logger.info(
+                    f"[DIAG] post batch LLM texto len(comprobantes)={len(comprobantes)}",
+                    agent_id=AGENTE_ID,
+                    operation="parseo_profundo",
+                )
 
             # --- Ruta 2: Páginas imagen → OCR-first → VLM imagen si necesario ---
             if imagenes_pg:
@@ -1111,6 +1207,12 @@ class EscribanoFiel:
                     pag_data = paginas_ocr_dict.get(page_num, {})
                     bloques = self._bloques_extraccion_pagina(pag_data, texto_digital=None)
                     if not bloques:
+                        self._logger.info(
+                            f"[DIAG] post-página imagen {page_num} len(comprobantes)="
+                            f"{len(comprobantes)} (sin bloques)",
+                            agent_id=AGENTE_ID,
+                            operation="parseo_profundo",
+                        )
                         continue
                     lineas_full: List[Dict[str, Any]] = pag_data.get("lineas") or []
 
@@ -1130,10 +1232,23 @@ class EscribanoFiel:
                                 self._calcular_score_suficiencia(comp_ocr, tipo)
                             )
                             scores_ocr.append(score)
+                            self._diag_log_comp_creado(
+                                etapa="imagen",
+                                page_num=page_num,
+                                reg_suf=reg_suf,
+                                tipo=tipo,
+                                score=score,
+                                comp=comp_ocr,
+                            )
 
                             if score >= SCORE_UMBRAL_SIN_VLM:
                                 comp_ocr.grupo_k.confianza_global = "alta"
-                                comprobantes.append(comp_ocr)
+                                self._diag_append_comprobante(
+                                    comprobantes,
+                                    comp_ocr,
+                                    etiqueta="ocr_first_imagen_sin_vlm",
+                                    page_num=page_num,
+                                )
                                 n_resueltas_ocr += 1
                                 n_imagen += 1
                                 self._logger.info(
@@ -1146,7 +1261,12 @@ class EscribanoFiel:
                             if score >= SCORE_UMBRAL_CON_OBS:
                                 comp_ocr.grupo_k.confianza_global = "media"
                                 comp_ocr.grupo_k.campos_no_encontrados = faltantes
-                                comprobantes.append(comp_ocr)
+                                self._diag_append_comprobante(
+                                    comprobantes,
+                                    comp_ocr,
+                                    etiqueta="ocr_first_imagen_con_obs",
+                                    page_num=page_num,
+                                )
                                 n_resueltas_ocr += 1
                                 n_imagen += 1
                                 self._logger.info(
@@ -1165,6 +1285,11 @@ class EscribanoFiel:
                             lineas_roi = lineas_full
                         imagenes_pendientes_vlm.append((page_num, bbox_px, lineas_roi))
                         n_escaladas_vlm += 1
+                    self._logger.info(
+                        f"[DIAG] post-página imagen {page_num} len(comprobantes)={len(comprobantes)}",
+                        agent_id=AGENTE_ID,
+                        operation="parseo_profundo",
+                    )
 
                 if imagenes_pendientes_vlm:
                     imagenes_b64 = self._renderizar_vlm_recortes(
@@ -1202,7 +1327,12 @@ class EscribanoFiel:
                         for future in as_completed(futures):
                             _job_ix, pg_num, comp, t_elapsed = future.result()
                             tiempo_vlm_total += t_elapsed
-                            comprobantes.append(comp)
+                            self._diag_append_comprobante(
+                                comprobantes,
+                                comp,
+                                etiqueta="vlm_imagen",
+                                page_num=pg_num,
+                            )
                             n_imagen += 1
                             pag_data = paginas_ocr_dict.get(pg_num, {})
                             tipo = self._clasificar_tipo_comprobante(
@@ -1213,6 +1343,11 @@ class EscribanoFiel:
                                 agent_id=AGENTE_ID,
                                 operation="parseo_profundo",
                             )
+                    self._logger.info(
+                        f"[DIAG] post batch VLM imagen len(comprobantes)={len(comprobantes)}",
+                        agent_id=AGENTE_ID,
+                        operation="parseo_profundo",
+                    )
 
             self._logger.info(
                 f"Tipos detectados: {tipos_detectados}",
@@ -1221,13 +1356,39 @@ class EscribanoFiel:
             )
 
             # Deduplicar por serie_numero
+            self._logger.info(
+                f"[DIAG] pre_dedup len(comprobantes)={len(comprobantes)}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
             antes = len(comprobantes)
             comprobantes = vlm_client._deduplicar(comprobantes)
             dedup = antes - len(comprobantes)
+            self._logger.info(
+                f"[DIAG] post_dedup len(comprobantes)={len(comprobantes)} removidos={dedup}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
 
             # Actualizar expediente
             expediente.comprobantes = comprobantes
             expediente.resumen_extraccion.comprobantes_procesados = len(comprobantes)
+            self._logger.info(
+                f"[DIAG] expediente.comprobantes asignado len={len(expediente.comprobantes)}",
+                agent_id=AGENTE_ID,
+                operation="parseo_profundo",
+            )
+            _pdf_nom = Path(pdf_path).name
+            print(
+                f"[DIAG escribano] parseo_profundo fin PDF={_pdf_nom} "
+                f"total_comprobantes={len(comprobantes)}",
+                flush=True,
+            )
+            for _i, _c in enumerate(comprobantes, 1):
+                print(
+                    f"  [{_i}] {self._diag_snap_serie_numero(_c)}",
+                    flush=True,
+                )
 
             stats = vlm_handler.get_estadisticas()
             msg = (

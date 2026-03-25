@@ -205,8 +205,18 @@ def main() -> int:
             errores.append(f"{pdf.name}: sin expediente en resultado")
             continue
         comprobantes = res.expediente.comprobantes or []
+        print(
+            f"[DIAG tool] {pdf.name} -> res.expediente.comprobantes: "
+            f"len={len(comprobantes)} (iteracion fila a fila)",
+            flush=True,
+        )
         for c in comprobantes:
             filas.append(_fila_desde_comprobante(expediente_id, c))
+        print(
+            f"[DIAG tool] {pdf.name} filas añadidas al Excel: {len(comprobantes)} "
+            f"| acumulado filas todas={len(filas)}",
+            flush=True,
+        )
         if not res.exito and res.razon_detencion:
             errores.append(f"{pdf.name}: pipeline {res.exito=} {res.razon_detencion}")
 
