@@ -1,0 +1,313 @@
+# AG-EVIDENCE — Archivo maestro de continuidad (handoff entre IAs)
+
+**Versión del documento:** 2026-03-31
+**Propósito:** Un único punto de entrada para continuar el proyecto sin contexto previo, con precisión técnica y sin inventar comportamiento no sustentado en fuentes del repo.
+
+**Regla de uso:** Si una afirmación no está aquí ni en un archivo citado explícitamente, la IA debe tratarla como **INCIERTA** hasta verificar en código o en documentación primaria.
+
+---
+
+## 1. Identidad del proyecto
+
+### Qué es AG-EVIDENCE
+
+- Sistema **local-first** de **análisis probatorio** y apoyo al **control previo** de **expedientes administrativos**, con contexto inicial MINEDU (viáticos, rendiciones, comprobantes).
+- Produce **salidas trazables** (Excel, diagnósticos, trazas JSONL, etc.) basadas en **evidencia** y reglas explícitas.
+
+### Qué problema resuelve
+
+- Extraer y estructurar información desde **PDFs/imágenes** de forma **controlada**.
+- Señalar **observaciones, inconsistencias y riesgos** cuando hay **normativa o regla identificada** y **evidencia suficiente**.
+- Reducir **alucinación e inferencia no sustentada** mediante **abstención** y estándar probatorio.
+
+### Qué NO es
+
+- No es un chatbot creativo ni asesor legal automático (cfr. `docs/PROJECT_SPEC.md`).
+- No reemplaza al analista humano ni emite decisión administrativa final.
+- No es “experimental” en el sentido de abandonar gobernanza: **código y reglas prevalecen**.
+
+### Dominio funcional exacto
+
+> Análisis probatorio de expedientes administrativos y documentos asociados, con énfasis en evidencia verificable y trazabilidad (cfr. `docs/PROJECT_SPEC.md`, `AGENTS.md` / candado funcional del repo).
+
+---
+
+## 2. Principios no negociables
+
+Consolidado desde `docs/PROJECT_SPEC.md`, `docs/AGENT_GOVERNANCE_RULES.md` y práctica del código:
+
+| Principio | Significado operativo |
+|-----------|------------------------|
+| **Evidencia sobre inferencia** | Nada crítico sin respaldo documental o regla cargada. |
+| **Cero alucinaciones** | Falta de dato → declarar ausencia / `NULL` / degradación, no inventar. |
+| **Local-first** | Procesamiento local; sin APIs pagadas como requisito (cfr. PROJECT_SPEC). |
+| **Privacidad** | Datos sensibles no versionados en git; PDFs de expedientes fuera del repo. |
+| **Trazabilidad** | Archivo, página, método, regla cuando aplica (estándar probatorio para observaciones graves). |
+| **Abstención** | Preferir vacío honesto; política formal en `src/extraction/abstencion.py`. |
+| **Visibilidad probatoria** | En el extractor autónomo: solo lo legible en el **bloque** texto; sin completar desde anexo (ver sección 7). |
+
+---
+
+## 3. Arquitectura actual
+
+### Arquitectura general (implementación real)
+
+El código productivo vive principalmente en **`src/`**, no en el árbol antiguo `agentes/` + `orquestador.py` descrito en `docs/ARCHITECTURE.md`. Ese documento conserva **principios** útiles pero su **árbol de directorios y entrypoints** pueden estar **desactualizados** — verificar siempre contra el filesystem.
+
+### Capas (lectura práctica)
+
+1. **Ingesta / custodia / trazas:** `src/ingestion/` (`custody_chain.py`, `trace_logger.py`, `pdf_text_extractor.py`, …).
+2. **OCR:** `src/ocr/core.py` (Paddle PP-OCRv5 GPU + fallback Tesseract — cfr. `CLAUDE.md`).
+3. **Extracción y orquestación:** `src/extraction/escribano_fiel.py` — **`VERSION_ESCRIBANO = "4.1.0"`** al momento de redactar este handoff (`grep VERSION_ESCRIBANO`).
+4. **Contrato de datos:** `src/extraction/expediente_contract.py` (`ExpedienteJSON`, grupos de campos).
+5. **Confianza e integridad:** `src/extraction/confidence_router.py` (router, `IntegrityCheckpoint`, diagnóstico).
+6. **Validación / reglas:** `src/validation/`, `src/rules/`.
+7. **Salida Excel forense:** `src/extraction/excel_writer.py` (incluye hoja DIAGNOSTICO, hojas de comprobantes según evolución del módulo).
+
+### Flujo principal del pipeline (referencia `CLAUDE.md`)
+
+**Siete pasos de alto nivel:** custodia → OCR → parseo → OCR-first + VLM → evaluación → validación → Excel.
+
+La implementación concreta (orden interno, flags, workers) está en **`escribano_fiel.py`** y módulos referenciados; no reproducir aquí cada rama sin leer código.
+
+### Rol del pipeline
+
+- Orquestar custodia, extracción de texto/OCR, parseo profundo (incl. VLM según disponibilidad), decisiones de confianza y escritura de salidas.
+- **No** es reemplazado por el script `extract_comprobantes_minedu.py`; ese script es **herramienta autónoma** para carpetas de PDF y Excel de comprobantes (ver sección 6).
+
+### Interacción OCR → extracción → clasificación → validación → Excel
+
+1. **OCR / texto:** de página o recorte a texto estructurado o semiestructurado.
+2. **Extracción:** campos a contrato (`expediente_contract`) y comprobantes mínimos según router.
+3. **Clasificación / scoring:** `confidence_router`, umbrales, OCR-first vs VLM (cfr. ADR-011 en documentación del proyecto).
+4. **Validación:** módulos de validación y reglas cuando aplican.
+5. **Excel / informes:** `excel_writer` y scripts auxiliares.
+
+---
+
+## 4. Estado actual real del sistema
+
+**Fuentes:** `CLAUDE.md` (última actualización indicada allí: 2026-03-24), `CURRENT_STATE.md` (2026-03-31), `git log`.
+
+### Completado (referencia)
+
+- Fases 0–4 del roadmap descrito en `CLAUDE.md` (28/42 tareas ~66,7 %); pipeline **v4.1.0** en operación con OCR-first y VLM configurado.
+- Blindaje de seguridad en capas; tests en el orden de **~1355 passed** según `CLAUDE.md` (re-verificar con `pytest` antes de citar en informes formales).
+- **Última milestone cerrada** relevante para este handoff (Git): commit **`c95533f`** — *feat(extraccion): recuperación post-extracción, visibilidad probatoria, columnas y dedup en `scripts/extract_comprobantes_minedu.py`* + `CURRENT_STATE.md` + contexto + `.gitignore`.
+
+### En progreso / pendiente (referencia `CLAUDE.md`)
+
+- **Fase 5:** evaluación, legal prep, golden dataset, etc.
+- **ADR-012:** benchmark PaddleOCR-VL / alternativas; trabajo documentado como parcial.
+
+### Cambios recientes implementados (extractor autónomo)
+
+- Flujo **extraer → clasificar** en `scripts/extract_comprobantes_minedu.py`.
+- Recuperación post-extracción con **`_sin_veneno_en_bloque()`** y criterios extendidos (detalle en sección 6 y `CURRENT_STATE.md`).
+- Columnas Excel: `needs_review`, `visible_en_documento`, `parcial_ocr`.
+- Deduplicación: tupla de 4 elementos con sufijo por página + `bloque_indice_1based` cuando serie y RUC son `NULL`.
+
+**Importante:** `CURRENT_STATE.md` declara que esta milestone **no** cambió por sí sola las reglas internas de `escribano_fiel.py`; el cambio arquitectónico descrito “ANTES/AHORA” en la sección 5 aplica al **diseño del script autónomo**, no necesariamente a un refactor previo ya aplicado al orquestador.
+
+---
+
+## 5. Cambio arquitectónico reciente (CRÍTICO)
+
+### Ámbito
+
+El patrón documentado aquí como cambio es el del **script** `scripts/extract_comprobantes_minedu.py`, según su docstring y `procesar_pagina()`.
+
+### ANTES (patrón evitado en este diseño)
+
+- Enfoques que **filtran o deciden** “si es comprobante” **antes** de haber **extraído** campos desde el bloque, arriesgando **pérdida de señal** o decisiones sin evidencia estruturada en la fila.
+
+### AHORA (implementado en el script)
+
+- **Extraer primero** cada bloque (`extraer_fila_desde_bloque_texto`) con política **NULL si no hay evidencia** en el fragmento.
+- **Clasificar después** (`clasificar_bloque_post_extraccion`): veneno → descarte; scoring → aceptación o `score_insuficiente_post_extraccion`; opción de **recuperación** acotada.
+
+### Por qué cambió
+
+- Alinear decisión con **datos ya materializados**; trazabilidad más clara entre **texto del bloque** y **campos extraídos**.
+- Reducir descarte premuro de bloques con texto útil pero score bajo si hay **criterios de visibilidad** adicionales (recuperación), sin romper reglas de veneno.
+
+### Qué problema resolvió
+
+- Recuperar filas útiles en casos MINEDU donde el score post-extracción era &lt; 2 pero el bloque mostraba **moneda + monto**, **RUC + monto**, o **estructura tipo ticket**, sin mezclar tablas anexo ni consultas SUNAT.
+
+### Impacto real
+
+- Reportado en `CURRENT_STATE.md`: del orden de **~9 a ~11–12** filas en hoja `comprobantes` en el caso de prueba asociado (depende del PDF y deduplicación).
+
+### Por qué NO rompe el pipeline principal
+
+- El script vive en **`scripts/`** y genera **`comprobantes.xlsx`** en su modo de uso; **no** es importado por `escribano_fiel.py` en el diseño descrito en `CURRENT_STATE.md`. La integración futura sería **decisión explícita** de arquitectura, no asumida aquí.
+
+---
+
+## 6. Lógica actual del extractor de comprobantes (`scripts/extract_comprobantes_minedu.py`)
+
+### Segmentación
+
+- Por página se obtiene texto (`obtener_texto_pagina`); luego **`detectar_bloques_comprobantes`**. Si no hay bloques, se usa la página completa como un único bloque (comportamiento descrito en `procesar_pagina` / contexto consolidado).
+
+### Extracción “ciega” por bloque
+
+- **`extraer_fila_desde_bloque_texto`:** solo texto del bloque; rellena `FilaComprobante`; usa etiquetas y regex existentes; **no** completa desde anexo (observaciones pueden incluir `no_completar_desde_anexo` en páginas anexo).
+
+### Clasificación post-extracción
+
+- **`clasificar_bloque_post_extraccion(fila, texto_bloque)`** devuelve `DecisionPostExtraccion` con motivo, tier, score y detalle.
+
+### Reglas de veneno (orden lógico)
+
+1. **Multiples series / listado** en el bloque → `veneno_multiples_series_en_bloque`.
+2. **Consulta SUNAT** / patrones de ruido SUNAT → `veneno_consulta_sunat`.
+3. **ANEXO + estructura tabular** → `veneno_anexo_tabla`.
+
+### Scoring
+
+- **`_score_datos_extraidos`:** hasta 4 puntos (serie normalizada, RUC, monto, tipo FACTURA/BOLETA).
+- Umbral de aceptación estándar: **score ≥ 2**. Si **score &lt; 2** → `score_insuficiente_post_extraccion` salvo rama de recuperación.
+
+### Tiers
+
+- **`_tier_post_score`:** `ALTA` / `MEDIA` / `BAJA` / `N/A` según score y presencia de fecha y proveedor cuando el score es 3.
+
+### Recuperación post-extracción
+
+- Solo si motivo es **`score_insuficiente_post_extraccion`** y **`_recuperacion_extendida_permitida`** (sobre `_sin_veneno_en_bloque` + criterios de moneda+monto, RUC+monto, o ticket). Ver enumeración exacta en **`CURRENT_STATE.md` §1**.
+
+### Deduplicación
+
+- **`clave_dedup_normalizada`:** `(archivo, serie_norm, ruc, sufijo)`; sufijo distinto de 0 si serie y RUC son `NULL`, combinando página y `bloque_indice_1based`.
+
+### Logs
+
+- `[BLOQUE_DESCARTADO_POST_EXTRACCION]`, `[BLOQUE_RECUPERADO_POST_EXTRACCION]`, `[SEGMENTO]` (resumen por página).
+
+### Salida Excel
+
+- Hoja **`comprobantes`:** columnas en array **`COLUMNS`** del script.
+- Hoja **`bloques_descartados`:** estructura **`COLUMNS_DESCARTADOS`**.
+
+---
+
+## 7. Principio de visibilidad probatoria (sección independiente)
+
+**Alcance:** extractor autónomo y, como criterio cultural del proyecto, extensible al razonamiento sobre cualquier módulo.
+
+1. **Si un humano puede ver el dato en el fragmento probatorio tratado (bloque/página/recorte)** → el sistema **debe intentar** extraerlo con los mecanismos implementados (regex, OCR, VLM según corresponda). Si el mecanismo falla pero el patrón es visible, marcar **parcialidad** (`parcial_ocr`, observaciones), no inventar el valor.
+2. **Si ni un humano puede ver el dato en ese fragmento** → **`NULL`**; **no** completar desde anexo ni por contexto externo al fragmento en el script autónomo.
+3. **Errores del documento fuente:** si faltan campos críticos tras recuperación, se añade **`error_detectado_documento_fuente`** y la frase constante **`FRASE_VISIBILIDAD_PROBATORIA`** en observaciones — la **subsanación** es responsabilidad del área usuaria / revisión humana (`needs_review=True` en recuperación).
+4. **NULL antes que inferencia** siempre que no exista evidencia explícita.
+
+---
+
+## 8. Estructura de salida (Excel del script)
+
+| Elemento | Descripción |
+|----------|-------------|
+| **Hoja `comprobantes`** | Una fila por comprobante aceptado (vía score o recuperación); columnas según `COLUMNS`. |
+| **Columnas nuevas (milestone)** | `needs_review`, `visible_en_documento`, `parcial_ocr` (además de `tier_post_extraccion`, `score_post_extraccion` existentes en el esquema del script). |
+| **Flags** | `needs_review=True` en recuperación; `visible_en_documento` / `parcial_ocr` calculados en `_calcular_visible_y_parcial` (definición exacta en `CURRENT_STATE.md` §4). |
+| **Observaciones** | Tags estándar + en recuperación: `post_extraccion=aceptacion_extendida_score_insuficiente`, frase de visibilidad, y `error_detectado_documento_fuente` si falta cualquier crítico entre serie norm., RUC, monto, fecha, proveedor nombre. |
+| **Hoja `bloques_descartados`** | Bloques no aceptados ni recuperados; motivo, score, tier hipotético sin veneno, metadatos de bloque. |
+
+---
+
+## 9. Reglas de gobernanza operativa
+
+- **Cursor:** implementación principal en código (`src/`, `scripts/`, `tests/`), commits convencionales, sin modificar archivos protegidos sin aprobación (cfr. `CONTRIBUTING.md`, gobernanza del repo).
+- **Claude Code (auditor):** revisión, sincronización documental acordada en protocolo del proyecto; no sustituye la lectura del código.
+- **No modificar arquitectura** (flujos, contratos, pipelines) sin **justificación** y alineación con `docs/ARCHITECTURE.md` **y** código real en `src/`.
+- **No usar memoria implícita del chat** como fuente de verdad: **git**, **tests**, **archivos citados**.
+- **No asumir** rutas como `orquestador.py` en raíz o `utils/validador_evidencia.py` sin comprobar que existen; `docs/AGENT_GOVERNANCE_RULES.md` menciona componentes **normativos** que pueden no coincidir 1:1 con el árbol actual.
+
+---
+
+## 10. Estado Git / continuidad
+
+| Item | Valor verificado al generar este documento |
+|------|-------------------------------------------|
+| **Rama** | `main` |
+| **Último commit relevante** | `c95533f` — feat(extraccion): recuperación post-extracción, visibilidad probatoria, `CURRENT_STATE.md`, `AG_EVIDENCE_CONTEXT_UPDATED.txt`, `scripts/extract_comprobantes_minedu.py`, `.gitignore` |
+| **Push** | Ese commit estaba en **`origin/main`** tras `git push` en la sesión que lo creó |
+| **Este archivo** | `AG_EVIDENCE_MASTER_HANDOFF.txt` — **añadido después** de `c95533f`; requiere **nuevo commit** para quedar versionado y pusheado |
+
+**Archivos tocados en `c95533f` (no inventar otros):**
+`.gitignore`, `CURRENT_STATE.md`, `AG_EVIDENCE_CONTEXT_UPDATED.txt`, `scripts/extract_comprobantes_minedu.py`.
+
+---
+
+## 11. Revisión crítica del contexto (faltantes y desalineaciones)
+
+Lo siguiente **no** invalida el proyecto pero **sí** debe conocerse para evitar alucinaciones:
+
+| Ítem | Problema | Por qué importa |
+|------|----------|----------------|
+| `docs/ARCHITECTURE.md` | Describe árbol `agentes/`, `orquestador.py` raíz, `utils/` como actual | El núcleo implementado está en **`src/extraction/escribano_fiel.py`**; hay que **reconciliar** lectura normativa con código. |
+| `docs/AGENT_GOVERNANCE_RULES.md` | Cita `orquestador.py`, flujo AG01–AG09, rutas `utils/` | Marco **normativo**; implementación concreta puede diferir; verificar antes de asumir archivo existe. |
+| `CLAUDE.md` | Fecha última actualización **2026-03-24** vs milestone extractor **2026-03-31** | Actualizar `CLAUDE.md` en próxima sesión oficial si se adopta el extractor como parte del estándar documentado. |
+| `docs/ADR.md`, `docs/ARCHITECTURE_SNAPSHOT.md` | Citados en ARCHITECTURE | Pueden contener decisiones no reproducidas en este handoff; leer si el cambio afecta ADRs. |
+| `docs/PARSING_COMPROBANTES_SPEC.md` | Referenciado en contrato / tareas | Necesario para cambios en campos SUNAT y grupos A–K. |
+| `governance/SESSION_PROTOCOL.md` | Gate pre-tarea, audit | Obligatorio antes de declarar trabajo “cerrado” en sesiones formales. |
+| `ROADMAP.md` | Estado de tareas | Fuente para “siguiente paso” de producto, no asumir sin leer. |
+
+**Documento no rastreado visto en working tree (2026-03-31):** `docs/EVALUATION_FRAMEWORK.md` aparecía como **untracked**; no forma parte del commit `c95533f` — tratar como borrador hasta que se incluya en git.
+
+---
+
+## 12. Propuesta de continuidad (obligatoria)
+
+### Próximo paso técnico lógico
+
+1. **Commit + push** de `AG_EVIDENCE_MASTER_HANDOFF.txt` y excepción en `.gitignore` para mantener trazabilidad del handoff.
+2. **Sincronizar `CLAUDE.md`** con la milestone del extractor (fecha, ruta del script, principio visibilidad) sin contradecir gobernanza.
+3. **Fase 5 (según roadmap):** golden dataset / evaluación — ver `CLAUDE.md` y `ROADMAP.md` para tarea concreta **#30** y afines.
+4. **Decisión explícita:** si `extract_comprobantes_minedu.py` debe **integrarse** al pipeline (`escribano_fiel`) o permanecer **herramienta lateral** — no implementar integración sin ADR o nota de arquitectura.
+
+### Qué debe hacer la siguiente IA
+
+- Leer este archivo **y** abrir `CURRENT_STATE.md` ante cualquier duda sobre recuperación/flags.
+- Ejecutar **`git pull origin main`** y **`pytest`** antes de afirmar estado de tests.
+- Cualquier cambio en veneno/scoring del script: **tests o corrida reproducible** sobre PDF de prueba acordado.
+
+### Qué NO debe hacer todavía
+
+- No reescribir el pipeline completo asumiendo que el script reemplaza a `escribano_fiel`.
+- No **relajar veneno** ni **cruzar anexo** para subir métricas sin decisión de gobernanza.
+- No citar números de tests o commits sin **verificación en terminal**.
+
+---
+
+## 13. Instrucciones para nuevo chat (copiar y pegar)
+
+```text
+Proyecto: AG-EVIDENCE (repo Hanns111/AG-EVIDENCE, rama main).
+
+1) Pega al inicio del chat el contenido completo de AG_EVIDENCE_MASTER_HANDOFF.txt (raíz del repo).
+2) Comportamiento obligatorio de la IA:
+   - No inventar rutas de archivos ni comportamiento: verificar en el repo.
+   - Prioridad de lectura: este handoff → CURRENT_STATE.md (extractor) → código en scripts/extract_comprobantes_minedu.py y src/extraction/escribano_fiel.py según la tarea.
+   - Respetar principios: evidencia sobre inferencia, NULL antes que inferencia, visibilidad probatoria en el extractor autónomo.
+3) Validar primero:
+   - git status, git log -3 --oneline, rama main.
+   - Si tocaa pipeline: pytest (o subconjunto acordado).
+4) Antes de proponer cambios arquitectónicos: leer docs/AGENT_GOVERNANCE_RULES.md y governance/SESSION_PROTOCOL.md (gate).
+5) Si la tarea es solo extractor MINEDU: no modificar escribano_fiel salvo petición explícita del usuario.
+
+Confirma en tu respuesta qué archivos leíste y qué comprobaste en git.
+```
+
+---
+
+## Regla final
+
+Este archivo **consolida** pero **no reemplaza** la legislación interna completa en `docs/` ni el código. Ante conflicto:
+
+**Código versionado + documentación primaria del repo > resumen en chat > suposiciones del modelo.**
+
+---
+
+*Fin del archivo maestro de continuidad.*
