@@ -103,6 +103,7 @@ debug_*
 test_*.txt
 *.txt
 !requirements.txt
+!AG_EVIDENCE_CONTEXT_UPDATED.txt
 !README.md
 !CHANGELOG.md
 !LICENSE

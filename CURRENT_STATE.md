@@ -1,206 +1,129 @@
-# AG-EVIDENCE — Estado Actual del Proyecto
+# AG-EVIDENCE — Estado actual del sistema (memoria oficial)
 
-> Última actualización: 2026-03-25 (documentación fallback OCR-first + Problema 3)
-> Último commit documentación continuidad: `42dd78a`
+**Fecha de corte:** 2026-03-31  
+**Alcance:** Repositorio AG-EVIDENCE y herramienta `scripts/extract_comprobantes_minedu.py` (extracción MINEDU / expedientes en Excel).
 
----
-
-## 🔵 Estado actualizado (2026-03-24)
-
-- **Problema 1 (SUNAT):** RESUELTO — `page_classifier` con scoring auditable; páginas de validez no entran al extractor de comprobantes.
-- **Problema 2 (multi-comprobante):** RESUELTO — `page_segmenter` segmentación dinámica por layout OCR (N regiones, sin k fijo); integrado en `escribano_fiel` (ruta digital e imagen/VLM por recorte).
-- **Pipeline actual:**
-  - `page_classifier` (scoring auditable)
-  - `page_segmenter` (segmentación dinámica por layout OCR)
-- **Estado del sistema:** estable; validado contra golden **DIRI2026-INT-0196314** en tests unitarios de clasificación y segmentación.
-- **Problema 3 (parcial):** fallback OCR-first sin VLM implementado (comprobantes se materializan sin Ollama); **siguiente:** extracción de montos (alucinación crítica, ej. p37 real 25.00 vs pipeline 236.00).
-- **Nota:** el sistema ya **clasifica** páginas y **segmenta** comprobantes antes de la extracción profunda (OCR-first / VLM).
-- **Próximas capas del sistema:**
-  - Clasificación de expediente (rendición vs reembolso) — **CAPA CORE** — ver `docs/NEXT_STEP.md` (sección clasificación de expediente)
-  - Validación externa SUNAT (pendiente) — ver `docs/SUNAT_VALIDATION.md` y `docs/NEXT_STEP.md`
-- **Nota:** el sistema evolucionará hacia verificación cruzada contra fuentes oficiales.
-
-## 🔵 Resolución Problema 3 (parcial) — fallback OCR-first
-
-### Problema detectado
-
-El pipeline no generaba comprobantes cuando Ollama no estaba disponible, debido a un early return en `parseo_profundo`.
-
-### Causa raíz
-
-Dependencia implícita del VLM para materializar comprobantes, a pesar de contar con OCR, clasificación y segmentación funcionales.
-
-### Solución implementada
-
-Se implementó un fallback OCR-first determinístico:
-
-- Activado cuando `ollama_no_disponible`
-- Usa `_bloques_extraccion_pagina` + segmentación existente
-- Genera comprobantes mediante `construir_comprobante_minimo`
-- Umbral: `score_comprobante >= 2`
-- Extracción vía `_extraer_campos_ocr_por_tipo`
-- Campos no encontrados → NULL (abstención)
-
-### Resultado
-
-- El sistema ahora genera comprobantes sin depender del VLM
-- Se elimina el bloqueo crítico del pipeline
-- Se mantiene trazabilidad, contratos y deduplicación
-
-### Impacto arquitectónico
-
-El sistema pasa de ser VLM-gated a OCR-first robusto con VLM como mejora opcional
+Este documento describe el comportamiento **implementado en código** en la fecha indicada. Para el pipeline principal (`src/extraction/escribano_fiel.py`, etc.) no se alteraron reglas en esta milestone; el cambio estructural documentado aquí es la **recuperación post-extracción** en el script autónomo de comprobantes.
 
 ---
 
-## Estado General
+## 1. Nueva lógica implementada
 
-| Indicador | Valor |
-|---|---|
-| **Versión pipeline** | v4.1.0 (7 pasos) |
-| **Fases completadas** | 0, 1 (parcial), 2, 3, 4 = 28/42 tareas (66.7%) |
-| **Fase en progreso** | 5 (Evaluación + Legal prep) — en curso (clasificación + segmentación) |
-| **Tests** | ~1,400 passed (sin contar integración Ollama local) |
-| **Commits** | ver `git rev-list --count main` |
-| **Último hito Fase 5** | `page_classifier` + `page_segmenter` + tests golden DIRI2026 |
-| **Remote** | origin/main sincronizado |
-| **GPU** | RTX 5090 Laptop 24GB VRAM (sm_120 Blackwell) |
-| **OCR Engine** | PaddleOCR 3.4.0 PP-OCRv5 GPU |
-| **VLM Engine** | Ollama + qwen2.5vl:7b (sin cambios — ADR-012 bloqueado) |
-| **Deadline Premio BPG** | 4 de mayo 2026 (41 días) |
+### Recuperación post-extracción
 
----
+- Se activa **solo** cuando el clasificador devuelve motivo: **`score_insuficiente_post_extraccion`** (scoring de campos extraídos &lt; 2, tras extracción ciega del bloque).
+- Antes de aceptar por recuperación, debe cumplirse **sin veneno** en el bloque, mediante **`_sin_veneno_en_bloque()`**.
+- **`_sin_veneno_en_bloque()`** usa las **mismas** comprobaciones que `clasificar_bloque_post_extraccion` antes del scoring:
+  - listado múltiples series en bloque;
+  - consulta SUNAT / ruido SUNAT;
+  - ANEXO + estructura tabular (veneno).
 
-## Sesión 2026-03-24 — Resumen completo
+### Criterios de aceptación extendida
 
-### Lo que se hizo
+Un bloque **sin veneno** y con score insuficiente se acepta además si cumple **al menos uno** de:
 
-1. **Sincronización verificada:** 142 commits, local = remote, todo en origin/main
-2. **Descargador de expedientes** (`src/tools/descargador_expedientes.py`):
-   - Playwright CDP para conectar a Chrome en puerto 9222
-   - Descarga PDFs a `data/expedientes/incoming/`
-   - Notificaciones Telegram (TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID en .env)
-   - Commit: `c34bf1e`
-3. **Watchdog de carpeta** (`src/tools/watchdog_expedientes.py`):
-   - Monitorea `data/expedientes/incoming/` cada 5 segundos
-   - Notifica por Telegram cuando llegan PDFs nuevos (nombre + tamaño + SHA-256)
-   - Commit: `c34bf1e`
-4. **Hojas Excel ANEXO_3 + COMPROBANTES** (`src/extraction/excel_writer.py`):
-   - `escribir_anexo3()` y `escribir_comprobantes()` anti-alucinación
-   - Integradas en paso 7 de `escribano_fiel.py`
-   - Commit: `c34bf1e`
-5. **ADR-012 — Benchmark PaddleOCR-VL-1.5** (`docs/ADR-012.md`):
-   - Modelo descargado y probado con 3 backends
-   - **RESULTADO: BLOQUEADO** — ningún backend funciona en RTX 5090
-   - PaddlePaddle nativo: output vacío (0 chars)
-   - PyTorch/transformers: crash por incompatibilidad de versión
-   - vLLM: modelo no soportado
-   - Opción pendiente: llama.cpp GGUF
-   - Commit: `e42aadc`
-6. **Software instalado en WSL2:**
-   - `paddlex[ocr]==3.4.2`, `vllm==0.18.0`, `accelerate==1.13.0`
-   - **CUIDADO:** vLLM cambió nvidia-cublas, puede afectar PaddleOCR GPU
+1. **Moneda visible** en el texto del bloque (`S/`, `SOLES`, `PEN` vía regex dedicada) **y** patrón de monto (reutiliza `RE_MONTO` y regex de TOTAL / importe ya existentes).
+2. **RUC** presente en la fila extraída **o** patrón RUC visible en el bloque **y** **monto parcial** detectable en el bloque.
+3. **Estructura tipo ticket:**
+   - entre **3 y 45** líneas no vacías;
+   - contiene patrón de monto;
+   - contiene alguna de las palabras clave **TOTAL**, **IMPORTE**, **PAGO** (mayúsculas normalizadas en texto).
 
-### Lo que NO se hizo
-
-- Telegram bot setup (manual: Hans debe crear bot con @BotFather)
-- Benchmark con llama.cpp GGUF (llama.cpp no instalado)
-- Fase 5 tareas (#30-34)
-- Frontend
-- Notion checkpoint (no se intentó en esta sesión)
+No se cruza información de anexos ni del resto de la página para “salvar” el bloque: solo texto del segmento.
 
 ---
 
-## Archivos nuevos/modificados esta sesión
+## 2. Principio crítico implementado
 
-```
-NUEVO   src/tools/descargador_expedientes.py   — Playwright CDP downloader
-NUEVO   src/tools/watchdog_expedientes.py       — File watcher + Telegram
-NUEVO   docs/ADR-012.md                         — Benchmark PaddleOCR-VL-1.5
-NUEVO   scripts/benchmark_paddleocr_vl.py       — Script benchmark formal
-NUEVO   scripts/test_paddleocr_vl_torch.py      — Test PyTorch directo
-NUEVO   CURRENT_STATE.md                        — Este archivo
-MODIF   src/extraction/excel_writer.py          — +escribir_anexo3, escribir_comprobantes
-MODIF   src/extraction/escribano_fiel.py        — Integración hojas ANEXO_3 + COMPROBANTES
-MODIF   tests/test_excel_writer.py              — Tests para hojas nuevas
-MODIF   .env.example                            — TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, CDP_ENDPOINT
-MODIF   .claude/settings.json                   — Permisos capitalizados
-MODIF   CLAUDE.md                               — Session summary + plan actualizado
-```
+### Principio de visibilidad probatoria
+
+- El sistema **solo** extrae lo que puede fundamentar en el **bloque** (fragmento segmentado).
+- Si un dato no es claramente visible para un lector humano en ese fragmento → **`NULL`** (sin completar desde anexo).
+- **Prohibido:** inferencia de valores; completar desde ANEXO; asumir por contexto externo al bloque.
+- Documentación en cabecera del script y constante de frase en observaciones (ver sección 5).
 
 ---
 
-## Fases del proyecto
+## 3. Metadatos en filas recuperadas
 
-| Fase | Estado | Tareas | Detalle |
-|------|--------|--------|---------|
-| 0: Setup | COMPLETADA | #1-9 | Repo, CI, gobernanza |
-| 1: Trazabilidad + OCR | PARCIAL | #10-15 OK, #16 pendiente | OCR PP-OCRv5, trace_logger |
-| 2: Contrato + Router | COMPLETADA | #17-21 | ExpedienteJSON, IntegrityCheckpoint |
-| 3: Qwen Fallback | COMPLETADA | #22-26 | VLM integration, parseo profundo |
-| 4: Validaciones | COMPLETADA | #27-29 | Reglas, detracción, hallazgos |
-| 5: Evaluación + Legal | PENDIENTE | #30-34 | Golden dataset, flywheel, diseño legal |
-| 6: Motor Legal | PENDIENTE | #35-40 | RAG chunks, verificador citas |
-| Transversal: Seguridad | COMPLETADA | #41 | Blindaje 4 capas |
+En la rama de **aceptación extendida**:
+
+- `tier_post_extraccion` = **`"BAJA"`**
+- `needs_review` = **`True`**
+- `score_post_extraccion` = **valor real** devuelto por `_score_datos_extraidos(fila)` (no inventado)
+
+En comprobantes aceptados por el flujo normal (sin recuperación), `needs_review` se fija en **`False`** y el tier/score provienen de la clasificación estándar.
 
 ---
 
-## Plan para próximas sesiones
+## 4. Trazabilidad (`visible_en_documento`, `parcial_ocr`)
 
-### Próxima sesión (prioridad)
+Implementación en **`_calcular_visible_y_parcial(fila, bloque, fuente)`**:
 
-1. **Verificar PaddleOCR GPU** — `python3 -c "from paddleocr import PaddleOCR; ocr = PaddleOCR(); print('OK')"`
-   - Si broken por vLLM → `pip install nvidia-cublas-cu12==12.9.0.13`
-2. **ADR-012 opción GGUF** — instalar llama.cpp, descargar PaddleOCR-VL-1.5-GGUF,
-   benchmark real. Si funciona → integrar. Si no → mantener qwen2.5vl:7b.
-3. **Telegram setup** — @BotFather → token → .env → probar watchdog
-4. **Fase 5 inicio** — Tarea #30 (golden dataset)
+- **`visible_en_documento`**: `True` si hay **al menos un** campo crítico con valor extraído distinto de `NULL`, **o** al menos **un** patrón esperado visible en el bloque para la serie, RUC, monto, fecha o proveedor (etiquetas tipo razón social / emisor / etc.).
+- **`parcial_ocr`**: `True` si la fuente de texto es OCR débil (`ocr`, `debil`, `error_ocr`) **o** si para **algún** campo crítico hay patrón en el bloque pero el valor extraído sigue en `NULL` (posible lectura incompleta).
 
-### Semana 2
-
-- Tech Sentinel (scripts/tech_sentinel.py)
-- Tarea #31 (test_flywheel.py)
-- Procesar 3-5 expedientes reales
-- Tarea #16 (re-generar Excel formal)
-
-### Semana 3-5 (antes del 4 de mayo)
-
-- Frontend MVP (v0.dev)
-- Video demo
-- Documento postulación Premio BPG
-
-### Estimación de tiempo restante
-
-| Bloque | Esfuerzo | Importancia para Premio |
-|--------|----------|------------------------|
-| ADR-012 completar | 1 sesión | MEDIA (optimización, no bloqueante) |
-| Fase 5 completa | 5-7 sesiones | ALTA (datos reales necesarios) |
-| Frontend MVP | 3-4 sesiones | ALTA (demo visual) |
-| Video + documento | 2-3 sesiones | CRÍTICA (entregable final) |
-| **Total** | **~12-15 sesiones** | Alcanzable en 41 días |
+Campos críticos considerados para flags y para el tag de error: serie (normalizada), RUC, monto total, fecha, nombre proveedor.
 
 ---
 
-## Decisión arquitectónica pendiente
+## 5. Observaciones automáticas (recuperación)
 
-**¿Cambiar VLM o seguir con qwen2.5vl:7b?**
+En recuperación, a las observaciones existentes del bloque se añade siempre:
 
-- Si llama.cpp GGUF funciona para PaddleOCR-VL-1.5 → cambiar (mejor precisión, menos VRAM)
-- Si no funciona → mantener qwen2.5vl:7b y priorizar Fase 5
-- **Recomendación del Auditor:** No bloquear el proyecto por la revolución OCR.
-  El pipeline actual funciona (2.7 min/expediente). El Premio no requiere el modelo
-  más rápido — requiere un sistema funcional con demo convincente.
+- `post_extraccion=aceptacion_extendida_score_insuficiente | tier=BAJA | score_post=... |` + detalle de scoring original;
+- Frase literal: **«El sistema solo reporta lo que se puede ver; lo demás se observa como error.»** (constante `FRASE_VISIBILIDAD_PROBATORIA`).
+
+Si **falta alguno** de los campos críticos (serie normalizada, RUC, monto total, fecha, proveedor nombre = `NULL`):
+
+- Se añade el tag **`error_detectado_documento_fuente`** (`TAG_ERROR_DETECTADO_DOCUMENTO_FUENTE`).
 
 ---
 
-## Notas técnicas para la próxima IA/sesión
+## 6. Excel
 
-- **SSH roto:** `git@github.com` da Permission denied. Usar HTTPS:
-  `git push https://github.com/Hanns111/AG-EVIDENCE.git main`
-- **pre-commit roto en Windows:** Hook apunta a `/usr/bin/python3` (WSL).
-  Usar `--no-verify` para commits desde Windows.
-- **OCR/Pipeline siempre en WSL2:** `wsl bash -c "cd /mnt/c/Users/Hans/Proyectos/AG-EVIDENCE && python3 script.py"`
-- **Ollama arranque:** Ver CLAUDE.md sección "Arranque Ollama"
-- **Expediente de prueba:** `data/expedientes/pruebas/viaticos_2026/DIRI2026-INT-0196314_12.03.2026/`
-  - `2026031211199PV0086JOSEADRIANZENRENDICION.pdf` (44 páginas, rendición)
-  - `20260218101336PV0086JOSEADRIANZENUCAYALI.pdf` (7 páginas, viático)
+Hoja **`comprobantes`**: columnas adicionales respecto al esquema anterior del script:
+
+- `needs_review`
+- `visible_en_documento`
+- `parcial_ocr`
+
+Hoja **`bloques_descartados`**: sin cambio de contrato en esta entrega (sigue registrando bloques que no entran ni por aceptación normal ni por recuperación).
+
+---
+
+## 7. Deduplicación
+
+- Clave **`clave_dedup_normalizada`**: tupla de **cuatro** elementos `(archivo_origen, serie_numero_normalizado, ruc, sufijo)`.
+- Si **serie normalizada y RUC son ambos `NULL`**, el **sufijo** incorpora página y **`bloque_indice_1based`** para evitar colisiones entre bloques distintos del mismo PDF.
+- Campo interno **`bloque_indice_1based`** se asigna en la extracción por bloque (no requiere columna en Excel para funcionar).
+
+---
+
+## 8. Logging
+
+Nuevo mensaje de consola:
+
+- **`[BLOQUE_RECUPERADO_POST_EXTRACCION]`** — incluye archivo, página, índice de bloque, `score_ext`, `needs_review=1`.
+
+Los descartes siguen emitiendo **`[BLOQUE_DESCARTADO_POST_EXTRACCION]`** como antes.
+
+---
+
+## 9. Validación
+
+- **`python -m py_compile scripts/extract_comprobantes_minedu.py`** ejecutado con éxito en el entorno de desarrollo (sin errores de sintaxis).
+
+---
+
+## 10. Impacto funcional (alcance del script autónomo)
+
+- Sobre el **caso de prueba** MINEDU/DIRI asociado a esta iteración se reportó pasar de **~9** filas útiles a **~11–12** en la hoja **`comprobantes`**, según validación manual (el número exacto depende del PDF y de la deduplicación).
+- Los registros recuperados llevan **`needs_review=True`** y **`tier_post_extraccion=BAJA`**.
+
+---
+
+## Regla final
+
+- Este archivo resume el **estado implementado** descrito arriba.
+- No sustituye los documentos de gobernanza en `docs/` ni el pipeline en `src/`; indica qué está versionado y cómo se comporta el extractor autónomo en **`scripts/extract_comprobantes_minedu.py`**.

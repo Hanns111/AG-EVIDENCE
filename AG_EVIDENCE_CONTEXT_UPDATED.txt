@@ -1,0 +1,146 @@
+# AG-EVIDENCE — Contexto consolidado para continuidad (LLM / humano)
+
+**Generado:** 2026-03-31
+**Uso:** Pegar al inicio de nuevos chats como contexto base.
+**Estado detallado del extractor MINEDU:** ver **`CURRENT_STATE.md`** en la raíz del repositorio (memoria oficial de esa milestone).
+
+---
+
+## 1. Resumen del proyecto
+
+**AG-EVIDENCE** es un sistema **local-first** de análisis probatorio sobre **expedientes administrativos** (control previo, foco MINEDU / viáticos y comprobantes). Prioriza **trazabilidad**, **anti-alucinación** y **abstención** (preferir `NULL` a inventar).
+
+- **Repositorio:** Hanns111/AG-EVIDENCE (trabajo en **`main`** según protocolo del proyecto).
+- **Stack relevante:** Python, PyMuPDF/pdfplumber, PaddleOCR (GPU en WSL2), VLM vía Ollama en pipeline principal, Excel con openpyxl/pandas en herramientas.
+
+---
+
+## 2. Objetivo (control previo MINEDU)
+
+- Extraer y estructurar **evidencia documental** de PDFs (comprobantes, anexos, páginas SUNAT, etc.).
+- Emitir salidas auditables (Excel, diagnósticos, trazas) **sin afirmar** lo que no consta en el documento.
+- Validaciones normativas solo cuando hay **pauta/directiva identificada** (reglas de gobernanza en `docs/AGENT_GOVERNANCE_RULES.md`).
+
+---
+
+## 3. Arquitectura actual (repositorio)
+
+- **Orquestación pipeline principal:** `src/extraction/escribano_fiel.py` (custodia → OCR → parseo → router/VLM según configuración → salidas).
+- **Contrato de datos:** `src/extraction/expediente_contract.py` (`ExpedienteJSON`, grupos de campos).
+- **Confianza e integridad:** `src/extraction/confidence_router.py` (router, `IntegrityCheckpoint`, diagnóstico).
+- **OCR:** `src/ocr/core.py` (Paddle PP-OCRv5 + fallback).
+- **Ingesta / trazas:** `src/ingestion/trace_logger.py`, `custody_chain.py`, `pdf_text_extractor.py`.
+- **Excel forense:** `src/extraction/excel_writer.py` (incl. hoja DIAGNOSTICO).
+- **Herramienta autónoma MINEDU (esta milestone):** `scripts/extract_comprobantes_minedu.py` — no reemplaza al orquestador; sirve extracción **por bloque** a Excel para carpetas de PDFs de prueba.
+
+Documentación arquitectónica general: `docs/ARCHITECTURE.md` (visión modular; algunos nombres históricos de archivos pueden diferir del árbol actual — verificar en `src/`).
+
+---
+
+## 4. Flujo de procesamiento
+
+### Pipeline principal (AG-EVIDENCE)
+
+Flujo de alto nivel: **PDF → texto/OCR → clasificación de página / segmentación → extracción de campos → validación / Excel / diagnóstico** (según fase y flags). Detalle en `CLAUDE.md` / roadmap del repo.
+
+### Script `extract_comprobantes_minedu.py`
+
+1. Por página: obtener texto (PyMuPDF / pdfplumber / OCR según disponibilidad y calidad).
+2. **Segmentar** en bloques candidatos (`detectar_bloques_comprobantes`).
+3. Por bloque: **`extraer_fila_desde_bloque_texto`** (extracción solo desde ese texto; NULL si no hay evidencia).
+4. **`clasificar_bloque_post_extraccion`**: veneno → descarte; si no veneno → score 0–4 por campos; si score &lt; 2 → descarte por `score_insuficiente_post_extraccion` salvo **recuperación extendida** (ver `CURRENT_STATE.md` sección 1).
+5. Deduplicación global por **`clave_dedup_normalizada`**.
+6. **`comprobantes.xlsx`**: hojas `comprobantes` y `bloques_descartados`.
+
+---
+
+## 5. Reglas anti-alucinación (vigentes)
+
+- **No inferir** datos no sustentados en evidencia explícita.
+- Observaciones **CRÍTICAS/MAYORES** requieren archivo + página + snippet (estándar probatorio del proyecto).
+- Preferir **NULL** frente a completar desde **ANEXO** o contexto ajeno al fragmento en el script autónomo.
+- Tag explícito en extractor: `no_completar_desde_anexo` cuando la página se clasifica como anexo (observaciones).
+
+---
+
+## 6. Principio de visibilidad probatoria (extractor)
+
+- Solo se reporta lo **extraíble del bloque** visible en el texto.
+- Imposibilidad humana de leer el dato en el fragmento → **NULL**.
+- Frase de cierre en observaciones de recuperación: *«El sistema solo reporta lo que se puede ver; lo demás se observa como error.»*
+- Tag **`error_detectado_documento_fuente`** si faltan campos críticos en la fila recuperada.
+
+---
+
+## 7. Lógica de extracción de comprobantes (script)
+
+- Campos: tipo, serie/número, RUC, proveedor/ cliente forense, ítems, IGV/desgloses, forma de pago, fecha, monto, moneda, estado, confianza, observaciones, fuente, etc. (ver lista **`COLUMNS`** en el script).
+- **Extracción primero, clasificación después** — sin filtrar bloques antes de extraer.
+- Venenos: multiseries, consulta SUNAT, anexo+tabla.
+
+---
+
+## 8. Sistema de scoring (post-extracción)
+
+- **`_score_datos_extraidos`:** puntos por serie normalizada, RUC, monto, tipo FACTURA/BOLETA (máx. 4).
+- Umbral de aceptación estándar: **score ≥ 2** (`clasificar_bloque_post_extraccion`).
+- **Tier** si aceptado: `ALTA` / `MEDIA` / `BAJA` según `_tier_post_score`.
+
+---
+
+## 9. Sistema post-extracción (recuperación)
+
+Condiciones y criterios: **replicate exactamente** la sección **«1. Nueva lógica implementada»** de **`CURRENT_STATE.md`** (activación solo con `score_insuficiente_post_extraccion`, `_sin_veneno_en_bloque`, tres vías de aceptación extendida).
+
+Metadatos de fila recuperada: `tier_post_extraccion=BAJA`, `needs_review=True`, flags `visible_en_documento`, `parcial_ocr`.
+
+---
+
+## 10. Estructura de salida (Excel)
+
+- **Hoja `comprobantes`:** todas las columnas en **`COLUMNS`** del script (incl. `needs_review`, `visible_en_documento`, `parcial_ocr`, `tier_post_extraccion`, `score_post_extraccion`).
+- **Hoja `bloques_descartados`:** motivo, score, tier hipotético sin veneno, tipo doc, tamaño bloque, etc.
+
+---
+
+## 11. Campos y metadatos (extractor)
+
+- Críticos para revisión y tag de error: **serie normalizada, RUC, monto total, fecha, proveedor (nombre)**.
+- **`bloque_indice_1based`:** interno; participa en deduplicación cuando faltan serie y RUC.
+
+---
+
+## 12. Sistema de deduplicación
+
+- Ver **`CURRENT_STATE.md` sección 7** (tupla 4 elementos y sufijo página+bloque).
+
+---
+
+## 13. Logs relevantes
+
+- `[BLOQUE_RECUPERADO_POST_EXTRACCION]`
+- `[BLOQUE_DESCARTADO_POST_EXTRACCION]`
+- `[SEGMENTO]` resumen por página
+
+---
+
+## 14. Estado actual del sistema
+
+**Fuente normativa única para la milestone del extractor:** archivo **`CURRENT_STATE.md`** en la raíz (2026-03-31).
+
+**Pipeline principal `src/`:** sin cambios de lógica en esta entrega específica; continúa según último estado en `main` y documentación histórica (`docs/CURRENT_STATE.md`, `CLAUDE.md`).
+
+---
+
+## Cómo ejecutar el extractor
+
+```text
+cd scripts
+python extract_comprobantes_minedu.py
+```
+
+Colocar los PDFs en el directorio de trabajo esperado por el script (por defecto carpeta del script) o adaptar rutas en código local.
+
+---
+
+*Fin del contexto consolidado.*
