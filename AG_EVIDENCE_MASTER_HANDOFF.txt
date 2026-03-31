@@ -231,12 +231,15 @@ El patrón documentado aquí como cambio es el del **script** `scripts/extract_c
 | Item | Valor verificado al generar este documento |
 |------|-------------------------------------------|
 | **Rama** | `main` |
-| **Último commit relevante** | `c95533f` — feat(extraccion): recuperación post-extracción, visibilidad probatoria, `CURRENT_STATE.md`, `AG_EVIDENCE_CONTEXT_UPDATED.txt`, `scripts/extract_comprobantes_minedu.py`, `.gitignore` |
-| **Push** | Ese commit estaba en **`origin/main`** tras `git push` en la sesión que lo creó |
-| **Este archivo** | `AG_EVIDENCE_MASTER_HANDOFF.txt` — **añadido después** de `c95533f`; requiere **nuevo commit** para quedar versionado y pusheado |
+| **Último commit relevante (extractor)** | `c95533f` — feat(extraccion): recuperación post-extracción, visibilidad probatoria, `CURRENT_STATE.md`, `AG_EVIDENCE_CONTEXT_UPDATED.txt`, `scripts/extract_comprobantes_minedu.py`, `.gitignore` |
+| **Último commit relevante (handoff)** | `51ba029` — docs: agrega `AG_EVIDENCE_MASTER_HANDOFF.txt` y excepción en `.gitignore` |
+| **Push** | **Confirmado** en `origin/main` para ambos commits en la sesión de creación de este documento |
 
-**Archivos tocados en `c95533f` (no inventar otros):**
+**Archivos tocados en `c95533f`:**
 `.gitignore`, `CURRENT_STATE.md`, `AG_EVIDENCE_CONTEXT_UPDATED.txt`, `scripts/extract_comprobantes_minedu.py`.
+
+**Archivos tocados en `51ba029`:**
+`.gitignore`, `AG_EVIDENCE_MASTER_HANDOFF.txt`.
 
 ---
 
@@ -262,8 +265,8 @@ Lo siguiente **no** invalida el proyecto pero **sí** debe conocerse para evitar
 
 ### Próximo paso técnico lógico
 
-1. **Commit + push** de `AG_EVIDENCE_MASTER_HANDOFF.txt` y excepción en `.gitignore` para mantener trazabilidad del handoff.
-2. **Sincronizar `CLAUDE.md`** con la milestone del extractor (fecha, ruta del script, principio visibilidad) sin contradecir gobernanza.
+1. ~~**Commit + push** del handoff~~ — hecho (`51ba029`); en sesiones futuras: `git pull` antes de editar.
+2. **Sincronizar `CLAUDE.md`** (con aprobación de gobernanza; archivo protegido) con la milestone del extractor si se adopta como referencia oficial permanente.
 3. **Fase 5 (según roadmap):** golden dataset / evaluación — ver `CLAUDE.md` y `ROADMAP.md` para tarea concreta **#30** y afines.
 4. **Decisión explícita:** si `extract_comprobantes_minedu.py` debe **integrarse** al pipeline (`escribano_fiel`) o permanecer **herramienta lateral** — no implementar integración sin ADR o nota de arquitectura.
 
