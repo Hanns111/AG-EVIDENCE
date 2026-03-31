@@ -232,8 +232,8 @@ El patrón documentado aquí como cambio es el del **script** `scripts/extract_c
 |------|-------------------------------------------|
 | **Rama** | `main` |
 | **Último commit relevante (extractor)** | `c95533f` — feat(extraccion): recuperación post-extracción, visibilidad probatoria, `CURRENT_STATE.md`, `AG_EVIDENCE_CONTEXT_UPDATED.txt`, `scripts/extract_comprobantes_minedu.py`, `.gitignore` |
-| **Último commit relevante (handoff)** | `51ba029` — docs: agrega `AG_EVIDENCE_MASTER_HANDOFF.txt` y excepción en `.gitignore` |
-| **Push** | **Confirmado** en `origin/main` para ambos commits en la sesión de creación de este documento |
+| **Último commit relevante (handoff)** | `51ba029` — creación del maestro; `83a225a` — alinea secciones 10 y 12 con git real |
+| **Push** | **Confirmado** en `origin/main` (ver `git log` — HEAD puede ser `83a225a` o posterior) |
 
 **Archivos tocados en `c95533f`:**
 `.gitignore`, `CURRENT_STATE.md`, `AG_EVIDENCE_CONTEXT_UPDATED.txt`, `scripts/extract_comprobantes_minedu.py`.
