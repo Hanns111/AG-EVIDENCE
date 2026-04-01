@@ -16,7 +16,9 @@
 | **GPU** | RTX 5090 24GB VRAM (Laptop) |
 | **Orquestador** | src/extraction/escribano_fiel.py |
 | **ADR-012** | PaddleOCR-VL-1.5 benchmark EN PROGRESO — nativo BROKEN, pendiente vLLM |
-| **Última actualización** | 2026-03-24 |
+| **ADR-013** | Source map Claude Code → solo referencia conceptual externa (no operativa) |
+| **Investigación** | `docs/research/CLAUDE_CODE_SOURCEMAP_NOTES.md` — benchmark arquitectónico; no toca `src/` |
+| **Última actualización** | 2026-03-31 |
 
 ---
 

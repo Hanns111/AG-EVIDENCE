@@ -256,6 +256,7 @@ Lo siguiente **no** invalida el proyecto pero **sí** debe conocerse para evitar
 | `docs/PARSING_COMPROBANTES_SPEC.md` | Referenciado en contrato / tareas | Necesario para cambios en campos SUNAT y grupos A–K. |
 | `governance/SESSION_PROTOCOL.md` | Gate pre-tarea, audit | Obligatorio antes de declarar trabajo “cerrado” en sesiones formales. |
 | `ROADMAP.md` | Estado de tareas | Fuente para “siguiente paso” de producto, no asumir sin leer. |
+| Source map Claude Code (`CLAUDE_SOURCE_FINAL_60MB.map`) | Archivo **externo** al repo (~60 MB), no versionado | Solo **consulta conceptual** — `docs/research/CLAUDE_CODE_SOURCEMAP_NOTES.md`, **ADR-013**. **No** es dependencia, **no** mejora por sí solo Excel/RUC/fecha; el foco del producto sigue siendo **OCR + parsing + venenos + recuperación**. |
 
 **Documento no rastreado visto en working tree (2026-03-31):** `docs/EVALUATION_FRAMEWORK.md` aparecía como **untracked**; no forma parte del commit `c95533f` — tratar como borrador hasta que se incluya en git.
 
@@ -281,6 +282,7 @@ Lo siguiente **no** invalida el proyecto pero **sí** debe conocerse para evitar
 - No reescribir el pipeline completo asumiendo que el script reemplaza a `escribano_fiel`.
 - No **relajar veneno** ni **cruzar anexo** para subir métricas sin decisión de gobernanza.
 - No citar números de tests o commits sin **verificación en terminal**.
+- No usar el **source map** de Claude Code (`CLAUDE_SOURCE_FINAL_60MB.map`) como base operativa del pipeline ni como sustituto de OCR/parsing; ver ADR-013 y notas de investigación.
 
 ---
 

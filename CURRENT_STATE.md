@@ -123,6 +123,15 @@ Los descartes siguen emitiendo **`[BLOQUE_DESCARTADO_POST_EXTRACCION]`** como an
 
 ---
 
+## 11. Investigación externa (sin impacto en pipeline)
+
+- **Source map Claude Code** (`CLAUDE_SOURCE_FINAL_60MB.map`): archivo **local** (~60 MB) **fuera** de este repo; **no** se importa ni ejecuta. Su único rol en AG-EVIDENCE es **referencia arquitectónica / contrast e** documentada en:
+  - `docs/research/CLAUDE_CODE_SOURCEMAP_NOTES.md`
+  - `docs/ADR-013-claude-code-sourcemap-reference.md`
+- **No** sustituye OCR, parsing ni reglas de veneno/recuperación; el problema principal del producto sigue siendo **precisión de extracción y calidad de salida** (Excel incl.), no “agregar agencia” tipo asistente genérico.
+
+---
+
 ## Regla final
 
 - Este archivo resume el **estado implementado** descrito arriba.

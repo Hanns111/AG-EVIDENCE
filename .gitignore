@@ -83,6 +83,11 @@ nul
 *~
 
 # ------------------------------------------------------------------------------
+# Volcados masivos de investigación (NO versionar; fuente local fuera del repo)
+# ------------------------------------------------------------------------------
+CLAUDE_SOURCE*.map
+
+# ------------------------------------------------------------------------------
 # Documentos y datos sensibles (NO versionar)
 # ------------------------------------------------------------------------------
 *.pdf
@@ -105,6 +110,7 @@ test_*.txt
 !requirements.txt
 !AG_EVIDENCE_CONTEXT_UPDATED.txt
 !AG_EVIDENCE_MASTER_HANDOFF.txt
+!CHATGPT_BRIEF_AG_EVIDENCE.txt
 !README.md
 !CHANGELOG.md
 !LICENSE

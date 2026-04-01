@@ -433,6 +433,26 @@ continuous batching solo si niveles anteriores son insuficientes.
 
 ---
 
+## ADR-013 — Source map de Claude Code como referencia conceptual (no operativa)
+
+**Estado:** Aceptada  
+**Fecha:** 2026-03-31
+
+### Contexto
+Existe un volcado local masivo (`CLAUDE_SOURCE_FINAL_60MB.map`) útil solo como **benchmark conceptual** de tooling agentico/multimodal; no debe entrar al repo ni al runtime del pipeline.
+
+### Decisión
+Registrar el artefacto como **investigación externa**; el pipeline AG-EVIDENCE sigue **determinista, probatorio y local-first**. Cualquier patrón inspirado requerirá **ADR posterior**.
+
+### Consecuencias
+- Documentación: `docs/research/CLAUDE_CODE_SOURCEMAP_NOTES.md`
+- Sin cambios en `src/` ni dependencias de ejecución
+- `.gitignore` reforzado contra copias accidentales del `.map`
+
+**Documento completo:** [ADR-013-claude-code-sourcemap-reference.md](ADR-013-claude-code-sourcemap-reference.md)
+
+---
+
 ## Regla de Actualización
 
 Si una decisión:
