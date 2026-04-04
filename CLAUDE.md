@@ -18,6 +18,7 @@
 | **ADR-012** | PaddleOCR-VL-1.5 benchmark EN PROGRESO — nativo BROKEN, pendiente vLLM |
 | **ADR-013** | Source map Claude Code → solo referencia conceptual externa (no operativa) |
 | **Investigación** | `docs/research/CLAUDE_CODE_SOURCEMAP_NOTES.md` — benchmark arquitectónico; no toca `src/` |
+| **Evaluación** | Marco definido (`docs/EVALUATION_FRAMEWORK.md` v1.1) — SIN golden dataset ni script automático aún |
 | **Principio rector** | VISIBILIDAD PROBATORIA: sin inferencia, sin cruce, NULL si no visible |
 | **Última actualización** | 2026-04-04 |
 
@@ -548,6 +549,8 @@ Claude Code tiene **permisos completos** sobre todo el directorio del proyecto A
 - **VISIBILIDAD PROBATORIA (principio rector):** el dato existe SOLO si es visible en el documento fuente. Sin inferencia, sin cruce con Anexo 3 durante extracción, NULL si el campo existe pero no se leyó, vacío si no aplica al tipo de comprobante. Validación cruzada (Anexo 3 vs factura) es etapa POSTERIOR (Fase 5+).
 - **Anti-alucinación:** toda observación CRÍTICA/MAYOR requiere archivo + página + snippet
 - **Abstención:** prefiere vacío honesto a dato inventado
+- **Marco de evaluación:** `docs/EVALUATION_FRAMEWORK.md` v1.1 — define ground truth (comprobantes.xlsx), métricas (precisión, conteo, montos, RUC, fechas), tipos de error y flujo de evaluación. Estado: documento aprobado, pendiente implementación (golden dataset + script automático).
+- **Brief multi-agente:** `CHATGPT_BRIEF_AG_EVIDENCE.txt` — contexto para ChatGPT cuando Hans lo usa como consultor externo del proyecto.
 - **Completitud:** Completado = módulo en src/ + tests + integración pipeline. Scripts exploratorios NO cuentan.
 - **Gate de arranque:** Ver governance/SESSION_PROTOCOL.md — verificar 5 fuentes antes de declarar "listo"
 - **Local-first:** ningún dato sale a cloud (GDPR ready)
@@ -624,6 +627,7 @@ pdftotext "archivo_ocr.pdf" "archivo.txt"
   pull_request_template.md  ← Template PRs con checklist gobernanza
 .gitattributes              ← Merge protection (ours) para archivos protegidos
 .pre-commit-config.yaml     ← 8 hooks: ruff, governance guard, seguridad
+CHATGPT_BRIEF_AG_EVIDENCE.txt ← Brief de contexto para ChatGPT como consultor externo
 config/
   __init__.py, settings.py
 governance/
