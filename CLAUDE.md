@@ -12,13 +12,14 @@
 | **Pipeline** | 7 pasos: custodia → OCR → parseo → OCR-first + VLM → evaluación → validación → Excel |
 | **Fases completadas** | 0-4 (28/42 tareas = 66.7%) + ADR-011 Niveles 1-3 + ADR-012 parcial |
 | **Fase siguiente** | Fase 5: Evaluación + Legal prep + ADR-012 benchmark VLM |
-| **Tests** | 1355 passed, 0 failed |
+| **Tests** | 1403 collected (verificado 2026-04-04) |
 | **GPU** | RTX 5090 24GB VRAM (Laptop) |
 | **Orquestador** | src/extraction/escribano_fiel.py |
 | **ADR-012** | PaddleOCR-VL-1.5 benchmark EN PROGRESO — nativo BROKEN, pendiente vLLM |
 | **ADR-013** | Source map Claude Code → solo referencia conceptual externa (no operativa) |
 | **Investigación** | `docs/research/CLAUDE_CODE_SOURCEMAP_NOTES.md` — benchmark arquitectónico; no toca `src/` |
-| **Última actualización** | 2026-03-31 |
+| **Principio rector** | VISIBILIDAD PROBATORIA: sin inferencia, sin cruce, NULL si no visible |
+| **Última actualización** | 2026-04-04 |
 
 ---
 
@@ -39,6 +40,13 @@
 
 ## Última Tarea Completada
 
+- **Sesiones post 2026-03-24** — Commits en main hasta 2026-04-04:
+  - `c95533f` feat(extraccion): recuperación post-extracción con visibilidad probatoria y trazabilidad
+  - `42dd78a` feat: fallback OCR-first para generación de comprobantes sin VLM
+  - `18b9c82` feat(escribano): fallback OCR-first cuando Ollama no está disponible
+  - `51ba029` docs: handoff maestro de continuidad (AG_EVIDENCE_MASTER_HANDOFF.txt)
+  - `1a0225a` docs(research): sourcemap Claude Code como referencia conceptual
+
 - **Sesión 2026-03-24** — ADR-012 benchmark + herramientas de descarga
   - `src/tools/descargador_expedientes.py`: Playwright CDP para descargar PDFs del MINEDU
   - `src/tools/watchdog_expedientes.py`: Monitor carpeta incoming + notif Telegram
@@ -55,8 +63,9 @@
 - num_predict=800, num_ctx=4096, timeout=60s, vlm_workers=2
 - OCR-first (8/21 sin VLM), ROI crop (17.6% área), ThreadPoolExecutor paralelo
 - E2E DIRI2026: **2.7 min** (16x speedup vs 45 min), 19 comprobantes, 0 fallos JSON
+  - ⚠️ Performance condicional: benchmark bajo DIRI2026-INT-0196314 (19 comprobantes). No es garantía universal — expedientes con más páginas imagen o peor calidad de escaneo serán más lentos.
 - MonkeyOCR-pro-1.2B descartado (sm_120 incompatible PyTorch cu124)
-- Tests: 1355 passed, 0 failures
+- Tests: 1403 collected (actualizado 2026-04-04)
 - **Fase 4 COMPLETADA** (3/3 tareas: #27 ✅ #28 ✅ #29 ✅)
 - **Fase 3 COMPLETADA** (5/5 tareas: #22 ✅ #23 ✅ #24 ✅ #25 ✅ #26 ✅)
 
@@ -536,6 +545,7 @@ Claude Code tiene **permisos completos** sobre todo el directorio del proyecto A
 
 ## Reglas de Proyecto
 
+- **VISIBILIDAD PROBATORIA (principio rector):** el dato existe SOLO si es visible en el documento fuente. Sin inferencia, sin cruce con Anexo 3 durante extracción, NULL si el campo existe pero no se leyó, vacío si no aplica al tipo de comprobante. Validación cruzada (Anexo 3 vs factura) es etapa POSTERIOR (Fase 5+).
 - **Anti-alucinación:** toda observación CRÍTICA/MAYOR requiere archivo + página + snippet
 - **Abstención:** prefiere vacío honesto a dato inventado
 - **Completitud:** Completado = módulo en src/ + tests + integración pipeline. Scripts exploratorios NO cuentan.
